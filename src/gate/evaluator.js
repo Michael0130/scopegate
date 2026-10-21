@@ -98,7 +98,17 @@ async function callLLM(messages) {
       method: 'POST',
       signal: controller.signal,
       headers: { Authorization: `Bearer ${LLM_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: LLM_MODEL, messages, max_tokens: 1024, temperature: 0 }),
+      // thinking disabled: glm-5.3-flash supports it (~1.5s); the glm-4.6 alias always
+      // thinks (~13s+, error 1210) — always request glm-5.3-flash explicitly.
+      // max_tokens 512: the LLM outputs only the verdict skeleton (~100 tokens) — the
+      // gateway derives locked scope and price itself, so a bigger budget is dead latency.
+      body: JSON.stringify({
+        model: LLM_MODEL,
+        messages,
+        max_tokens: 512,
+        temperature: 0,
+        thinking: { type: 'disabled' },
+      }),
     });
     if (!res.ok) throw new Error(`LLM HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
     const data = await res.json();
