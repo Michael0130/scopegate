@@ -54,6 +54,15 @@ async function createOrder(token, requestId, contractHash) {
   return order;
 }
 
+async function getOrder(token, orderId) {
+  const res = await fetch(`${BASE_URL}/v2/checkout/orders/${orderId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const order = await res.json();
+  if (!res.ok) throw new Error(`Get Order failed: ${JSON.stringify(order)}`);
+  return order;
+}
+
 function report(label, pass, detail) {
   console.log(`  ${pass ? 'PASS' : 'FAIL'}  ${label}${detail ? ` — ${detail}` : ''}`);
   return pass;
@@ -88,9 +97,12 @@ function report(label, pass, detail) {
     console.log(`    Order Status: ${first.status}`);
     console.log(`    Approval Link: ${first.links.find(l => l.rel === 'approve')?.href}`);
 
-    const echoed = first.purchase_units?.[0]?.custom_id;
-    report('custom_id echoed intact in create response', echoed === contractHash, `echoed=${echoed}`);
-    report('shipping_preference honored (NO_SHIPPING / no shipping object)', !first.purchase_units?.[0]?.shipping);
+    // PayPal omits custom_id in the create response; the anchor must survive in the ledger,
+    // so verify it via GET (the query path the dispute-defense flow will actually use).
+    const fetched = await getOrder(token, first.id);
+    const anchored = fetched.purchase_units?.[0]?.custom_id;
+    report('custom_id anchored intact (GET order query)', anchored === contractHash, `echoed=${anchored}`);
+    report('shipping_preference honored (NO_SHIPPING / no shipping object)', !fetched.purchase_units?.[0]?.shipping);
 
     console.log('[3] Re-sending identical request with the same PayPal-Request-Id...');
     const second = await createOrder(token, requestId, contractHash);
