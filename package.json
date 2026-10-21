@@ -1,0 +1,20 @@
+{
+  "name": "scopegate",
+  "version": "0.1.0",
+  "description": "The scope firewall for agentic commerce — a merchant-side AI admission gateway and dispute shield for bespoke digital services, anchored on PayPal.",
+  "type": "module",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "spike": "node spikes/test-paypal-order.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

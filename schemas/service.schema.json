@@ -1,0 +1,24 @@
+{
+  "service_id": "srv_nextjs_landing",
+  "merchant_name": "Alex (Independent Fullstack Dev)",
+  "title": "Bespoke Next.js 14 Landing Page Implementation",
+  "base_price": 500.00,
+  "currency": "USD",
+  "turnaround_days": 3,
+  "max_revisions": 2,
+  "deliverables": [
+    "Up to 3 responsive sections (Hero, Pricing, FAQ)",
+    "Tailwind CSS dark-mode styling",
+    "Vercel deployment configuration"
+  ],
+  "explicit_exclusions": [
+    "Native iOS or Android mobile app development",
+    "Custom backend database or authentication architecture",
+    "Third-party payment risk modeling"
+  ],
+  "surcharge_rules": {
+    "rush_24h_delivery": 150.00,
+    "extra_revision_per_round": 50.00,
+    "additional_page_section": 100.00
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "dossier_id": "dos_88219",
+  "paypal_order_id": "5O190127TN364715T",
+  "paypal_custom_id_anchor": "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
+  "policy_compliance": "PayPal Seller Protection Policy Section 11 (Intangible Goods & Services)",
+  "contract_snapshot": {
+    "agreed_deliverables": ["3 responsive sections", "24-hour rush delivery"],
+    "explicit_exclusions": ["Native iOS/Android app", "Backend DB"],
+    "max_revisions": 2
+  },
+  "proof_of_delivery": {
+    "verified_payer_email": "sb-buyer@personal.example.com",
+    "delivery_dispatched_at": "2026-10-22T09:15:00Z",
+    "recipient_access_log": {
+      "accessed_at": "2026-10-22T10:02:41Z",
+      "client_ip": "198.51.100.42",
+      "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+      "artifact_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

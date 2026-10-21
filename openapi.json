@@ -1,0 +1,90 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ScopeGate Merchant Gateway API",
+    "description": "Merchant-side admission gateway for agentic commerce. Adjudicates buyer-agent requests against the merchant service baseline and anchors agreed terms on PayPal orders via a SHA-256 contract hash.",
+    "version": "0.1.0"
+  },
+  "servers": [
+    { "url": "/" }
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "summary": "Liveness probe",
+        "responses": {
+          "200": { "description": "Gateway is up" }
+        }
+      }
+    },
+    "/api/v1/scope/negotiate": {
+      "post": {
+        "summary": "Adjudicate a buyer-agent request against the merchant service baseline",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["buyer_message"],
+                "properties": {
+                  "buyer_message": {
+                    "type": "string",
+                    "description": "Natural-language service request from the buyer agent"
+                  },
+                  "budget_usd": {
+                    "type": "number",
+                    "description": "Optional stated budget in USD"
+                  },
+                  "session_id": {
+                    "type": "string",
+                    "description": "Session identifier mapped to the PayPal-Request-Id idempotency header"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gatekeeper verdict (ACCEPT | COUNTER | REJECT) — see schemas/decision.schema.json",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Decision" }
+              }
+            }
+          },
+          "501": {
+            "description": "Not implemented yet (D2 milestone)"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Decision": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "decision": {
+            "type": "string",
+            "enum": ["ACCEPT", "COUNTER", "REJECT"]
+          },
+          "risk_flags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "reasoning": { "type": "string" },
+          "quoted_price": { "type": "number" },
+          "locked_scope": { "type": "object" },
+          "contract_hash": {
+            "type": "string",
+            "description": "SHA-256 hex digest of the frozen contract JSON, also anchored as PayPal purchase_units[0].custom_id"
+          },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

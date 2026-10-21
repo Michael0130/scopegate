@@ -1,0 +1,15 @@
+{
+  "session_id": "req_scope_9f8a2b",
+  "decision": "ACCEPT | COUNTER | REJECT",
+  "risk_flags": ["NONE | PROMPT_INJECTION_DETECTED | EXPLICIT_EXCLUSION_VIOLATED | RUSH_CAPACITY_SURCHARGE"],
+  "reasoning": "Clear explanation for the buyer agent and merchant audit log.",
+  "quoted_price": 650.00,
+  "locked_scope": {
+    "agreed_deliverables": ["3 responsive sections", "24-hour rush delivery"],
+    "explicit_exclusions": ["Native iOS/Android app", "Backend DB"],
+    "max_revisions": 2,
+    "turnaround_hours": 24
+  },
+  "contract_hash": "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
+  "timestamp": "2026-10-21T12:00:00Z"
+}
