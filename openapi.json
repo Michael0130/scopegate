@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ScopeGate Merchant Gateway API",
-    "description": "Merchant-side admission gateway for agentic commerce. Adjudicates buyer-agent requests against the merchant service baseline and anchors agreed terms on PayPal orders via a SHA-256 contract hash.",
-    "version": "0.1.0"
+    "description": "Merchant-side admission gateway for agentic commerce. Adjudicates buyer-agent requests against the merchant service baseline, anchors agreed terms on PayPal orders via a SHA-256 contract hash, and assembles Seller Protection §11 dispute dossiers with delivery proof.",
+    "version": "0.2.0"
   },
   "servers": [
     { "url": "/" }
@@ -13,7 +13,22 @@
       "get": {
         "summary": "Liveness probe",
         "responses": {
-          "200": { "description": "Gateway is up" }
+          "200": {
+            "description": "Gateway is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" },
+                    "service": { "type": "string" },
+                    "gate_mode": { "type": "string", "enum": ["llm", "degraded"] },
+                    "time": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -38,7 +53,7 @@
                   },
                   "session_id": {
                     "type": "string",
-                    "description": "Session identifier mapped to the PayPal-Request-Id idempotency header"
+                    "description": "Session identifier; doubles as the PayPal-Request-Id idempotency header"
                   }
                 }
               }
@@ -47,16 +62,170 @@
         },
         "responses": {
           "200": {
-            "description": "Gatekeeper verdict (ACCEPT | COUNTER | REJECT) — see schemas/decision.schema.json",
+            "description": "Gatekeeper verdict (ACCEPT | COUNTER | REJECT)",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Decision" }
               }
             }
-          },
-          "501": {
-            "description": "Not implemented yet (D2 milestone)"
           }
+        }
+      }
+    },
+    "/api/v1/checkout": {
+      "post": {
+        "summary": "Create (or idempotently re-fetch) the PayPal order for an accepted quote",
+        "description": "Sends the frozen contract hash as purchase_units[0].custom_id and the session_id as PayPal-Request-Id, so retries resolve to the same order.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["session_id"],
+                "properties": {
+                  "session_id": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PayPal order created or replayed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session_id": { "type": "string" },
+                    "order_id": { "type": "string" },
+                    "status": { "type": "string" },
+                    "replayed": { "type": "boolean" },
+                    "approve_url": { "type": "string", "format": "uri" },
+                    "contract_hash": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Session not found" },
+          "409": { "description": "Session was rejected by the gate" }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/capture": {
+      "post": {
+        "summary": "Capture funds after the buyer approves the order on PayPal",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Capture result with payer email and the custom_id anchor echo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "order_id": { "type": "string" },
+                    "status": { "type": "string" },
+                    "payer_email": { "type": "string", "nullable": true },
+                    "custom_id_anchor": { "type": "string", "nullable": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}": {
+      "get": {
+        "summary": "Fetch a negotiation session record",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Session record (decision + order state)" },
+          "404": { "description": "Session not found" }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/dossier": {
+      "get": {
+        "summary": "Export the Seller Protection §11 dispute dossier for a session",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence dossier (see schemas/dossier.schema.json)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Dossier" }
+              }
+            }
+          },
+          "409": { "description": "Delivery evidence incomplete (not dispatched or never downloaded)" }
+        }
+      }
+    },
+    "/api/v1/delivery/{sessionId}/dispatch": {
+      "post": {
+        "summary": "Dispatch the finished artifact to the payer-verified email",
+        "parameters": [
+          { "name": "sessionId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payer_email": { "type": "string", "description": "Overrides the captured payer email" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dispatch recorded with artifact SHA-256",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session_id": { "type": "string" },
+                    "payer_email": { "type": "string" },
+                    "delivery_dispatched_at": { "type": "string", "format": "date-time" },
+                    "artifact_sha256": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "409": { "description": "No PayPal order on this session yet" }
+        }
+      }
+    },
+    "/api/v1/delivery/{sessionId}/artifact": {
+      "get": {
+        "summary": "Recipient download — served byte-identical to the dispatched copy and logged (IP, user agent, timestamp)",
+        "parameters": [
+          { "name": "sessionId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artifact file (text/plain attachment)",
+            "content": {
+              "text/plain": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "409": { "description": "Not dispatched yet" }
         }
       }
     }
@@ -73,16 +242,75 @@
           },
           "risk_flags": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string", "enum": ["NONE", "PROMPT_INJECTION_DETECTED", "EXPLICIT_EXCLUSION_VIOLATED", "RUSH_CAPACITY_SURCHARGE"] }
           },
           "reasoning": { "type": "string" },
-          "quoted_price": { "type": "number" },
-          "locked_scope": { "type": "object" },
-          "contract_hash": {
-            "type": "string",
-            "description": "SHA-256 hex digest of the frozen contract JSON, also anchored as PayPal purchase_units[0].custom_id"
+          "quoted_price": { "type": "number", "nullable": true },
+          "applied_surcharges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rule": { "type": "string" },
+                "quantity": { "type": "integer" }
+              }
+            }
           },
-          "timestamp": { "type": "string", "format": "date-time" }
+          "locked_scope": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "agreed_deliverables": { "type": "array", "items": { "type": "string" } },
+              "explicit_exclusions": { "type": "array", "items": { "type": "string" } },
+              "max_revisions": { "type": "integer" },
+              "turnaround_hours": { "type": "integer" }
+            }
+          },
+          "contract_hash": { "type": "string", "nullable": true },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "gate_meta": {
+            "type": "object",
+            "properties": {
+              "mode": { "type": "string", "enum": ["llm", "fallback-cache", "degraded"] },
+              "latency_ms": { "type": "integer", "nullable": true },
+              "injection_firewall_forced": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "Dossier": {
+        "type": "object",
+        "properties": {
+          "dossier_id": { "type": "string" },
+          "paypal_order_id": { "type": "string" },
+          "paypal_custom_id_anchor": { "type": "string" },
+          "policy_compliance": { "type": "string" },
+          "generated_at": { "type": "string", "format": "date-time" },
+          "contract_snapshot": {
+            "type": "object",
+            "properties": {
+              "agreed_deliverables": { "type": "array", "items": { "type": "string" } },
+              "explicit_exclusions": { "type": "array", "items": { "type": "string" } },
+              "max_revisions": { "type": "integer" },
+              "quoted_price": { "type": "number" }
+            }
+          },
+          "proof_of_delivery": {
+            "type": "object",
+            "properties": {
+              "verified_payer_email": { "type": "string" },
+              "delivery_dispatched_at": { "type": "string", "format": "date-time" },
+              "recipient_access_log": {
+                "type": "object",
+                "properties": {
+                  "accessed_at": { "type": "string", "format": "date-time" },
+                  "client_ip": { "type": "string" },
+                  "user_agent": { "type": "string" },
+                  "artifact_sha256": { "type": "string" }
+                }
+              }
+            }
+          }
         }
       }
     }

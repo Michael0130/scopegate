@@ -5,6 +5,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { evaluateScope } from './gate/evaluator.js';
 import { createScopedOrder, getOrder, captureOrder } from './paypal/client.js';
+import { buildDossier } from './paypal/disputes.js';
+import { renderArtifact, artifactHash, recordDispatch, recordAccess, getDeliveryRecord } from './delivery/tracker.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -110,7 +112,10 @@ app.post('/api/v1/orders/:id/capture', async (req, res) => {
   try {
     const capture = await captureOrder(req.params.id);
     const session = [...sessions.values()].find((s) => s.order_id === req.params.id);
-    if (session) session.order_status = capture.status;
+    if (session) {
+      session.order_status = capture.status;
+      session.payer_email = capture.payer?.email_address ?? session.payer_email ?? null;
+    }
     res.json({
       order_id: req.params.id,
       status: capture.status,
@@ -127,6 +132,59 @@ app.get('/api/v1/sessions/:id', (req, res) => {
   const session = getSession(req.params.id);
   if (!session) return res.status(404).json({ error: 'session_not_found' });
   res.json(session);
+});
+
+// Merchant dispatches the finished artifact to the payer-verified email.
+// Requires a created order; the payer email comes from capture when available.
+app.post('/api/v1/delivery/:sessionId/dispatch', (req, res) => {
+  const session = getSession(req.params.sessionId);
+  if (!session) return res.status(404).json({ error: 'session_not_found' });
+  if (!session.order_id) {
+    return res.status(409).json({ error: 'order_not_created', message: 'Checkout must succeed before delivery.' });
+  }
+
+  const record = recordDispatch(session.session_id, {
+    payerEmail: req.body?.payer_email || session.payer_email || 'unverified@scopegate.invalid',
+    artifactSha256: artifactHash(session),
+    dispatchedAt: new Date().toISOString(),
+  });
+  res.json({
+    session_id: session.session_id,
+    payer_email: record.payer_email,
+    delivery_dispatched_at: record.delivery_dispatched_at,
+    artifact_sha256: record.artifact_sha256,
+  });
+});
+
+// Recipient picks up the artifact: served byte-identical to the dispatched copy,
+// and the pickup is logged (IP, user agent, timestamp) for the dispute dossier.
+app.get('/api/v1/delivery/:sessionId/artifact', (req, res) => {
+  const session = getSession(req.params.sessionId);
+  if (!session) return res.status(404).json({ error: 'session_not_found' });
+  const record = getDeliveryRecord(session.session_id);
+  if (!record) {
+    return res.status(409).json({ error: 'not_dispatched', message: 'Merchant has not dispatched this deliverable yet.' });
+  }
+
+  recordAccess(session.session_id, {
+    clientIp: req.ip,
+    userAgent: req.get('user-agent') || 'unknown',
+    accessedAt: new Date().toISOString(),
+  });
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="scopegate-deliverable-${session.session_id}.txt"`);
+  res.send(renderArtifact(session));
+});
+
+// One-click Seller Protection §11 evidence package for this session.
+app.get('/api/v1/sessions/:sessionId/dossier', (req, res) => {
+  const session = getSession(req.params.sessionId);
+  if (!session) return res.status(404).json({ error: 'session_not_found' });
+  const record = getDeliveryRecord(session.session_id);
+  if (!session.order_id || !record || record.accesses.length === 0) {
+    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch the deliverable and let the recipient download it first.' });
+  }
+  res.json(buildDossier(session, record));
 });
 
 app.listen(PORT, () => {
