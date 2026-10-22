@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ScopeGate">
+  <defs>
+    <clipPath id="sg-a"><path d="M79.2 -20 L-20 -20 L-20 79.2 Z"/></clipPath>
+    <clipPath id="sg-b"><path d="M82.4 -20 L120 -20 L120 120 L-20 120 L-20 82.4 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#sg-a)">
+    <path fill="#f4f6fb" fill-rule="evenodd" d="M24 7 H40 L54 21 V43 L40 57 H24 L10 43 V21 Z M26 17 H38 L44 23 V41 L38 47 H26 L20 41 V23 Z M44 27 H54 V33 H44 Z M36 33 H44 V43 H36 Z"/>
+  </g>
+  <g clip-path="url(#sg-b)">
+    <path fill="#c9cfdb" fill-rule="evenodd" d="M24 7 H40 L54 21 V43 L40 57 H24 L10 43 V21 Z M26 17 H38 L44 23 V41 L38 47 H26 L20 41 V23 Z M44 27 H54 V33 H44 Z M36 33 H44 V43 H36 Z"/>
+  </g>
+</svg>
