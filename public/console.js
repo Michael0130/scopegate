@@ -54,6 +54,9 @@ const grid = agGrid.createGrid($('decision-grid'), {
   rowData: [],
   rowHeight: 38,
   headerHeight: 34,
+  animateRows: true,
+  rowSelection: 'single',
+  suppressCellFocus: true,
   onRowClicked: (e) => showDrawer(e.data.session_id),
 });
 
