@@ -25,6 +25,9 @@ const sessions = new Map();
 // Ring buffer of verified webhook deliveries (newest first) — drives the console feed.
 const webhookEvents = [];
 const WEBHOOK_EVENT_LIMIT = 20;
+// Every raw delivery attempt (verified or not) — debug view for integration.
+const webhookAttempts = [];
+const WEBHOOK_ATTEMPT_LIMIT = 20;
 
 function getSession(id) {
   return sessions.get(id);
@@ -296,15 +299,21 @@ app.post('/api/webhooks/paypal', async (req, res) => {
   }
   if (Object.keys(headers).length < PAYPAL_TRANSMISSION_HEADERS.length) {
     // Not a genuine PayPal delivery — no point asking the verifier about it.
+    webhookAttempts.unshift({ at: new Date().toISOString(), headers: Object.keys(headers), verdict: 'dropped: missing transmission headers' });
+    webhookAttempts.length = Math.min(webhookAttempts.length, WEBHOOK_ATTEMPT_LIMIT);
     return res.status(401).json({ error: 'invalid_signature', message: 'missing PayPal transmission headers' });
   }
   try {
     const verdict = await verifyWebhookSignature(headers, req.body);
     if (verdict.verification_status !== 'SUCCESS') {
       console.warn('[webhook] signature verification FAILED — dropping delivery');
+      webhookAttempts.unshift({ at: new Date().toISOString(), headers: Object.keys(headers), verdict: 'rejected: ' + (verdict.verification_status ?? 'unknown') });
+      webhookAttempts.length = Math.min(webhookAttempts.length, WEBHOOK_ATTEMPT_LIMIT);
       return res.status(401).json({ error: 'invalid_signature' });
     }
     const event = JSON.parse(req.body.toString('utf8'));
+    webhookAttempts.unshift({ at: new Date().toISOString(), headers: Object.keys(headers), verdict: 'verified', event_id: event.id, event_type: event.event_type });
+    webhookAttempts.length = Math.min(webhookAttempts.length, WEBHOOK_ATTEMPT_LIMIT);
     const matchedSession = applyWebhookEvent(event);
     webhookEvents.unshift({
       id: event.id,
@@ -329,8 +338,12 @@ app.post('/api/webhooks/paypal', async (req, res) => {
   }
 });
 
-app.get('/api/v1/webhook-events', (_req, res) => {
-  res.json({ webhook_url: '/api/webhooks/paypal', events: webhookEvents });
+app.get('/api/v1/webhook-events', (req, res) => {
+  res.json({
+    webhook_url: '/api/webhooks/paypal',
+    events: webhookEvents,
+    ...(req.query.raw === '1' ? { raw_attempts: webhookAttempts } : {}),
+  });
 });
 
 app.listen(PORT, () => {
