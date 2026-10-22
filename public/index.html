@@ -3,49 +3,256 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ScopeGate — Merchant Console</title>
+  <title>ScopeGate — The scope firewall for agentic commerce</title>
+  <meta name="description" content="Merchant-side admission gateway for bespoke digital services: adjudicate buyer agents before the order, anchor contracts in PayPal's ledger, win intangible-goods disputes." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <style>
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
     body {
-      margin: 0; min-height: 100vh; display: flex; flex-direction: column;
-      font-family: ui-sans-serif, system-ui, sans-serif;
-      background: #0b0f14; color: #e6edf3;
+      margin: 0; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background:
+        radial-gradient(1.2px 1.2px at 18% 22%, rgba(129,140,248,.5) 50%, transparent 51%),
+        radial-gradient(1.2px 1.2px at 68% 12%, rgba(110,231,183,.4) 50%, transparent 51%),
+        radial-gradient(1.4px 1.4px at 84% 38%, rgba(167,139,250,.45) 50%, transparent 51%),
+        radial-gradient(1.2px 1.2px at 38% 64%, rgba(129,140,248,.35) 50%, transparent 51%),
+        #05060f;
+      color: #f3f5f9;
     }
-    header { padding: 20px 28px 12px; border-bottom: 1px solid #1f2730; }
-    header h1 { margin: 0; font-size: 20px; letter-spacing: 0.5px; }
-    header p { margin: 4px 0 0; color: #8b98a5; font-size: 13px; }
-    main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 28px; }
-    .panel { border: 1px solid #1f2730; border-radius: 10px; padding: 18px; background: #0f141a; }
-    .panel h2 { margin: 0 0 10px; font-size: 15px; }
-    .panel p { color: #8b98a5; font-size: 13px; line-height: 1.6; }
-    footer { padding: 12px 28px; border-top: 1px solid #1f2730; color: #8b98a5; font-size: 12px; }
-    @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; color: #c4b5fd; background: rgba(139,92,246,.1); border: 1px solid rgba(139,92,246,.25); border-radius: 5px; padding: 1px 6px; }
+    a { color: inherit; }
+
+    .nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 28px; border-bottom: 1px solid rgba(255,255,255,.08); position: sticky; top: 0; backdrop-filter: blur(10px); background: rgba(5,6,15,.82); z-index: 10; }
+    .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; letter-spacing: .2px; text-decoration: none; }
+    .brand svg { flex: none; }
+    .nav-links { display: flex; gap: 26px; align-items: center; }
+    .nav-links a { color: #9aa1b1; text-decoration: none; font-size: 13.5px; }
+    .nav-links a:hover { color: #f3f5f9; }
+
+    .hero { text-align: center; padding: 74px 24px 64px; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.03); border-radius: 999px; padding: 6px 15px; font-size: 10.5px; letter-spacing: 2.2px; color: #c7ccd8; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+    h1 { margin: 26px 0 0; font-size: clamp(44px, 7.2vw, 76px); line-height: 1.04; font-weight: 800; letter-spacing: -2.2px; }
+    .grad { background: linear-gradient(90deg, #a78bfa 0%, #818cf8 45%, #6ee7b7 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .sub { max-width: 620px; margin: 26px auto 0; color: #9aa1b1; font-size: 16.5px; line-height: 1.65; }
+    .cta { display: flex; gap: 14px; justify-content: center; margin-top: 34px; flex-wrap: wrap; }
+    .btn-white { display: inline-flex; align-items: center; background: #fff; color: #0b0d16; font-weight: 600; font-size: 14px; text-decoration: none; border-radius: 9px; padding: 12px 22px; }
+    .btn-white:hover { background: #e8ebf2; }
+    .btn-ghost { display: inline-flex; align-items: center; color: #f3f5f9; font-weight: 600; font-size: 14px; text-decoration: none; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.02); border-radius: 9px; padding: 12px 22px; }
+    .btn-ghost:hover { border-color: rgba(255,255,255,.34); }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); max-width: 780px; margin: 58px auto 0; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.015); border-radius: 14px; }
+    .stat { padding: 20px 14px; }
+    .stat + .stat { border-left: 1px solid rgba(255,255,255,.08); }
+    .stat-v { font-size: 23px; font-weight: 800; letter-spacing: -.5px; }
+    .stat-l { margin-top: 5px; font-size: 11.5px; color: #9aa1b1; line-height: 1.45; }
+    @media (max-width: 720px) { .stats { grid-template-columns: 1fr 1fr; } .stat:nth-child(3) { border-left: 0; } .stat:nth-child(n+3) { border-top: 1px solid rgba(255,255,255,.08); } }
+
+    .eyebrow { text-align: center; font-size: 11px; letter-spacing: 3.5px; color: #6b7280; margin-bottom: 12px; }
+    h2 { text-align: center; margin: 0 0 40px; font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -1.2px; }
+    .band { border-top: 1px solid rgba(255,255,255,.08); background: #0a0c18; padding: 64px 24px 68px; }
+
+    .how { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; max-width: 1060px; margin: 0 auto; align-items: center; }
+    @media (max-width: 900px) { .how { grid-template-columns: 1fr; } }
+    .step { display: grid; grid-template-columns: 52px 1fr; gap: 14px; padding: 16px 0; }
+    .step + .step { border-top: 1px solid rgba(255,255,255,.08); }
+    .step-num { font-size: 26px; font-weight: 800; letter-spacing: -1px; background: linear-gradient(90deg, #a78bfa, #818cf8, #6ee7b7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .step h3 { margin: 2px 0 7px; font-size: 16.5px; font-weight: 700; }
+    .step p { margin: 0; color: #9aa1b1; font-size: 13.5px; line-height: 1.65; }
+    .terminal-wrap { position: relative; }
+    .glow { position: absolute; inset: -34px -20px; background: radial-gradient(closest-side, rgba(139,92,246,.22), transparent 72%); filter: blur(6px); }
+    .terminal { position: relative; border: 1px solid rgba(167,139,250,.28); background: #070812; border-radius: 14px; padding: 18px 20px 20px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.85; text-align: left; }
+    .term-title { color: #6b7280; font-size: 10.5px; letter-spacing: 1.8px; margin-bottom: 10px; }
+    .plus { color: #818cf8; }
+    .dim { color: #565d6d; }
+    .red { color: #f87171; }
+    .green { color: #4ade80; }
+
+    .why { padding: 70px 24px; }
+    .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; max-width: 1000px; margin: 0 auto; }
+    @media (max-width: 820px) { .why-grid { grid-template-columns: 1fr; gap: 26px; } }
+    .why-item h3 { margin: 0 0 9px; font-size: 17px; font-weight: 700; }
+    .why-item p { margin: 0; color: #9aa1b1; font-size: 13.5px; line-height: 1.65; }
+
+    .prereq-card { max-width: 1000px; margin: 0 auto 18px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.015); border-radius: 14px; padding: 20px 24px; }
+    .prereq-title { font-size: 11px; letter-spacing: 2.5px; color: #6b7280; margin-bottom: 13px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 8px 13px; font-size: 13px; background: rgba(255,255,255,.02); }
+    .tag { font-size: 10px; letter-spacing: .5px; border-radius: 5px; padding: 2px 7px; }
+    .tag-purple { color: #c4b5fd; background: rgba(139,92,246,.16); border: 1px solid rgba(139,92,246,.4); }
+    .tag-blue { color: #93c5fd; background: rgba(59,130,246,.14); border: 1px solid rgba(59,130,246,.4); }
+    .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 1000px; margin: 0 auto; }
+    @media (max-width: 820px) { .code-grid { grid-template-columns: 1fr; } }
+    .code-card { border: 1px solid rgba(167,139,250,.24); background: #070812; border-radius: 14px; overflow: hidden; }
+    .code-head { display: flex; gap: 9px; align-items: center; padding: 11px 17px; border-bottom: 1px solid rgba(255,255,255,.08); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; letter-spacing: 1.6px; color: #9aa1b1; }
+    .code-card pre { margin: 0; padding: 15px 17px 17px; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.8; color: #e5e7eb; }
+    .code-card code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+
+    .teaser { border-top: 1px solid rgba(255,255,255,.08); text-align: center; padding: 70px 24px 74px; }
+
+    footer { border-top: 1px solid rgba(255,255,255,.08); padding: 40px 28px 44px; text-align: center; }
+    .foot-line { margin-top: 14px; color: #9aa1b1; font-size: 13.5px; }
+    .foot-meta { margin-top: 8px; color: #565d6d; font-size: 11.5px; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>ScopeGate</h1>
-    <p>The scope firewall for agentic commerce.</p>
+  <!-- sliced-G brand mark (public/logo.svg, inlined for zero requests) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <clipPath id="sg-a"><path d="M79.2 -20 L-20 -20 L-20 79.2 Z"/></clipPath>
+      <clipPath id="sg-b"><path d="M82.4 -20 L120 -20 L120 120 L-20 120 L-20 82.4 Z"/></clipPath>
+      <g id="sg-mark">
+        <g clip-path="url(#sg-a)"><path fill="#f4f6fb" fill-rule="evenodd" d="M24 7 H40 L54 21 V43 L40 57 H24 L10 43 V21 Z M26 17 H38 L44 23 V41 L38 47 H26 L20 41 V23 Z M44 27 H54 V33 H44 Z M36 33 H44 V43 H36 Z"/></g>
+        <g clip-path="url(#sg-b)"><path fill="#c9cfdb" fill-rule="evenodd" d="M24 7 H40 L54 21 V43 L40 57 H24 L10 43 V21 Z M26 17 H38 L44 23 V41 L38 47 H26 L20 41 V23 Z M44 27 H54 V33 H44 Z M36 33 H44 V43 H36 Z"/></g>
+      </g>
+    </defs>
+  </svg>
+
+  <header class="nav">
+    <a class="brand" href="/">
+      <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><use href="#sg-mark"/></svg>
+      ScopeGate
+    </a>
+    <nav class="nav-links">
+      <a href="#how">How it Works</a>
+      <a href="#quickstart">Quick Start</a>
+      <a href="/console">Live Console</a>
+      <a href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
+    </nav>
   </header>
-  <main>
-    <section class="panel">
-      <h2>Buyer Agent Protocol Simulator</h2>
-      <p>
-        Eval-case selector (Cases 1&ndash;6), request payload editor, gateway response card and
-        &ldquo;Accept &amp; Pay with PayPal Sandbox&rdquo; land in D4 (Master Spec &sect;7.1).
-      </p>
-    </section>
-    <section class="panel">
-      <h2>Merchant Console</h2>
-      <p>
-        Service-baseline card, AG Grid (community edition) live decision stream with capsule
-        badges, expandable contract-diff drawer, PayPal ledger status and one-click dispute
-        dossier export land in D4.
-      </p>
-    </section>
-  </main>
-  <footer>Gateway status: <span id="health">checking&hellip;</span></footer>
-  <script type="module" src="app.js"></script>
+
+  <section class="hero">
+    <div class="pill"><span class="dot"></span>LIVE ON PAYPAL SANDBOX</div>
+    <h1>The Scope Firewall<br /><span class="grad">for Agentic Commerce</span></h1>
+    <p class="sub">The merchant-side admission gateway for bespoke digital services. ScopeGate adjudicates
+      buyer agents before the order, anchors the agreed contract inside PayPal&rsquo;s own ledger,
+      and arms sellers with dispute-proof evidence &mdash; no more free work.</p>
+    <div class="cta">
+      <a class="btn-white" href="/console">Launch Live Console &rarr;</a>
+      <a class="btn-ghost" href="#quickstart">Quick Start</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-v">3-State</div><div class="stat-l">Gatekeeper verdicts &mdash; ACCEPT · COUNTER · REJECT</div></div>
+      <div class="stat"><div class="stat-v">SHA-256</div><div class="stat-l">Contract anchored as PayPal custom_id</div></div>
+      <div class="stat"><div class="stat-v">&sect;11</div><div class="stat-l">Seller Protection evidence dossier</div></div>
+      <div class="stat"><div class="stat-v">&lt;4s</div><div class="stat-l">Live LLM adjudication, deterministic fallback</div></div>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="eyebrow">HOW IT WORKS</div>
+    <h2>Three gates. Zero free work.</h2>
+    <div class="how">
+      <div>
+        <div class="step">
+          <div class="step-num">01</div>
+          <div>
+            <h3>Buyer agent posts an intent</h3>
+            <p>Natural language lands in the Prompt Firewall: XML-isolated, scanned for injection,
+              matched against the merchant&rsquo;s service baseline. Price obeys a one-way ratchet &mdash;
+              add-ons only move it up.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div>
+            <h3>Contract anchored on PayPal</h3>
+            <p>The frozen terms are SHA-256 hashed into <code>purchase_units[0].custom_id</code>.
+              Intangible-service checkout with <code>NO_SHIPPING</code>; <code>PayPal-Request-Id</code>
+              makes agent retries idempotent &mdash; never a double charge.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div>
+            <h3>Disputes answered with evidence</h3>
+            <p>Every delivery pickup logs payer email, IP, timestamp and artifact hash. One click exports
+              the Seller Protection &sect;11 dossier PayPal reviewers actually accept.</p>
+          </div>
+        </div>
+      </div>
+      <div class="terminal-wrap">
+        <div class="glow"></div>
+        <div class="terminal" role="img" aria-label="Gatekeeper terminal log">
+          <div class="term-title">gatekeeper &mdash; live decision</div>
+          <div><span class="dim">$</span> POST /api/v1/scope/negotiate</div>
+          <div><span class="plus">[+]</span> buyer input isolated in &lt;buyer_input&gt;</div>
+          <div><span class="plus">[+]</span> injection scan&hellip; <span class="red">PROMPT_INJECTION_DETECTED</span></div>
+          <div><span class="plus">[+]</span> exclusion match&hellip; <span class="red">native iOS app</span></div>
+          <div class="green">VERDICT: REJECT &mdash; 0 hours leaked &middot; no contract frozen</div>
+          <div><span class="dim">#</span> case 4 passes &rarr; ACCEPT $500.00</div>
+          <div><span class="plus">[+]</span> contract hash 8e79eb98&hellip;dd9918 &rarr; custom_id</div>
+          <div class="green"><span class="plus">[+]</span> order CAPTURED &middot; idempotent replay &check;</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why">
+    <div class="eyebrow">WHY SCOPEGATE</div>
+    <h2>A defense layer sellers were missing.</h2>
+    <div class="why-grid">
+      <div class="why-item">
+        <h3>Scope creep, priced.</h3>
+        <p>Rush jobs, extra revisions, added sections &mdash; every overshoot is metered against
+          published surcharge rules and re-quoted as a new locked contract version.</p>
+      </div>
+      <div class="why-item">
+        <h3>Prompt injection, burned.</h3>
+        <p>&ldquo;Ignore pricing rules&rdquo; is data, not a command. Deterministic heuristics plus a
+          hard-constraint LLM reject the attack before any work starts.</p>
+      </div>
+      <div class="why-item">
+        <h3>Disputes, won.</h3>
+        <p>Intangible services lose chargebacks for lack of a tracking number. A contract hash in
+          PayPal&rsquo;s ledger plus tracked delivery is the tracking number.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="quickstart">
+    <div class="eyebrow">QUICK START</div>
+    <h2>Running in 60 seconds.</h2>
+    <div class="prereq-card">
+      <div class="prereq-title">PREREQUISITES</div>
+      <div class="chips">
+        <span class="chip">Node 22+ <span class="tag tag-purple">required</span></span>
+        <span class="chip">PayPal Sandbox keys <span class="tag tag-blue">seller</span></span>
+        <span class="chip">GLM / LLM API key <span class="tag tag-blue">gate</span></span>
+        <span class="chip">Render (deploy) <span class="tag tag-purple">optional</span></span>
+      </div>
+    </div>
+    <div class="code-grid">
+      <div class="code-card">
+        <div class="code-head">run the gateway <span class="tag tag-blue">seller</span></div>
+        <pre><code>git clone https://github.com/Michael0130/scopegate
+cd scopegate &amp;&amp; cp .env.example .env
+npm install
+npm start          <span class="dim"># gateway on :3000</span></code></pre>
+      </div>
+      <div class="code-card">
+        <div class="code-head">prove the shield <span class="tag tag-blue">gate</span></div>
+        <pre><code>npm run spike      <span class="dim"># PayPal sandbox P0 checks</span>
+npm run eval       <span class="dim"># 6 adversarial cases + dossier</span>
+<span class="green">ALL CHECKS PASSED</span></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="teaser">
+    <div class="eyebrow">LIVE CONSOLE</div>
+    <h2>Watch the firewall work.</h2>
+    <p class="sub">Buyer-agent simulator on the left, merchant defense console on the right &mdash;
+      six adversarial evaluation cases, real PayPal sandbox orders, one-click dispute dossier.</p>
+    <a class="btn-white" href="/console">Open Console &rarr;</a>
+  </section>
+
+  <footer>
+    <a class="brand" href="/">
+      <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><use href="#sg-mark"/></svg>
+      ScopeGate
+    </a>
+    <div class="foot-line">The firewall merchants were missing.</div>
+    <div class="foot-meta">MIT &middot; PayPal Sandbox only &middot; Built for the PayPal AI Hackathon</div>
+  </footer>
 </body>
 </html>

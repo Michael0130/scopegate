@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ScopeGate — Live Console</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/vendor/ag-grid.css" />
+  <link rel="stylesheet" href="/vendor/ag-theme-quartz.css" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0f14; color: #e6edf3; font-size: 13.5px; line-height: 1.45; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .dim { color: #8b98a5; }
+
+    .appbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-bottom: 1px solid #1f2730; background: #0d1319; }
+    .brand { display: flex; gap: 10px; align-items: center; text-decoration: none; color: inherit; }
+    .name { font-weight: 600; letter-spacing: .2px; }
+    .tagline { font-size: 11.5px; color: #8b98a5; }
+    .appbar-right { display: flex; gap: 14px; align-items: center; }
+    .mode-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #4ade80; border: 1px solid rgba(63,185,80,.35); background: rgba(63,185,80,.08); border-radius: 999px; padding: 3px 10px; }
+    .mode-pill.degraded { color: #d29922; border-color: rgba(210,153,34,.4); background: rgba(210,153,34,.08); }
+    .toplink { color: #8b98a5; text-decoration: none; font-size: 12px; }
+    .toplink:hover { color: #e6edf3; }
+
+    .panes { display: grid; grid-template-columns: 5fr 7fr; }
+    @media (max-width: 980px) { .panes { grid-template-columns: 1fr; } }
+    .pane { padding: 16px 18px 18px; min-width: 0; }
+    .pane + .pane { border-left: 1px solid #1f2730; }
+    @media (max-width: 980px) { .pane + .pane { border-left: 0; border-top: 1px solid #1f2730; } }
+    .pane-title { display: flex; gap: 7px; align-items: center; margin: 0 0 12px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: #8b98a5; }
+
+    .label { display: block; font-size: 11.5px; color: #8b98a5; margin: 10px 0 5px; text-transform: uppercase; letter-spacing: .5px; }
+    .select, .textarea { width: 100%; background: #0d1319; color: #e6edf3; border: 1px solid #1f2730; border-radius: 8px; padding: 8px 10px; font: inherit; }
+    .textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; resize: vertical; }
+    .select:focus, .textarea:focus { outline: 2px solid rgba(47,129,247,.45); outline-offset: 1px; }
+    .actions { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+    .btn { display: inline-flex; gap: 6px; align-items: center; background: #0d1319; color: #e6edf3; border: 1px solid #1f2730; border-radius: 8px; padding: 7px 13px; font: inherit; font-size: 12.5px; cursor: pointer; }
+    .btn:hover { border-color: #8b98a5; }
+    .btn-primary { background: #2f81f7; border-color: #2f81f7; color: #fff; }
+    .btn-primary:hover { background: #4a90f8; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .hint { font-size: 11px; color: #8b98a5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    .response { margin-top: 16px; border: 1px solid #1f2730; border-radius: 10px; background: #10161d; overflow: hidden; }
+    .resp-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 13px; border-bottom: 1px solid #1f2730; background: #0d1319; }
+    .resp-body { padding: 12px 13px; }
+    .quote { font-size: 26px; font-weight: 600; letter-spacing: .3px; }
+    .quote small { font-size: 12px; font-weight: 400; color: #8b98a5; margin-left: 6px; }
+    .resp-reason { color: #8b98a5; font-size: 12.5px; margin: 8px 0 10px; }
+    .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; padding: 3px 0; }
+    .kv b { font-weight: 400; color: #8b98a5; }
+    .paybtn { display: inline-flex; gap: 7px; align-items: center; margin-top: 12px; background: #ffc439; color: #003087; font-weight: 600; font-size: 12.5px; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; font-style: italic; }
+    .paybtn:hover { filter: brightness(1.05); }
+
+    .pill { font-size: 10.5px; font-weight: 600; letter-spacing: .8px; border-radius: 999px; padding: 2px 10px; }
+    .pill-reject { color: #f85149; background: rgba(248,81,73,.12); border: 1px solid rgba(248,81,73,.5); }
+    .pill-counter { color: #d29922; background: rgba(210,153,34,.12); border: 1px solid rgba(210,153,34,.5); }
+    .pill-accept { color: #3fb950; background: rgba(63,185,80,.1); border: 1px solid rgba(63,185,80,.5); }
+    .pill-captured { color: #0b0f14; background: #3fb950; border: 1px solid #3fb950; }
+    .pill-created { color: #93c5fd; background: rgba(47,129,247,.1); border: 1px solid rgba(47,129,247,.5); }
+    .flag { font-size: 10px; letter-spacing: .4px; border-radius: 5px; padding: 2px 7px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .flag-red { color: #f85149; border: 1px solid rgba(248,81,73,.45); }
+    .flag-purple { color: #a371f7; border: 1px solid rgba(163,113,247,.45); }
+    .flag-amber { color: #d29922; border: 1px solid rgba(210,153,34,.45); }
+    .chip { display: inline-flex; gap: 4px; align-items: center; font-size: 11.5px; border-radius: 999px; padding: 3px 10px; }
+    .chip-ok { color: #3fb950; background: rgba(63,185,80,.08); border: 1px solid rgba(63,185,80,.3); }
+    .chip-no { color: #f85149; background: rgba(248,81,73,.06); border: 1px dashed rgba(248,81,73,.4); }
+
+    .baseline { border: 1px solid #1f2730; border-radius: 10px; background: #10161d; padding: 13px 15px; }
+    .baseline-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .baseline-title { font-weight: 600; }
+    .baseline-sub { font-size: 11.5px; color: #8b98a5; margin-top: 2px; }
+    .baseline-price { text-align: right; }
+    .price { font-size: 22px; font-weight: 600; }
+    .price-sub { display: block; font-size: 11px; color: #8b98a5; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 11px 0 9px; }
+    .surcharge { font-size: 11.5px; color: #8b98a5; border-top: 1px dashed #1f2730; padding-top: 9px; }
+    .surcharge b { color: #d29922; font-weight: 500; }
+
+    .grid-head { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 2px 8px; }
+    .grid-title { display: flex; gap: 7px; align-items: center; margin: 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: #8b98a5; }
+
+    #decision-grid { width: 100%; height: 218px; border: 1px solid #1f2730; border-radius: 10px; background: #10161d; }
+
+    .drawer { border: 1px solid #1f2730; border-radius: 10px; background: #10161d; margin-top: 12px; padding: 14px 15px; }
+    .drawer-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: #8b98a5; margin-bottom: 10px; }
+    .drawer-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 700px) { .drawer-cols { grid-template-columns: 1fr; } }
+    .diff-item { display: flex; gap: 7px; font-size: 12px; padding: 2.5px 0; }
+    .diff-mark { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; width: 12px; flex: none; }
+    .diff-add { color: #3fb950; }
+    .diff-keep { color: #8b98a5; }
+    .diff-no { color: #f85149; }
+    .hashline { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; word-break: break-all; background: #0d1319; border: 1px solid #1f2730; border-radius: 6px; padding: 7px 9px; margin-top: 8px; color: #2f81f7; }
+
+    .ledger { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; border: 1px solid #1f2730; border-radius: 10px; background: #10161d; padding: 11px 15px; }
+    .ledger-info { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .ledger-label { display: inline-flex; gap: 6px; align-items: center; font-size: 11.5px; color: #8b98a5; text-transform: uppercase; letter-spacing: .5px; }
+    .ledger-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .modal { position: fixed; inset: 0; background: rgba(4,8,12,.75); display: grid; place-items: center; z-index: 30; padding: 20px; }
+    .modal[hidden] { display: none; }
+    .modal-card { width: min(640px, 100%); max-height: 82vh; display: flex; flex-direction: column; background: #10161d; border: 1px solid #1f2730; border-radius: 12px; overflow: hidden; }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 11px 15px; border-bottom: 1px solid #1f2730; background: #0d1319; font-size: 13px; }
+    .iconbtn { background: none; border: 0; color: #8b98a5; cursor: pointer; padding: 4px; font-size: 15px; }
+    .iconbtn:hover { color: #e6edf3; }
+    .pre { margin: 0; padding: 13px 15px; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; line-height: 1.55; }
+    .modal-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 15px; border-top: 1px solid #1f2730; background: #0d1319; }
+
+    .checkout-zone { border-top: 1px dashed #1f2730; margin-top: 12px; padding-top: 12px; }
+    .step-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+    .status-line { font-size: 12px; color: #8b98a5; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <clipPath id="sg-a"><path d="M79.2 -20 L-20 -20 L-20 79.2 Z"/></clipPath>
+      <clipPath id="sg-b"><path d="M82.4 -20 L120 -20 L120 120 L-20 120 L-20 82.4 Z"/></clipPath>
+      <g id="sg-mark">
+        <g clip-path="url(#sg-a)"><path fill="#f4f6fb" fill-rule="evenodd" d="M24 7 H40 L54 21 V43 L40 57 H24 L10 43 V21 Z M26 17 H38 L44 23 V41 L38 47 H26 L20 41 V23 Z M44 27 H54 V33 H44 Z M36 33 H44 V43 H36 Z"/></g>
+        <g clip-path="url(#sg-b)"><path fill="#c9cfdb" fill-rule="evenodd" d="M24 7 H40 L54 21 V43 L40 57 H24 L10 43 V21 Z M26 17 H38 L44 23 V41 L38 47 H26 L20 41 V23 Z M44 27 H54 V33 H44 Z M36 33 H44 V43 H36 Z"/></g>
+      </g>
+    </defs>
+  </svg>
+
+  <header class="appbar">
+    <a class="brand" href="/">
+      <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><use href="#sg-mark"/></svg>
+      <div>
+        <div class="name">ScopeGate <span class="dim">Merchant Shield</span></div>
+        <div class="tagline">The scope firewall for agentic commerce</div>
+      </div>
+    </a>
+    <div class="appbar-right">
+      <span class="mode-pill" id="gate-mode"><span class="dot" style="width:6px;height:6px;border-radius:50%;background:currentColor"></span><span id="gate-mode-text">checking…</span></span>
+      <a class="toplink" href="/openapi.json" target="_blank" rel="noopener">OpenAPI / SDK</a>
+    </div>
+  </header>
+
+  <main class="panes">
+    <!-- Left: Buyer Agent Protocol Simulator -->
+    <section class="pane" aria-label="Buyer agent protocol simulator">
+      <h2 class="pane-title">Buyer Agent Protocol Simulator</h2>
+
+      <label class="label" for="case-select">Evaluation case</label>
+      <select id="case-select" class="select">
+        <option value="1">Case 1 · Prompt injection + out-of-scope</option>
+        <option value="2">Case 2 · Backend DB (excluded)</option>
+        <option value="3" selected>Case 3 · Rush 24h + extra revision</option>
+        <option value="4">Case 4 · Compliant baseline request</option>
+        <option value="5">Case 5 · Subjective / viral wording</option>
+        <option value="6">Case 6 · Idempotent replay (same request-id)</option>
+      </select>
+
+      <label class="label" for="payload">Agent request payload</label>
+      <textarea id="payload" class="textarea" rows="5" spellcheck="false"></textarea>
+      <div class="hint" id="case-hint" style="margin-top:5px"></div>
+
+      <div class="actions">
+        <button id="send" class="btn btn-primary" type="button">Send Request to Gateway</button>
+        <span class="hint">POST /api/v1/scope/negotiate</span>
+      </div>
+
+      <div id="response" class="response" aria-live="polite" hidden></div>
+    </section>
+
+    <!-- Right: Merchant Console -->
+    <section class="pane" aria-label="Merchant console">
+      <div class="baseline">
+        <div class="baseline-head">
+          <div>
+            <div class="baseline-title">Bespoke Next.js 14 Landing Page</div>
+            <div class="baseline-sub">Merchant baseline · Alex (Independent Fullstack Dev)</div>
+          </div>
+          <div class="baseline-price"><span class="price">$500</span><span class="price-sub">/ 3 days · 2 revisions</span></div>
+        </div>
+        <div class="chips" id="baseline-chips"></div>
+        <div class="surcharge">Surcharges: rush 24h <b>+$150</b> · extra revision <b>+$50</b> · extra section <b>+$100</b> · one-way ratchet — never below base</div>
+      </div>
+
+      <div class="grid-head">
+        <h3 class="grid-title">Live decision stream</h3>
+        <span class="hint">click a row for the contract diff</span>
+      </div>
+      <div id="decision-grid" class="ag-theme-quartz-dark"></div>
+
+      <div class="drawer" id="drawer" hidden>
+        <div class="drawer-title" id="drawer-title">Contract diff</div>
+        <div class="drawer-cols">
+          <div id="drawer-diff"></div>
+          <div>
+            <div id="drawer-kv"></div>
+            <div class="hashline" id="drawer-hash" hidden></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ledger">
+        <div class="ledger-info">
+          <span class="ledger-label">PayPal ledger</span>
+          <span class="mono" id="ledger-order" style="font-size:12px">—</span>
+          <span id="ledger-status"></span>
+          <span class="mono dim" id="ledger-custom" style="font-size:12px"></span>
+        </div>
+        <div class="ledger-actions">
+          <button class="btn" id="btn-dispatch" type="button" disabled>Dispatch deliverable</button>
+          <button class="btn" id="btn-download" type="button" disabled>Simulate buyer download</button>
+          <button class="btn" id="btn-dossier" type="button" disabled>Export Dispute Dossier</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal" id="dossier-modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Dispute dossier">
+      <div class="modal-head">
+        <span><b>Dispute Dossier</b> · PayPal Seller Protection &sect;11</span>
+        <button class="iconbtn" id="modal-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <pre class="pre" id="dossier-pre"></pre>
+      <div class="modal-foot">
+        <span class="hint">Generated from the frozen contract hash + tracked delivery logs</span>
+        <button class="btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('dossier-pre').textContent)">Copy JSON</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/vendor/ag-grid-community.min.js"></script>
+  <script type="module" src="/console.js"></script>
+</body>
+</html>

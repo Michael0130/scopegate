@@ -27,6 +27,9 @@ function getSession(id) {
 app.use(express.json({ limit: '256kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Pretty URL for the live console (landing links here).
+app.get('/console', (_req, res) => res.redirect('/console.html'));
+
 app.get('/api/v1/health', (_req, res) => {
   res.json({
     status: 'ok',
