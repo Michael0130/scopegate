@@ -64,6 +64,25 @@
   *real* sandbox events (a genuine capture fires a genuinely-signed
   `PAYMENT.CAPTURE.COMPLETED`).
 
+## Experiment 5 — Disputes `provide-evidence` multipart part naming
+
+- **Hypothesis**: the JSON metadata part is named `evidence_info` (as suggested by
+  older community examples and the field name in the response schema).
+- **What we tried**: against live sandbox dispute `PP-R-LKW-10194104`
+  (`WAITING_FOR_SELLER_RESPONSE`, provide_evidence HATEOAS link present) we posted:
+  part names `evidence_info` / `files[]` / `evidence-file` / `file`, with and without
+  a file, with undici FormData and with a hand-rolled byte-exact multipart body, and
+  with a known-good W3C PDF as the attachment — 10 variants.
+- **Result / why it failed**: every variant returned `400 INVALID_EVIDENCE_FILE` —
+  even with no file attached at all, and even with a guaranteed-valid PDF. The error
+  text points at the file, but the actual cause is the JSON part name: the endpoint
+  expects the part to be named **`input`** (per the current API explorer).
+- **Decision**: `input` + `files` (hand-rolled multipart) returned **200** and moved
+  the dispute to `UNDER_PAYPAL_REVIEW` — the full order → capture → INR dispute →
+  evidence chain now runs for real in sandbox. Lesson: PayPal's misleading error
+  codes here cost an hour; when an error smells wrong, hunt the official request
+  example rather than iterating on the flagged field.
+
 ## Claim deliberately narrowed
 
 - **Over-claim**: "live LLM adjudication in under 4 seconds, always."
