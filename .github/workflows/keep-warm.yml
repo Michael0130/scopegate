@@ -1,7 +1,8 @@
 name: Keep Warm
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    # off-peak minutes: GitHub cron delays */10-on-the-10s heavily under load
+    - cron: "7,17,27,37,47,57 * * * *"
   workflow_dispatch:
 jobs:
   ping:
