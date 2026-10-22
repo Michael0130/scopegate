@@ -5,7 +5,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { evaluateScope } from './gate/evaluator.js';
 import { createScopedOrder, getOrder, captureOrder } from './paypal/client.js';
-import { buildDossier } from './paypal/disputes.js';
+import { buildDossier, buildEvidencePayload, provideEvidence } from './paypal/disputes.js';
+import { buildDefenseLetterPdf } from './paypal/defense-letter.js';
+import { verifyWebhookSignature, PAYPAL_TRANSMISSION_HEADERS } from './paypal/webhooks.js';
 import { renderArtifact, artifactHash, recordDispatch, recordAccess, getDeliveryRecord } from './delivery/tracker.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -20,9 +22,18 @@ const baseline = JSON.parse(
 // one PayPal order (PayPal-Request-Id = session_id makes the PayPal side idempotent too).
 const sessions = new Map();
 
+// Ring buffer of verified webhook deliveries (newest first) — drives the console feed.
+const webhookEvents = [];
+const WEBHOOK_EVENT_LIMIT = 20;
+
 function getSession(id) {
   return sessions.get(id);
 }
+
+// PayPal webhooks must hit the raw parser FIRST: the transmission signature is
+// computed over the exact request bytes, so this path is mounted before express.json
+// (body-parser marks req._body and later parsers skip it).
+app.use('/api/webhooks', express.raw({ type: '*/*', limit: '1mb' }));
 
 app.use(express.json({ limit: '256kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -118,6 +129,7 @@ app.post('/api/v1/orders/:id/capture', async (req, res) => {
     if (session) {
       session.order_status = capture.status;
       session.payer_email = capture.payer?.email_address ?? session.payer_email ?? null;
+      session.capture_id = capture.purchase_units?.[0]?.payments?.captures?.[0]?.id ?? session.capture_id ?? null;
     }
     res.json({
       order_id: req.params.id,
@@ -188,6 +200,137 @@ app.get('/api/v1/sessions/:sessionId/dossier', (req, res) => {
     return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch the deliverable and let the recipient download it first.' });
   }
   res.json(buildDossier(session, record));
+});
+
+// The same dossier as a downloadable defense-letter PDF (Seller Protection §11).
+app.get('/api/v1/sessions/:sessionId/dossier/pdf', (req, res) => {
+  const session = getSession(req.params.sessionId);
+  if (!session) return res.status(404).json({ error: 'session_not_found' });
+  const record = getDeliveryRecord(session.session_id);
+  if (!session.order_id || !record || record.accesses.length === 0) {
+    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch the deliverable and let the recipient download it first.' });
+  }
+  const pdf = buildDefenseLetterPdf(buildDossier(session, record));
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="scopegate-defense-letter-${session.session_id}.pdf"`);
+  res.send(pdf);
+});
+
+// Preview of the exact evidence_info payload that would be POSTed to
+// /v1/customer/disputes/{id}/provide-evidence for this session.
+app.get('/api/v1/sessions/:sessionId/evidence-payload', (req, res) => {
+  const session = getSession(req.params.sessionId);
+  if (!session) return res.status(404).json({ error: 'session_not_found' });
+  const record = getDeliveryRecord(session.session_id);
+  if (!record || record.accesses.length === 0) {
+    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch + download must happen before evidence exists.' });
+  }
+  res.json({
+    provide_evidence_endpoint: 'POST /v1/customer/disputes/{dispute_id}/provide-evidence',
+    evidence_type: 'PROOF_OF_FULFILLMENT',
+    multipart_parts: ['evidence_info (application/json)', 'notes', 'files: defense letter PDF'],
+    evidence_info: buildEvidencePayload(buildDossier(session, record), session),
+  });
+});
+
+// Fire the real Disputes API call against a live dispute id (phase 2 route).
+app.post('/api/v1/disputes/:disputeId/provide-evidence', async (req, res) => {
+  const session = getSession(req.body?.session_id);
+  if (!session) return res.status(404).json({ error: 'session_not_found' });
+  const record = getDeliveryRecord(session.session_id);
+  if (!record || record.accesses.length === 0) {
+    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch + download must happen before evidence exists.' });
+  }
+  try {
+    const dossier = buildDossier(session, record);
+    const pdf = buildDefenseLetterPdf(dossier);
+    const result = await provideEvidence({ disputeId: req.params.disputeId, dossier, session, pdfBuffer: pdf });
+    session.dispute = { ...(session.dispute ?? {}), evidence_submitted_at: new Date().toISOString() };
+    res.json(result);
+  } catch (err) {
+    console.error('[provide-evidence]', err.message);
+    res.status(502).json({ error: 'paypal_failure', message: err.message });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// PayPal webhook ingestion (Master Spec §4.1.4). Raw body is mandatory: the
+// transmission signature is computed over the exact bytes PayPal sent.
+// ---------------------------------------------------------------------------
+
+/** Match an event resource back to its session via contract hash, order or capture id. */
+function matchSession(resource = {}) {
+  const ids = new Set();
+  const tx = resource.disputed_transactions?.[0] ?? {};
+  for (const v of [resource.custom_id, resource.id, tx.seller_transaction_id, tx.related_transaction_id]) {
+    if (typeof v === 'string' && v) ids.add(v);
+  }
+  return [...sessions.values()].find(
+    (s) => ids.has(s.decision.contract_hash) || (s.order_id && ids.has(s.order_id)) || (s.capture_id && ids.has(s.capture_id)),
+  );
+}
+
+function applyWebhookEvent(event) {
+  const session = matchSession(event.resource ?? {});
+  if (event.event_type === 'PAYMENT.CAPTURE.COMPLETED' && session) {
+    session.order_status = 'COMPLETED';
+    session.capture_id = session.capture_id ?? event.resource?.id ?? null;
+  }
+  if (event.event_type === 'CUSTOMER.DISPUTE.CREATED' && session) {
+    session.dispute = {
+      dispute_id: event.resource?.dispute_id ?? event.resource?.id ?? null,
+      reason: event.resource?.reason ?? null,
+      status: event.resource?.status ?? 'OPEN',
+      amount: event.resource?.dispute_amount?.value ?? null,
+      created_at: event.create_time,
+    };
+  }
+  return session?.session_id ?? null;
+}
+
+app.post('/api/webhooks/paypal', async (req, res) => {
+  const headers = {};
+  for (const h of PAYPAL_TRANSMISSION_HEADERS) {
+    const v = req.get(h);
+    if (v) headers[h] = v;
+  }
+  if (Object.keys(headers).length < PAYPAL_TRANSMISSION_HEADERS.length) {
+    // Not a genuine PayPal delivery — no point asking the verifier about it.
+    return res.status(401).json({ error: 'invalid_signature', message: 'missing PayPal transmission headers' });
+  }
+  try {
+    const verdict = await verifyWebhookSignature(headers, req.body);
+    if (verdict.verification_status !== 'SUCCESS') {
+      console.warn('[webhook] signature verification FAILED — dropping delivery');
+      return res.status(401).json({ error: 'invalid_signature' });
+    }
+    const event = JSON.parse(req.body.toString('utf8'));
+    const matchedSession = applyWebhookEvent(event);
+    webhookEvents.unshift({
+      id: event.id,
+      event_type: event.event_type,
+      create_time: event.create_time,
+      verified: true,
+      matched_session: matchedSession,
+      resource_summary: {
+        id: event.resource?.id ?? null,
+        amount: event.resource?.amount?.value ?? event.resource?.dispute_amount?.value ?? null,
+        reason: event.resource?.reason ?? null,
+      },
+      received_at: new Date().toISOString(),
+    });
+    webhookEvents.length = Math.min(webhookEvents.length, WEBHOOK_EVENT_LIMIT);
+    console.log(`[webhook] VERIFIED ${event.event_type} (${event.id}) → session ${matchedSession ?? 'no match'}`);
+    res.status(200).send();
+  } catch (err) {
+    console.error('[webhook]', err.message);
+    // 500 makes PayPal retry the delivery; signature-verifier outages should not eat events.
+    res.status(500).json({ error: 'verification_unavailable' });
+  }
+});
+
+app.get('/api/v1/webhook-events', (_req, res) => {
+  res.json({ webhook_url: '/api/webhooks/paypal', events: webhookEvents });
 });
 
 app.listen(PORT, () => {
