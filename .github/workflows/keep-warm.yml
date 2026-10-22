@@ -1,6 +1,4 @@
-# Keep the Render free instance warm so judges never hit a cold start (~30-60s).
-# Runs on GitHub's infra every 10 minutes; GitHub cron is UTC. Manual trigger supported.
-name: keep-warm
+name: Keep Warm
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -10,4 +8,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping health endpoint
-        run: curl -sS -m 90 -o /dev/null -w "keep-warm: %{http_code} in %{time_total}s\n" https://scopegate.onrender.com/api/v1/health
+        run: curl -sS -m 90 -o /dev/null -w "keep-warm %{http_code} %{time_total}s" https://scopegate.onrender.com/api/v1/health
