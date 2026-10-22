@@ -28,6 +28,8 @@ const WEBHOOK_EVENT_LIMIT = 20;
 // Every raw delivery attempt (verified or not) — debug view for integration.
 const webhookAttempts = [];
 const WEBHOOK_ATTEMPT_LIMIT = 20;
+// Full capture of the most recent delivery for offline signature debugging.
+let lastDeliveryCapture = null;
 
 function getSession(id) {
   return sessions.get(id);
@@ -309,6 +311,7 @@ app.post('/api/webhooks/paypal', async (req, res) => {
       console.warn('[webhook] signature verification FAILED — dropping delivery');
       webhookAttempts.unshift({ at: new Date().toISOString(), headers: Object.keys(headers), verdict: 'rejected: ' + (verdict.verification_status ?? 'unknown') });
       webhookAttempts.length = Math.min(webhookAttempts.length, WEBHOOK_ATTEMPT_LIMIT);
+      lastDeliveryCapture = { at: new Date().toISOString(), paypal_headers: headers, raw_body: req.body.toString('utf8') };
       return res.status(401).json({ error: 'invalid_signature' });
     }
     const event = JSON.parse(req.body.toString('utf8'));
@@ -343,6 +346,7 @@ app.get('/api/v1/webhook-events', (req, res) => {
     webhook_url: '/api/webhooks/paypal',
     events: webhookEvents,
     ...(req.query.raw === '1' ? { raw_attempts: webhookAttempts } : {}),
+    ...(req.query.capture === '1' ? { last_delivery_capture: lastDeliveryCapture } : {}),
   });
 });
 
