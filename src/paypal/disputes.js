@@ -9,6 +9,7 @@
 // dispute requires the sandbox buyer to file INR from the Resolution Center.
 
 import { getAccessToken } from './client.js';
+import crypto from 'node:crypto';
 
 export function buildDossier(session, deliveryRecord) {
   const lastAccess = deliveryRecord.accesses[deliveryRecord.accesses.length - 1];
@@ -63,23 +64,35 @@ export function buildEvidencePayload(dossier, session) {
 }
 
 /**
- * Submit evidence to a live dispute: multipart/form-data with the `evidence_info`
- * JSON part, `notes`, and the defense-letter PDF as the file attachment.
+ * Submit evidence to a live dispute: multipart/form-data with the `input`
+ * JSON part (NOT `evidence_info` — that part name is rejected with
+ * INVALID_EVIDENCE_FILE, verified empirically 2026-10-22) and the
+ * defense-letter PDF as the file attachment. Proven end-to-end against
+ * sandbox dispute PP-R-LKW-10194104 (200 → dispute moved to UNDER_PAYPAL_REVIEW).
  */
 export async function provideEvidence({ disputeId, dossier, session, pdfBuffer }) {
   const token = await getAccessToken();
   const BASE_URL = process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com';
   const payload = buildEvidencePayload(dossier, session);
 
-  const form = new FormData();
-  form.append('evidence_info', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
-  form.append('notes', payload.notes);
-  form.append('files', new Blob([pdfBuffer], { type: 'application/pdf' }), `scopegate-dossier-${session.session_id}.pdf`);
+  const boundary = `----ScopeGateBoundary${crypto.randomBytes(8).toString('hex')}`;
+  const body = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="input"\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(payload)}\r\n` +
+      `--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="scopegate-defense-letter.pdf"\r\nContent-Type: application/pdf\r\n\r\n`,
+      'utf8',
+    ),
+    pdfBuffer,
+    Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8'),
+  ]);
 
   const res = await fetch(`${BASE_URL}/v1/customer/disputes/${encodeURIComponent(disputeId)}/provide-evidence`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+    },
+    body,
   });
   const data = await res.json().catch(() => ({ raw: 'non-json response' }));
   if (!res.ok) throw new Error(`provide-evidence failed (${res.status}): ${JSON.stringify(data)}`);

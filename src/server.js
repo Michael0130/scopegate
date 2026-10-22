@@ -14,6 +14,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Behind Render's proxy: trust X-Forwarded-For so the access log records the
+// real client IP (evidence quality for the dispute dossier), not ::1.
+app.set('trust proxy', true);
+
 const baseline = JSON.parse(
   readFileSync(path.join(__dirname, '..', 'schemas', 'service.schema.json'), 'utf8'),
 );
