@@ -100,6 +100,13 @@
     .ledger-label { display: inline-flex; gap: 6px; align-items: center; font-size: 11.5px; color: #8b98a5; text-transform: uppercase; letter-spacing: .5px; }
     .ledger-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
+    .webhooks { border: 1px solid #1f2730; border-radius: 10px; background: #10161d; margin-top: 12px; padding: 11px 15px; }
+    .wh-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .wh-list { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .wh-item { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12px; }
+    .wh-empty { font-size: 12px; color: #8b98a5; }
+    .wh-empty .mono { font-size: 11px; }
+
     .modal { position: fixed; inset: 0; background: rgba(4,8,12,.75); display: grid; place-items: center; z-index: 30; padding: 20px; }
     .modal[hidden] { display: none; }
     .modal-card { width: min(640px, 100%); max-height: 82vh; display: flex; flex-direction: column; background: #10161d; border: 1px solid #1f2730; border-radius: 12px; overflow: hidden; }
@@ -203,12 +210,23 @@
           <span class="ledger-label">PayPal ledger</span>
           <span class="mono" id="ledger-order" style="font-size:12px">—</span>
           <span id="ledger-status"></span>
+          <span class="pill pill-reject" id="dispute-badge" hidden title="CUSTOMER.DISPUTE.CREATED received for this session">DISPUTED</span>
           <span class="mono dim" id="ledger-custom" style="font-size:12px"></span>
         </div>
         <div class="ledger-actions">
           <button class="btn" id="btn-dispatch" type="button" disabled>Dispatch deliverable</button>
           <button class="btn" id="btn-download" type="button" disabled>Simulate buyer download</button>
           <button class="btn" id="btn-dossier" type="button" disabled>Export Dispute Dossier</button>
+        </div>
+      </div>
+
+      <div class="webhooks">
+        <div class="wh-head">
+          <span class="ledger-label">PayPal webhook events</span>
+          <span class="hint">POST /api/webhooks/paypal · signature-verified · polls 10s</span>
+        </div>
+        <div class="wh-list" id="webhook-list">
+          <div class="wh-empty">No verified deliveries yet. Fire one: <span class="mono">node scripts/register-webhook.js simulate CUSTOMER.DISPUTE.CREATED</span></div>
         </div>
       </div>
     </section>
@@ -222,7 +240,11 @@
       </div>
       <pre class="pre" id="dossier-pre"></pre>
       <div class="modal-foot">
-        <span class="hint">Generated from the frozen contract hash + tracked delivery logs</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="btn-view-dossier" type="button">Dossier JSON</button>
+          <button class="btn" id="btn-view-evidence" type="button">Evidence payload (Disputes API)</button>
+          <a class="btn" id="btn-pdf" href="#" target="_blank" rel="noopener">Defense letter PDF ↗</a>
+        </div>
         <button class="btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('dossier-pre').textContent)">Copy JSON</button>
       </div>
     </div>

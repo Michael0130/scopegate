@@ -297,6 +297,9 @@ $('btn-download').addEventListener('click', async () => {
   } catch (err) { alert('Download failed: ' + err.message); }
 });
 
+let dossierSessionId = null;
+let lastDossier = null;
+
 $('btn-dossier').addEventListener('click', async () => {
   const sid = capturedSession();
   if (!sid) return;
@@ -304,13 +307,61 @@ $('btn-dossier').addEventListener('click', async () => {
     const res = await fetch(`/api/v1/sessions/${sid}/dossier`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || res.status);
+    dossierSessionId = sid;
+    lastDossier = data;
     $('dossier-pre').textContent = JSON.stringify(data, null, 2);
+    $('btn-pdf').href = `/api/v1/sessions/${sid}/dossier/pdf`;
     $('dossier-modal').hidden = false;
   } catch (err) { alert('Dossier failed: ' + err.message); }
 });
 
+$('btn-view-dossier').addEventListener('click', () => {
+  if (lastDossier) $('dossier-pre').textContent = JSON.stringify(lastDossier, null, 2);
+});
+
+$('btn-view-evidence').addEventListener('click', async () => {
+  if (!dossierSessionId) return;
+  try {
+    const res = await fetch(`/api/v1/sessions/${dossierSessionId}/evidence-payload`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || res.status);
+    $('dossier-pre').textContent =
+      `// POST /v1/customer/disputes/{dispute_id}/provide-evidence  (multipart/form-data)\n` +
+      `// parts: evidence_info (application/json) · notes · files: defense letter PDF\n\n` +
+      JSON.stringify(data, null, 2);
+  } catch (err) { alert('Evidence payload failed: ' + err.message); }
+});
+
 $('modal-close').addEventListener('click', () => { $('dossier-modal').hidden = true; });
 $('dossier-modal').addEventListener('click', (e) => { if (e.target === $('dossier-modal')) $('dossier-modal').hidden = true; });
+
+// ── PayPal webhook feed (signature-verified deliveries) ─────────────────
+const EVENT_CLS = {
+  'CUSTOMER.DISPUTE.CREATED': 'pill-reject',
+  'PAYMENT.CAPTURE.COMPLETED': 'pill-captured',
+  'CHECKOUT.ORDER.APPROVED': 'pill-created',
+};
+async function pollWebhooks() {
+  try {
+    const res = await fetch('/api/v1/webhook-events');
+    const data = await res.json();
+    const events = data.events ?? [];
+    if (!events.length) return;
+    $('webhook-list').innerHTML = events.map((e) => `
+      <div class="wh-item">
+        <span class="pill ${EVENT_CLS[e.event_type] || 'pill-created'}">${e.event_type}</span>
+        <span class="mono dim">${(e.received_at || '').slice(11, 19)}Z</span>
+        <span class="chip chip-ok">✓ signature verified</span>
+        ${e.matched_session ? `<span class="mono dim">${e.matched_session.slice(0, 20)}…</span>` : '<span class="dim">unmatched session</span>'}
+        ${e.resource_summary?.reason ? `<span class="flag flag-red">${e.resource_summary.reason}</span>` : ''}
+        ${e.resource_summary?.amount ? `<span class="mono dim">$${e.resource_summary.amount}</span>` : ''}
+      </div>`).join('');
+    const disputed = events.some((e) => e.event_type === 'CUSTOMER.DISPUTE.CREATED' && e.matched_session === activeSession);
+    $('dispute-badge').hidden = !disputed;
+  } catch { /* server offline — leave the last state */ }
+}
+setInterval(pollWebhooks, 10000);
+pollWebhooks();
 
 // ── baseline chips + health ─────────────────────────────────────────────
 $('baseline-chips').innerHTML =

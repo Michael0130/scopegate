@@ -1,8 +1,14 @@
 // Dispute shield (Master Spec §3, pain point #1, 20% of effort): assembles the
 // Seller Protection §11 evidence dossier from the frozen gatekeeper decision and
-// the delivery access logs. Submitting through POST /v1/customer/disputes/{id}/
-// provide-evidence is phase 2 — per spec, if sandbox dispute creation proves too
-// heavy, this schema-perfect payload + a downloadable defense letter IS the demo.
+// the delivery access logs, then submits PROOF_OF_FULFILLMENT through
+// POST /v1/customer/disputes/{id}/provide-evidence (multipart/form-data).
+//
+// Sandbox access verified 2026-10-22: the app token carries
+// `https://uri.paypal.com/services/disputes/update-seller` (list + provide-evidence).
+// Creating a dispute from the API is not part of the public spec — a real
+// dispute requires the sandbox buyer to file INR from the Resolution Center.
+
+import { getAccessToken } from './client.js';
 
 export function buildDossier(session, deliveryRecord) {
   const lastAccess = deliveryRecord.accesses[deliveryRecord.accesses.length - 1];
@@ -31,6 +37,51 @@ export function buildDossier(session, deliveryRecord) {
   };
 }
 
-export async function provideEvidence(token, disputeId, dossier) {
-  throw new Error('provideEvidence: phase 2 (Master Spec roadmap)');
+/**
+ * The exact `evidence_info` JSON part POSTed to provide-evidence. The contract
+ * hash rides along as the intangible-service tracking reference — the one thing
+ * PayPal's flow asks for that intangible sellers never had (docs/evidence-table.md #3).
+ */
+export function buildEvidencePayload(dossier, session) {
+  return {
+    evidences: [{
+      evidence_type: 'PROOF_OF_FULFILLMENT',
+      tracking_info: {
+        carrier_name: 'OTHER',
+        carrier_name_other: 'ScopeGate Contract Hash (SHA-256, intangible digital service)',
+        tracking_number: dossier.paypal_custom_id_anchor,
+        tracking_url: `https://scopegate.onrender.com/api/v1/delivery/${session.session_id}/artifact`,
+      },
+    }],
+    notes:
+      `Intangible digital service. The negotiated scope was frozen pre-payment and its SHA-256 ` +
+      `hash anchored to purchase_units[0].custom_id of order ${dossier.paypal_order_id}. ` +
+      `The artifact was dispatched to the payer-verified email and downloaded ` +
+      `(${dossier.proof_of_delivery.recipient_access_log.accessed_at}), with a server-side ` +
+      `access log and artifact hash attached as the defense letter PDF.`,
+  };
+}
+
+/**
+ * Submit evidence to a live dispute: multipart/form-data with the `evidence_info`
+ * JSON part, `notes`, and the defense-letter PDF as the file attachment.
+ */
+export async function provideEvidence({ disputeId, dossier, session, pdfBuffer }) {
+  const token = await getAccessToken();
+  const BASE_URL = process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com';
+  const payload = buildEvidencePayload(dossier, session);
+
+  const form = new FormData();
+  form.append('evidence_info', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+  form.append('notes', payload.notes);
+  form.append('files', new Blob([pdfBuffer], { type: 'application/pdf' }), `scopegate-dossier-${session.session_id}.pdf`);
+
+  const res = await fetch(`${BASE_URL}/v1/customer/disputes/${encodeURIComponent(disputeId)}/provide-evidence`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  const data = await res.json().catch(() => ({ raw: 'non-json response' }));
+  if (!res.ok) throw new Error(`provide-evidence failed (${res.status}): ${JSON.stringify(data)}`);
+  return { paypal_response: data, evidence_payload: payload };
 }

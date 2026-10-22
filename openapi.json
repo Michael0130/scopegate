@@ -3,10 +3,12 @@
   "info": {
     "title": "ScopeGate Merchant Gateway API",
     "description": "Merchant-side admission gateway for agentic commerce. Adjudicates buyer-agent requests against the merchant service baseline, anchors agreed terms on PayPal orders via a SHA-256 contract hash, and assembles Seller Protection §11 dispute dossiers with delivery proof.",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "servers": [
-    { "url": "/" }
+    {
+      "url": "/"
+    }
   ],
   "paths": {
     "/api/v1/health": {
@@ -20,10 +22,23 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "string" },
-                    "service": { "type": "string" },
-                    "gate_mode": { "type": "string", "enum": ["llm", "degraded"] },
-                    "time": { "type": "string", "format": "date-time" }
+                    "status": {
+                      "type": "string"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "gate_mode": {
+                      "type": "string",
+                      "enum": [
+                        "llm",
+                        "degraded"
+                      ]
+                    },
+                    "time": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
                   }
                 }
               }
@@ -41,7 +56,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["buyer_message"],
+                "required": [
+                  "buyer_message"
+                ],
                 "properties": {
                   "buyer_message": {
                     "type": "string",
@@ -65,7 +82,9 @@
             "description": "Gatekeeper verdict (ACCEPT | COUNTER | REJECT)",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Decision" }
+                "schema": {
+                  "$ref": "#/components/schemas/Decision"
+                }
               }
             }
           }
@@ -82,9 +101,13 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["session_id"],
+                "required": [
+                  "session_id"
+                ],
                 "properties": {
-                  "session_id": { "type": "string" }
+                  "session_id": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -98,19 +121,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "session_id": { "type": "string" },
-                    "order_id": { "type": "string" },
-                    "status": { "type": "string" },
-                    "replayed": { "type": "boolean" },
-                    "approve_url": { "type": "string", "format": "uri" },
-                    "contract_hash": { "type": "string" }
+                    "session_id": {
+                      "type": "string"
+                    },
+                    "order_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    },
+                    "approve_url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "contract_hash": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "description": "Session not found" },
-          "409": { "description": "Session was rejected by the gate" }
+          "404": {
+            "description": "Session not found"
+          },
+          "409": {
+            "description": "Session was rejected by the gate"
+          }
         }
       }
     },
@@ -118,7 +158,14 @@
       "post": {
         "summary": "Capture funds after the buyer approves the order on PayPal",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -128,10 +175,20 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "order_id": { "type": "string" },
-                    "status": { "type": "string" },
-                    "payer_email": { "type": "string", "nullable": true },
-                    "custom_id_anchor": { "type": "string", "nullable": true }
+                    "order_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "payer_email": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "custom_id_anchor": {
+                      "type": "string",
+                      "nullable": true
+                    }
                   }
                 }
               }
@@ -144,11 +201,22 @@
       "get": {
         "summary": "Fetch a negotiation session record",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Session record (decision + order state)" },
-          "404": { "description": "Session not found" }
+          "200": {
+            "description": "Session record (decision + order state)"
+          },
+          "404": {
+            "description": "Session not found"
+          }
         }
       }
     },
@@ -156,18 +224,29 @@
       "get": {
         "summary": "Export the Seller Protection §11 dispute dossier for a session",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Evidence dossier (see schemas/dossier.schema.json)",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Dossier" }
+                "schema": {
+                  "$ref": "#/components/schemas/Dossier"
+                }
               }
             }
           },
-          "409": { "description": "Delivery evidence incomplete (not dispatched or never downloaded)" }
+          "409": {
+            "description": "Delivery evidence incomplete (not dispatched or never downloaded)"
+          }
         }
       }
     },
@@ -175,7 +254,14 @@
       "post": {
         "summary": "Dispatch the finished artifact to the payer-verified email",
         "parameters": [
-          { "name": "sessionId", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "content": {
@@ -183,7 +269,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "payer_email": { "type": "string", "description": "Overrides the captured payer email" }
+                  "payer_email": {
+                    "type": "string",
+                    "description": "Overrides the captured payer email"
+                  }
                 }
               }
             }
@@ -197,16 +286,27 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "session_id": { "type": "string" },
-                    "payer_email": { "type": "string" },
-                    "delivery_dispatched_at": { "type": "string", "format": "date-time" },
-                    "artifact_sha256": { "type": "string" }
+                    "session_id": {
+                      "type": "string"
+                    },
+                    "payer_email": {
+                      "type": "string"
+                    },
+                    "delivery_dispatched_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "artifact_sha256": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
           },
-          "409": { "description": "No PayPal order on this session yet" }
+          "409": {
+            "description": "No PayPal order on this session yet"
+          }
         }
       }
     },
@@ -214,18 +314,238 @@
       "get": {
         "summary": "Recipient download — served byte-identical to the dispatched copy and logged (IP, user agent, timestamp)",
         "parameters": [
-          { "name": "sessionId", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "The artifact file (text/plain attachment)",
             "content": {
               "text/plain": {
-                "schema": { "type": "string" }
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           },
-          "409": { "description": "Not dispatched yet" }
+          "409": {
+            "description": "Not dispatched yet"
+          }
+        }
+      }
+    },
+    "/api/v1/webhook-events": {
+      "get": {
+        "summary": "Recent verified PayPal webhook deliveries",
+        "description": "Ring buffer (newest first) of webhook events that passed signature verification. Drives the console feed.",
+        "operationId": "listWebhookEvents",
+        "tags": [
+          "webhooks"
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified webhook deliveries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "webhook_url": {
+                      "type": "string"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "PayPal event id (WH-…)"
+                          },
+                          "event_type": {
+                            "type": "string",
+                            "enum": [
+                              "CHECKOUT.ORDER.APPROVED",
+                              "PAYMENT.CAPTURE.COMPLETED",
+                              "CUSTOMER.DISPUTE.CREATED"
+                            ]
+                          },
+                          "create_time": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "verified": {
+                            "type": "boolean"
+                          },
+                          "matched_session": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "resource_summary": {
+                            "type": "object"
+                          },
+                          "received_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks/paypal": {
+      "post": {
+        "summary": "PayPal webhook receiver (signature-verified)",
+        "description": "Ingests PayPal webhook deliveries. The raw request body is verified against the PAYPAL-* transmission headers via POST /v1/notifications/verify-webhook-signature; unsigned or invalid deliveries are rejected with 401. Verified PAYMENT.CAPTURE.COMPLETED and CUSTOMER.DISPUTE.CREATED events drive session state (paid / disputed).",
+        "operationId": "receivePaypalWebhook",
+        "tags": [
+          "webhooks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event verified and ingested"
+          },
+          "401": {
+            "description": "Signature verification failed or PayPal transmission headers missing"
+          },
+          "500": {
+            "description": "Signature verifier unavailable (PayPal will retry the delivery)"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sessionId}/dossier/pdf": {
+      "get": {
+        "summary": "Download the dispute defense letter (PDF)",
+        "description": "The Seller Protection §11 dossier rendered as a human-readable defense letter PDF, byte-generated server-side with zero PDF dependencies. Attached as the evidence file when calling the Disputes API provide-evidence endpoint.",
+        "operationId": "downloadDefenseLetter",
+        "tags": [
+          "disputes"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Defense letter PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "evidence_incomplete — dispatch + recipient download must happen first"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sessionId}/evidence-payload": {
+      "get": {
+        "summary": "Preview the Disputes API provide-evidence payload",
+        "description": "The exact evidence_info JSON part that ScopeGate submits to POST /v1/customer/disputes/{dispute_id}/provide-evidence, with the contract hash as the intangible-service tracking reference (PROOF_OF_FULFILLMENT).",
+        "operationId": "previewEvidencePayload",
+        "tags": [
+          "disputes"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Multipart preview: evidence_info + notes + defense-letter PDF attachment"
+          },
+          "409": {
+            "description": "evidence_incomplete"
+          }
+        }
+      }
+    },
+    "/api/v1/disputes/{disputeId}/provide-evidence": {
+      "post": {
+        "summary": "Submit PROOF_OF_FULFILLMENT evidence to a live dispute",
+        "description": "Assembles the dossier + defense letter PDF and submits multipart/form-data to PayPal POST /v1/customer/disputes/{dispute_id}/provide-evidence (evidence_info JSON part, notes, PDF file attachment).",
+        "operationId": "provideDisputeEvidence",
+        "tags": [
+          "disputes"
+        ],
+        "parameters": [
+          {
+            "name": "disputeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "session_id"
+                ],
+                "properties": {
+                  "session_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PayPal accepted the evidence (links to dispute)"
+          },
+          "409": {
+            "description": "evidence_incomplete"
+          },
+          "502": {
+            "description": "paypal_failure"
+          }
         }
       }
     }
@@ -235,24 +555,47 @@
       "Decision": {
         "type": "object",
         "properties": {
-          "session_id": { "type": "string" },
+          "session_id": {
+            "type": "string"
+          },
           "decision": {
             "type": "string",
-            "enum": ["ACCEPT", "COUNTER", "REJECT"]
+            "enum": [
+              "ACCEPT",
+              "COUNTER",
+              "REJECT"
+            ]
           },
           "risk_flags": {
             "type": "array",
-            "items": { "type": "string", "enum": ["NONE", "PROMPT_INJECTION_DETECTED", "EXPLICIT_EXCLUSION_VIOLATED", "RUSH_CAPACITY_SURCHARGE"] }
+            "items": {
+              "type": "string",
+              "enum": [
+                "NONE",
+                "PROMPT_INJECTION_DETECTED",
+                "EXPLICIT_EXCLUSION_VIOLATED",
+                "RUSH_CAPACITY_SURCHARGE"
+              ]
+            }
           },
-          "reasoning": { "type": "string" },
-          "quoted_price": { "type": "number", "nullable": true },
+          "reasoning": {
+            "type": "string"
+          },
+          "quoted_price": {
+            "type": "number",
+            "nullable": true
+          },
           "applied_surcharges": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "rule": { "type": "string" },
-                "quantity": { "type": "integer" }
+                "rule": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer"
+                }
               }
             }
           },
@@ -260,20 +603,52 @@
             "type": "object",
             "nullable": true,
             "properties": {
-              "agreed_deliverables": { "type": "array", "items": { "type": "string" } },
-              "explicit_exclusions": { "type": "array", "items": { "type": "string" } },
-              "max_revisions": { "type": "integer" },
-              "turnaround_hours": { "type": "integer" }
+              "agreed_deliverables": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "explicit_exclusions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "max_revisions": {
+                "type": "integer"
+              },
+              "turnaround_hours": {
+                "type": "integer"
+              }
             }
           },
-          "contract_hash": { "type": "string", "nullable": true },
-          "timestamp": { "type": "string", "format": "date-time" },
+          "contract_hash": {
+            "type": "string",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
           "gate_meta": {
             "type": "object",
             "properties": {
-              "mode": { "type": "string", "enum": ["llm", "fallback-cache", "degraded"] },
-              "latency_ms": { "type": "integer", "nullable": true },
-              "injection_firewall_forced": { "type": "boolean" }
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "llm",
+                  "fallback-cache",
+                  "degraded"
+                ]
+              },
+              "latency_ms": {
+                "type": "integer",
+                "nullable": true
+              },
+              "injection_firewall_forced": {
+                "type": "boolean"
+              }
             }
           }
         }
@@ -281,32 +656,71 @@
       "Dossier": {
         "type": "object",
         "properties": {
-          "dossier_id": { "type": "string" },
-          "paypal_order_id": { "type": "string" },
-          "paypal_custom_id_anchor": { "type": "string" },
-          "policy_compliance": { "type": "string" },
-          "generated_at": { "type": "string", "format": "date-time" },
+          "dossier_id": {
+            "type": "string"
+          },
+          "paypal_order_id": {
+            "type": "string"
+          },
+          "paypal_custom_id_anchor": {
+            "type": "string"
+          },
+          "policy_compliance": {
+            "type": "string"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
           "contract_snapshot": {
             "type": "object",
             "properties": {
-              "agreed_deliverables": { "type": "array", "items": { "type": "string" } },
-              "explicit_exclusions": { "type": "array", "items": { "type": "string" } },
-              "max_revisions": { "type": "integer" },
-              "quoted_price": { "type": "number" }
+              "agreed_deliverables": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "explicit_exclusions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "max_revisions": {
+                "type": "integer"
+              },
+              "quoted_price": {
+                "type": "number"
+              }
             }
           },
           "proof_of_delivery": {
             "type": "object",
             "properties": {
-              "verified_payer_email": { "type": "string" },
-              "delivery_dispatched_at": { "type": "string", "format": "date-time" },
+              "verified_payer_email": {
+                "type": "string"
+              },
+              "delivery_dispatched_at": {
+                "type": "string",
+                "format": "date-time"
+              },
               "recipient_access_log": {
                 "type": "object",
                 "properties": {
-                  "accessed_at": { "type": "string", "format": "date-time" },
-                  "client_ip": { "type": "string" },
-                  "user_agent": { "type": "string" },
-                  "artifact_sha256": { "type": "string" }
+                  "accessed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "client_ip": {
+                    "type": "string"
+                  },
+                  "user_agent": {
+                    "type": "string"
+                  },
+                  "artifact_sha256": {
+                    "type": "string"
+                  }
                 }
               }
             }

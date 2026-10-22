@@ -1,0 +1,11 @@
+{
+  "webhook_id": "0UD40341KJ851773S",
+  "url": "https://scopegate.onrender.com/api/webhooks/paypal",
+  "event_types": [
+    "CHECKOUT.ORDER.APPROVED",
+    "PAYMENT.CAPTURE.COMPLETED",
+    "CUSTOMER.DISPUTE.CREATED"
+  ],
+  "registered_at": "2026-10-22T07:05:00Z",
+  "note": "Sandbox-only webhook registration (non-secret). Empirical findings recorded in scripts/register-webhook.js header."
+}
