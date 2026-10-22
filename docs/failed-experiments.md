@@ -1,7 +1,8 @@
 # Failed Experiments & Scope Reduction Log
 
 > W2-D5 deliverable (Master Spec §8, D5): 3 failed experiments and one deliberately narrowed
-> over-claim. All entries below are real experiments from the D1–D4 build log (2026-10-21/22).
+> over-claim. All entries below are real experiments from the D1–D4 build log (2026-10-21/22),
+> plus one from the phase-2 webhook integration (2026-10-22).
 
 ## Experiment 1 — AG Grid v32 UMD bundle with `theme: 'legacy'`
 
@@ -39,6 +40,31 @@
   bound to the plan.
 - **Decision**: generated the plan-specific key; both endpoints immediately served traffic. Lesson:
   on this platform, key ≠ plan binding — validate a key with one paid call before building on it.
+
+## Experiment 4 — verifying signatures of `simulate-event` webhook deliveries
+
+- **Hypothesis**: `POST /v1/notifications/simulate-event` delivers a properly signed sandbox
+  event, so `POST /v1/notifications/verify-webhook-signature` should return `SUCCESS` for it —
+  giving an offline demo of the `CUSTOMER.DISPUTE.CREATED` → dossier pipeline.
+- **What we tried**: registered the webhook via API (`0UD40341KJ851773S` →
+  `https://scopegate.onrender.com/api/webhooks/paypal`), fired simulations for
+  `CUSTOMER.DISPUTE.CREATED` and `PAYMENT.CAPTURE.COMPLETED` (both 202, deliveries really
+  arrived on Render with full `PAYPAL-*` transmission headers), and verified them two ways:
+  through PayPal's verify API, and locally with the documented algorithm
+  (`transmission_id|transmission_time|webhook_id|crc32(body)`, SHA256withRSA against the cert
+  at `cert_url` — including a brute matrix over serialization/format variants).
+- **Result / why it failed**: every simulated delivery failed verification both ways. The
+  signature simply is not computed over our webhook id with the delivered certificate —
+  the sandbox simulator signs with an internal id we cannot know (a known sandbox quirk;
+  cf. paypal/PayPal-PHP-SDK#704, where sandbox verifications consistently fail even over
+  ngrok). Empirical boundaries: `webhook_id`-vs-`url` in the simulate request makes no
+  difference; `CHECKOUT.ORDER.APPROVED` is not simulatable at all ("Not a valid Resource
+  Type").
+- **Decision**: the receiver stays strict — unverifiable deliveries are recorded
+  (`GET /api/v1/webhook-events?raw=1` shows them as `rejected: FAILURE`) and answered 401,
+  which is itself a demonstrable security property. Verified-green events will come from
+  *real* sandbox events (a genuine capture fires a genuinely-signed
+  `PAYMENT.CAPTURE.COMPLETED`).
 
 ## Claim deliberately narrowed
 

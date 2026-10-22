@@ -84,6 +84,16 @@
 
     #decision-grid { width: 100%; height: 218px; border: 1px solid #1f2730; border-radius: 10px; background: #10161d; }
 
+    /* AG Grid dark polish (community v31 wrapper-class theme overrides) */
+    #decision-grid .ag-header { background: #0d1319; border-bottom: 1px solid #1f2730; }
+    #decision-grid .ag-header-cell-text { font-size: 10.5px; font-weight: 600; letter-spacing: .7px; text-transform: uppercase; color: #8b98a5; }
+    #decision-grid .ag-row { transition: background-color .18s ease, box-shadow .18s ease; }
+    #decision-grid .ag-row-hover { background-color: rgba(47,129,247,.07) !important; cursor: pointer; }
+    #decision-grid .ag-row-selected { background-color: rgba(47,129,247,.12) !important; box-shadow: inset 2px 0 0 #2f81f7; }
+    #decision-grid .ag-row:focus, #decision-grid .ag-cell:focus { outline: none; }
+    #decision-grid .ag-body-viewport::-webkit-scrollbar { height: 8px; }
+    #decision-grid .ag-body-viewport::-webkit-scrollbar-thumb { background: #1f2730; border-radius: 4px; }
+
     .drawer { border: 1px solid #1f2730; border-radius: 10px; background: #10161d; margin-top: 12px; padding: 14px 15px; }
     .drawer-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: #8b98a5; margin-bottom: 10px; }
     .drawer-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
