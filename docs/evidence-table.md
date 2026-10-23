@@ -24,3 +24,76 @@
 | 9 | Reddit r/stripe | ~2026 | (Supporting, non-PayPal.) Thread title is the phenomenon in one line: "Anyone else losing 'Services Not Received' disputes despite having full Slack/Email receipts?" — digital agencies and software founders report losing these disputes even with signed statements of work and client approval trails, because the bank defaults to ruling for the cardholder. | https://www.reddit.com/r/stripe/comments/1sqafia/anyone_else_losing_services_not_received_disputes/ | Confirms the delivered-then-denied pattern is rail-wide (card rails via Stripe), not a PayPal quirk — reinforcing the rail-agnostic thesis of row 6 and the case for producing scheme-native evidence categories at transaction time rather than receipts after the fact. |
 | 10 | LinkedIn (Upwork freelancers) | ~2025–2026 | Platform-native approval, then chargeback: "Client rated 5 stars the day the contract closed. Then filed a chargeback." Multiple independent 2025–2026 posts by Upwork freelancers (Zurab Esartia, Tash Salas, Anton Makarenko) describe the same pattern, with sellers screenshotting the 5-star rating to use as dispute evidence. | https://www.linkedin.com/posts/zurab-esartia_i-absolutely-agree-that-upwork-has-invented-activity-7503000508626919424-qeqx | Even the platform's own native receipt — a 5-star rating the buyer chose to give — has to be manually screenshotted and pleaded into evidence. ScopeGate's equivalent is structured: approval lives in the hash-anchored contract, and the evidence bundle is already in the scheme's required format instead of a UI screenshot. |
 | 11 | Reddit r/paypal | ~2023 | Discord commission, delivered a month or two earlier, buyer filed a chargeback for ~$200: "I am a digital artist that did work with someone on Discord…" — the artist lost the chargeback and the same buyer then ran the identical scam on a second artist; both sellers' accounts went negative and the buyer was blacklisted on commission Discords. | https://www.reddit.com/r/paypal/comments/13hg1lc/i_am_a_seller_customer_filed_a_chargeback_for/ | Recurrence plus a manual community blacklist: the defense today is scattered rumor in Discord channels. ScopeGate's ledger makes each transaction independently verifiable (contract hash + delivery log), so a repeat offender faces machine-checked evidence instead of a fresh crowd that has never heard of them. |
+
+---
+
+
+> quotation marks is verbatim; `…` marks where the re-verifiable text ends (Reddit blocks anonymous
+> full-text access, so some entries are title plus confirmed fragments only). Typos in the
+> originals are preserved as-is. LinkedIn quote is verbatim from the public post preview.
+
+
+
+>
+>
+
+**English**:
+> A foreign buyer filed a malicious refund and the money was simply returned. I escalated to PayPal arbitration and lost outright… PayPal said the shipping address didn't match the address on the buyer's PayPal record, so the authenticity of the transaction could not be verified.
+>
+> (comment) If the buyer paid by credit card, even winning at PayPal is useless — the buyer's bank decides, not PayPal.
+>
+> (comment) After the malicious chargeback, PayPal deducted an extra $20 on top. Unbelievable.
+
+
+
+> "My client is about to scam me" — I have a client that want's to take back my money from the PayPal trough dispute process. We agreed on me making a logo for 500€, and a web app design for 760€…
+
+
+
+
+> "Task completed and files sent to client but paypal withdrew (held) the money?" — I got a task to do some digital files for a scammer skunk (it´s a she). … Long story short: I withdrew the money immediately, but now pp says I need to return money to my account so this scammer could get paid.
+
+
+
+
+> "A client made a PayPal dispute for $600. What can I do to protect myself in the future?" — I was working on the project, delivered 2 chapters for review as agreed, when it turned out…
+
+
+
+
+> "Anyone ever have luck in a PayPal dispute as the seller?" — This is looooong but thank you for bearing with me if you can! I had a very difficult client…
+
+
+
+
+
+**English**:
+> On Tuesday I got a call from the Market Regulation Bureau: a user had filed a complaint against me for refusing a refund — my first-ever complaint notice from them. It turned out that the previous Saturday, a user unhappy with my Minimal Clock app had requested a refund via WeChat; because I didn't reply and process it immediately, they complained to the bureau.
+
+
+
+> "Freelance scam from client and he got backed up by bank of america when I disputed with proof" — I'm posting this to warn fellow freelancers, especially digital … (the post quotes the client's pre-chargeback reply: "This looks amazing, I appreciate it", and the chargeback claim that the product was "never received").
+
+
+
+
+> "As a growing online artists, how can i avoid buyers from simply refunding their payment on paypal after i send the final product?" — For a little context, its a little known thing within art communi9ties where there are some that commision digital art, will pay for it but after they receieve the product they simply issue a full refund without the artists knowing meaning they kinda get off with free art and the artists loses out.
+>
+> (top advice in thread) Digital goods accompanied by a tracking-certified receipt will win 99% of chargebacks as long as you actually respond.
+
+>
+
+
+
+> "Anyone else losing "Services Not Received" disputes despite having full Slack/Email receipts?" — I'm researching payment disputes for digital agencies and s…
+
+
+
+
+> "Client rated 5 stars the day the contract closed. Then filed a chargeback."
+
+
+
+
+> "I am a seller. Customer filed a chargeback for digital art that they received a month or two ago. How can I resolve this issue?" — I am a digital artist that did work with someone on Discord. …
+
