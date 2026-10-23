@@ -87,6 +87,28 @@ export function contractHash(frozenTerms) {
   return crypto.createHash('sha256').update(JSON.stringify(canonicalize(frozenTerms))).digest('hex');
 }
 
+// ---- Milestone payment plan (v0.4): a deterministic split, like pricing. ----
+// Conventional bespoke-software cadence: deposit up front, delivery-stage payment,
+// final release. Percentages are code, never negotiation — the same one-way principle
+// as the price ratchet, and the plan rides inside frozenTerms so the contract hash
+// covers the payment structure too.
+const MILESTONE_TEMPLATE = Object.freeze([
+  { milestone_id: 'm1', label: 'Deposit (kick-off)', share: 0.4, release: 'on_contract_signing' },
+  { milestone_id: 'm2', label: 'Delivery & acceptance', share: 0.4, release: 'on_acceptance_of_m1' },
+  { milestone_id: 'm3', label: 'Final release', share: 0.2, release: 'on_acceptance_of_m2' },
+]);
+
+/** Split the quoted price into milestone amounts (integer cents; remainder → last). */
+export function planMilestones(totalPrice) {
+  const totalCents = Math.round(Number(totalPrice) * 100);
+  let allocated = 0;
+  return MILESTONE_TEMPLATE.map((m, i) => {
+    const cents = i === MILESTONE_TEMPLATE.length - 1 ? totalCents - allocated : Math.floor(totalCents * m.share);
+    allocated += cents;
+    return { milestone_id: m.milestone_id, label: m.label, amount: cents / 100, release: m.release };
+  });
+}
+
 // ---- LLM call + robust JSON extraction ----
 
 async function callLLM(messages) {
@@ -204,11 +226,13 @@ function finalize(decision, riskFlags, surcharges, reasoning, baseline, mode, la
       .reduce((sum, s) => sum + s.quantity, 0),
     turnaround_hours: surcharges.some((s) => s.rule === 'rush_24h_delivery') ? 24 : baseline.turnaround_days * 24,
   };
+  const paymentPlan = decision === Decision.REJECT ? null : planMilestones(quotedPrice);
   const frozenTerms = {
     service_id: baseline.service_id,
     quoted_price: quotedPrice,
     currency: baseline.currency,
     locked_scope: lockedScope,
+    payment_plan: paymentPlan,
   };
   return {
     decision,
@@ -217,6 +241,7 @@ function finalize(decision, riskFlags, surcharges, reasoning, baseline, mode, la
     quoted_price: quotedPrice,
     applied_surcharges: surcharges,
     locked_scope: lockedScope,
+    payment_plan: paymentPlan,
     contract_hash: decision === Decision.REJECT ? null : contractHash(frozenTerms),
     timestamp: new Date().toISOString(),
     gate_meta: { mode, latency_ms, injection_firewall_forced: forcedByFirewall },

@@ -45,13 +45,14 @@ function layoutLetter(dossier) {
   push('PayPal Seller Protection - Intangible Goods Additional Requirements', 'subtitle');
   push('');
   push(`Dossier ID:        ${dossier.dossier_id}`);
+  push(`Disputed stage:    ${dossier.milestone_id}${dossier.milestone_label ? ` (${dossier.milestone_label})` : ''}`);
   push(`PayPal Order ID:   ${dossier.paypal_order_id}`);
   push(`Generated at:      ${dossier.generated_at}`);
-  push('Contract anchor (SHA-256, custom_id):');
+  push('Contract anchor (SHA-256, custom_id prefix):');
   para(dossier.paypal_custom_id_anchor, 'mono');
   push('');
-  push('1. AGREED CONTRACT SCOPE (pre-payment, machine-frozen)', 'h');
-  para(`Quoted price: ${c.quoted_price} ${c.currency ?? 'USD'}`);
+  push('1. AGREED CONTRACT SCOPE AND PAYMENT PLAN (pre-payment, machine-frozen)', 'h');
+  para(`Quoted price: ${c.quoted_price} ${c.currency ?? 'USD'} in ${dossier.payment_ledger.length} milestones`);
   push('Agreed deliverables:', 'b');
   c.agreed_deliverables.forEach((d) => para(`- ${d}`));
   if (c.explicit_exclusions?.length) {
@@ -59,6 +60,14 @@ function layoutLetter(dossier) {
     c.explicit_exclusions.forEach((d) => para(`- ${d}`));
   }
   para(`Maximum revisions: ${c.max_revisions}`);
+  push('Payment ledger (each milestone order carries the contract hash as its custom_id prefix):', 'b');
+  dossier.payment_ledger.forEach((row) => {
+    para(
+      `- ${row.milestone_id} ${row.label}: ${row.amount.toFixed(2)} ${row.currency} - ` +
+      `order ${row.order_id ?? 'n/a'} - ${row.status ?? 'NONE'}${row.captured_at ? ` at ${row.captured_at}` : ''}`,
+    );
+    if (row.custom_id) para(`  custom_id: ${row.custom_id}`, 'mono');
+  });
   push('');
   push('2. PROOF OF DIGITAL DELIVERY (server-side access log)', 'h');
   para(`Verified payer email: ${dossier.proof_of_delivery.verified_payer_email}`);
@@ -71,16 +80,17 @@ function layoutLetter(dossier) {
   push('');
   push('3. CRYPTOGRAPHIC ANCHOR STATEMENT', 'h');
   para(
-    'Before payment, the negotiated scope above was canonicalized and hashed with SHA-256. ' +
-    'The 64-character hash was written to purchase_units[0].custom_id of the PayPal order ' +
-    '(limit 127 chars, 64 used), where neither party can alter it after the fact. The hash ' +
-    'therefore proves that the deliverables listed in section 1 are exactly what the buyer ' +
-    'agreed to and paid for.',
+    'Before payment, the negotiated scope and the milestone payment plan above were ' +
+    'canonicalized and hashed with SHA-256. Every milestone order carries that 64-character ' +
+    'hash in purchase_units[0].custom_id, suffixed with its milestone id (e.g. ' +
+    '<hash>:m1, 69 of the 127 allowed chars), where neither party can alter it after the ' +
+    'fact. The hash therefore proves that the deliverables and the payment schedule in ' +
+    'section 1 are exactly what the buyer agreed to and paid for.',
   );
   push('');
   push('4. FULFILLMENT CLAIM', 'h');
   para(
-    'The merchant dispatched the digital artifact to the payer-verified email address on ' +
+    'The merchant dispatched the milestone artifact to the payer-verified email address on ' +
     'file and the recipient downloaded it from the logged endpoint. The artifact byte stream ' +
     'is anchored by the SHA-256 value in section 2. This letter accompanies the ' +
     'PROOF_OF_FULFILLMENT evidence payload submitted through the PayPal Disputes API, with ' +

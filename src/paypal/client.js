@@ -1,8 +1,11 @@
 // PayPal sandbox client (Master Spec §4): OAuth2, Orders v2 with the contract-hash anchor,
 // and Capture. Every order created here carries the three non-negotiable anchors:
-//   - purchase_units[0].custom_id       = 64-char SHA-256 contract hash
+//   - purchase_units[0].custom_id       = `${contractHash}:m${n}` (v0.4 milestone anchor,
+//     69 chars — the bare 64-char hash stays the prefix so every milestone order provably
+//     belongs to the same contract)
 //   - application_context.shipping_preference = 'NO_SHIPPING' (intangible service)
-//   - Headers['PayPal-Request-Id']      = session_id (agent-retry idempotency)
+//   - Headers['PayPal-Request-Id']      = `${session_id}:${milestone_id}` (per-milestone
+//     idempotency — agent retries can never double-charge one stage)
 // Recipe validated in spikes/test-paypal-order.js: the create response does NOT echo
 // custom_id — verify the anchor via getOrder() (the query path the dispute flow uses).
 
@@ -33,7 +36,7 @@ export async function getAccessToken() {
 
 /**
  * Create (or idempotently re-fetch) a PayPal order for a frozen gatekeeper decision.
- * paypalRequestId MUST be stable per buyer session — retries with the same value return
+ * paypalRequestId MUST be stable per session+milestone — retries with the same value return
  * the same order instead of double-charging.
  */
 export async function createScopedOrder({ contractHash, paypalRequestId, amount, currency = 'USD', description }) {

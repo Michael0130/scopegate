@@ -11,11 +11,18 @@
 import { getAccessToken } from './client.js';
 import crypto from 'node:crypto';
 
-export function buildDossier(session, deliveryRecord) {
+export function buildDossier(session, deliveryRecord, milestoneId) {
   const lastAccess = deliveryRecord.accesses[deliveryRecord.accesses.length - 1];
+  const plan = session.decision.payment_plan ?? [];
+  const planEntry = plan.find((m) => m.milestone_id === milestoneId);
+  const payment = session.payments?.find((p) => p.milestone_id === milestoneId);
   return {
-    dossier_id: `dos_${session.session_id}`,
-    paypal_order_id: session.order_id,
+    dossier_id: `dos_${session.session_id}_${milestoneId}`,
+    milestone_id: milestoneId,
+    milestone_label: planEntry?.label ?? null,
+    paypal_order_id: payment?.order_id ?? null,
+    // The bare contract hash: the shared prefix of every milestone order's custom_id and
+    // the intangible-service tracking reference PayPal's flow asks for.
     paypal_custom_id_anchor: session.decision.contract_hash,
     policy_compliance: 'PayPal Seller Protection - Intangible Goods Additional Requirements (compelling-evidence standard)',
     generated_at: new Date().toISOString(),
@@ -25,7 +32,21 @@ export function buildDossier(session, deliveryRecord) {
       max_revisions: session.decision.locked_scope.max_revisions,
       quoted_price: session.decision.quoted_price,
     },
+    // v0.4: the full payment timeline — one anchor row per milestone order, all sharing
+    // the same contract-hash prefix. This is the ledger a dispute officer can check.
+    payment_ledger: (session.payments ?? []).map((p) => ({
+      milestone_id: p.milestone_id,
+      label: p.label,
+      amount: p.amount,
+      currency: session.decision.currency,
+      order_id: p.order_id,
+      custom_id: p.order_id ? `${session.decision.contract_hash}:${p.milestone_id}` : null,
+      capture_id: p.capture_id,
+      status: p.order_status,
+      captured_at: p.captured_at,
+    })),
     proof_of_delivery: {
+      milestone_id: milestoneId,
       verified_payer_email: deliveryRecord.payer_email,
       delivery_dispatched_at: deliveryRecord.delivery_dispatched_at,
       recipient_access_log: {
@@ -39,7 +60,7 @@ export function buildDossier(session, deliveryRecord) {
 }
 
 /**
- * The exact `evidence_info` JSON part POSTed to provide-evidence. The contract
+ * The exact `input` JSON part POSTed to provide-evidence. The contract
  * hash rides along as the intangible-service tracking reference — the one thing
  * PayPal's flow asks for that intangible sellers never had (docs/evidence-table.md #3).
  */
@@ -51,15 +72,17 @@ export function buildEvidencePayload(dossier, session) {
         carrier_name: 'OTHER',
         carrier_name_other: 'ScopeGate Contract Hash (SHA-256, intangible digital service)',
         tracking_number: dossier.paypal_custom_id_anchor,
-        tracking_url: `https://scopegate.onrender.com/api/v1/delivery/${session.session_id}/artifact`,
+        tracking_url: `https://scopegate.onrender.com/api/v1/delivery/${session.session_id}/artifact?milestone=${dossier.milestone_id}`,
       },
     }],
     notes:
-      `Intangible digital service. The negotiated scope was frozen pre-payment and its SHA-256 ` +
-      `hash anchored to purchase_units[0].custom_id of order ${dossier.paypal_order_id}. ` +
-      `The artifact was dispatched to the payer-verified email and downloaded ` +
+      `Intangible digital service delivered in contract milestones. The negotiated scope and ` +
+      `payment plan were frozen pre-payment and hashed with SHA-256. Every milestone order ` +
+      `carries that hash in purchase_units[0].custom_id, suffixed with its milestone id ` +
+      `(disputed stage: ${dossier.milestone_id}, order ${dossier.paypal_order_id}). The ` +
+      `milestone artifact was dispatched to the payer-verified email and downloaded ` +
       `(${dossier.proof_of_delivery.recipient_access_log.accessed_at}), with a server-side ` +
-      `access log and artifact hash attached as the defense letter PDF.`,
+      `access log, payment ledger, and artifact hash attached as the defense letter PDF.`,
   };
 }
 
