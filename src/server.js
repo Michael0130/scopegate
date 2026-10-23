@@ -200,7 +200,7 @@ app.get('/api/v1/delivery/:sessionId/artifact', (req, res) => {
   res.send(renderArtifact(session));
 });
 
-// One-click Seller Protection §11 evidence package for this session.
+// One-click Seller Protection Intangible-Goods evidence package for this session.
 app.get('/api/v1/sessions/:sessionId/dossier', (req, res) => {
   const session = getSession(req.params.sessionId);
   if (!session) return res.status(404).json({ error: 'session_not_found' });
@@ -211,7 +211,7 @@ app.get('/api/v1/sessions/:sessionId/dossier', (req, res) => {
   res.json(buildDossier(session, record));
 });
 
-// The same dossier as a downloadable defense-letter PDF (Seller Protection §11).
+// The same dossier as a downloadable defense-letter PDF (Seller Protection Intangible-Goods).
 app.get('/api/v1/sessions/:sessionId/dossier/pdf', (req, res) => {
   const session = getSession(req.params.sessionId);
   if (!session) return res.status(404).json({ error: 'session_not_found' });

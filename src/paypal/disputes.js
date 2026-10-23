@@ -1,5 +1,5 @@
 // Dispute shield (Master Spec §3, pain point #1, 20% of effort): assembles the
-// Seller Protection §11 evidence dossier from the frozen gatekeeper decision and
+// Seller Protection Intangible-Goods evidence dossier from the frozen gatekeeper decision and
 // the delivery access logs, then submits PROOF_OF_FULFILLMENT through
 // POST /v1/customer/disputes/{id}/provide-evidence (multipart/form-data).
 //
@@ -17,7 +17,7 @@ export function buildDossier(session, deliveryRecord) {
     dossier_id: `dos_${session.session_id}`,
     paypal_order_id: session.order_id,
     paypal_custom_id_anchor: session.decision.contract_hash,
-    policy_compliance: 'PayPal Seller Protection Policy Section 11 (Intangible Goods & Services)',
+    policy_compliance: 'PayPal Seller Protection - Intangible Goods Additional Requirements (compelling-evidence standard)',
     generated_at: new Date().toISOString(),
     contract_snapshot: {
       agreed_deliverables: session.decision.locked_scope.agreed_deliverables,

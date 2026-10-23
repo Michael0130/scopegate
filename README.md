@@ -10,7 +10,7 @@ Agentic commerce arms buyers with tireless agents that negotiate relentlessly, c
 
 1. **Gatekeeper (before the order)** — buyer input is isolated in XML tags to neutralize prompt injection, then matched against `schemas/service.schema.json`. Pricing follows a **one-way ratchet** (add-ons may only raise the quote). Verdicts are discrete: `ACCEPT`, `COUNTER` (re-quote with locked revision rounds), or `REJECT` (exclusion/blacklist hit or injection detected).
 2. **Hash Anchor (at the order)** — the agreed contract JSON is SHA-256 hashed and written into the PayPal order as `purchase_units[0].custom_id`, an immutable anchor in PayPal's own ledger. Orders are intangible-service (`shipping_preference: NO_SHIPPING`) and idempotent via the `PayPal-Request-Id` header, so agent retries can never double-charge.
-3. **Evidence Dossier (after delivery)** — the delivery gateway records the payer-verified email dispatch, access IP, user agent, timestamps, and artifact SHA-256, then exports a one-click dispute package aligned with PayPal Seller Protection §11 (Intangible Goods & Services).
+3. **Evidence Dossier (after delivery)** — the delivery gateway records the payer-verified email dispatch, access IP, user agent, timestamps, and artifact SHA-256, then exports a one-click dispute package aligned with PayPal Seller Protection Intangible Goods Additional Requirements.
 
 ## Quick start
 
