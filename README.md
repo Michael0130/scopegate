@@ -1,8 +1,10 @@
 # ScopeGate
 
-> **The scope firewall for agentic commerce.**
+> **The contract-boundary referee for agentic commerce.**
+>
+> *Gate the scope before the order. Anchor the proof after delivery.*
 
-ScopeGate is a **merchant-side AI admission gateway** for bespoke digital services (custom development, UI design, technical consulting). It lets independent sellers safely sell to external AI buyer agents by adjudicating every incoming request against the merchant's explicit service baseline **before** any PayPal order is created — and by generating cryptographically anchored evidence when a buyer files a malicious "item not received" dispute.
+ScopeGate lets independent sellers safely sell bespoke digital services (custom development, UI design, technical consulting) to external AI buyer agents. Here *scope* means the **contract boundary** — the agreed work, price, and milestone plan — and that contract is SHA-256-anchored onto every PayPal order as the single source of truth. The gate stands at every moment of conflict and adjudicates against it: **before** the order, buyer requests are matched against the merchant's service baseline (`ACCEPT` / `COUNTER` / `REJECT`), so out-of-bounds demands and prompt injections never become unpaid work; **after** delivery, ledger-anchored evidence answers a malicious "item not received" dispute — settled by the contract, not by whoever argues louder. And the boundary cuts both ways: a buyer cannot deny receipt of delivered work, and a seller cannot release the final milestone without acceptance.
 
 ## Why
 
