@@ -109,7 +109,7 @@ if (!sid) {
   check('dossier anchors the paypal order id', dossier.paypal_order_id === case6OrderId, `${dossier.paypal_order_id} vs ${case6OrderId}`);
   const sessionRecord = await fetch(`${BASE_URL}/api/v1/sessions/${sid}`).then((r) => r.json());
   check('dossier anchors the contract hash (custom_id)', dossier.paypal_custom_id_anchor === sessionRecord.decision.contract_hash, `${dossier.paypal_custom_id_anchor} vs ${sessionRecord.decision.contract_hash}`);
-  check('dossier cites Seller Protection §11', String(dossier.policy_compliance).includes('Section 11'));
+  check('dossier cites Seller Protection Intangible-Goods clause', String(dossier.policy_compliance).includes('Intangible Goods Additional Requirements'));
   check('dossier snapshot max_revisions = 2', dossier.contract_snapshot?.max_revisions === 2);
   check('dossier log has client ip', Boolean(dossier.proof_of_delivery?.recipient_access_log?.client_ip), dossier.proof_of_delivery?.recipient_access_log?.client_ip);
   check('dossier log hash equals artifact hash', dossier.proof_of_delivery?.recipient_access_log?.artifact_sha256 === dispatch.artifact_sha256);
