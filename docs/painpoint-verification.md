@@ -3,7 +3,10 @@
 > Every load-bearing claim about the dispute/chargeback landscape, checked against
 > primary sources (official PayPal policy text, Visa core rules, PayPal's public
 > OpenAPI specifications, and our own live sandbox end-to-end run on 2026-10-22 —
-> order → capture → INR dispute → `provide-evidence` accepted).
+> order → capture → INR dispute → `provide-evidence` accepted). As of v0.4 the
+> payment flow is milestone-based (deposit → stages → final; one anchored PayPal
+> order per stage) — every claim below is unaffected; the capture anchor simply
+> repeats once per stage.
 > Inspired by advisor review 2026-10-23: *don't let AI-generated claims stand in for
 > the actual rules.*
 

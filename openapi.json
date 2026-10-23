@@ -3,7 +3,7 @@
   "info": {
     "title": "ScopeGate Merchant Gateway API",
     "description": "Merchant-side admission gateway for agentic commerce. Adjudicates buyer-agent requests against the merchant service baseline, anchors agreed terms on PayPal orders via a SHA-256 contract hash, and assembles Seller Protection Intangible-Goods dossiers with delivery proof.",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "servers": [
     {
@@ -93,8 +93,8 @@
     },
     "/api/v1/checkout": {
       "post": {
-        "summary": "Create (or idempotently re-fetch) the PayPal order for an accepted quote",
-        "description": "Sends the frozen contract hash as purchase_units[0].custom_id and the session_id as PayPal-Request-Id, so retries resolve to the same order.",
+        "summary": "Create (or idempotently re-fetch) the PayPal order for ONE contract milestone",
+        "description": "Sends `${contractHash}:{milestone_id}` as purchase_units[0].custom_id and `${session_id}:{milestone_id}` as PayPal-Request-Id, so per-stage retries resolve to the same order. Milestone mN unlocks only after m(N-1) is captured AND its deliverable is downloaded (m1 any time after ACCEPT/COUNTER).",
         "requestBody": {
           "required": true,
           "content": {
@@ -107,6 +107,16 @@
                 "properties": {
                   "session_id": {
                     "type": "string"
+                  },
+                  "milestone_id": {
+                    "type": "string",
+                    "enum": [
+                      "m1",
+                      "m2",
+                      "m3"
+                    ],
+                    "default": "m1",
+                    "description": "Contract milestone to bill (40% deposit / 40% delivery / 20% final)"
                   }
                 }
               }
@@ -139,6 +149,17 @@
                     },
                     "contract_hash": {
                       "type": "string"
+                    },
+                    "milestone_id": {
+                      "type": "string"
+                    },
+                    "amount": {
+                      "type": "number",
+                      "description": "Milestone amount in the contract currency (sum of all milestones = quoted_price)"
+                    },
+                    "custom_id": {
+                      "type": "string",
+                      "description": "`${contract_hash}:${milestone_id}` — the anchor PayPal stores"
                     }
                   }
                 }
@@ -149,14 +170,14 @@
             "description": "Session not found"
           },
           "409": {
-            "description": "Session was rejected by the gate"
+            "description": "Session rejected by the gate, or milestone_locked (previous milestone not yet captured + accepted)"
           }
         }
       }
     },
     "/api/v1/orders/{id}/capture": {
       "post": {
-        "summary": "Capture funds after the buyer approves the order on PayPal",
+        "summary": "Capture funds for one milestone order after the buyer approves it on PayPal",
         "parameters": [
           {
             "name": "id",
@@ -188,6 +209,9 @@
                     "custom_id_anchor": {
                       "type": "string",
                       "nullable": true
+                    },
+                    "milestone_id": {
+                      "type": "string"
                     }
                   }
                 }
@@ -231,6 +255,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "milestone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "m1",
+                "m2",
+                "m3"
+              ]
+            },
+            "description": "Scope proof-of-delivery to this milestone; default = latest accepted"
           }
         ],
         "responses": {
@@ -252,7 +290,7 @@
     },
     "/api/v1/delivery/{sessionId}/dispatch": {
       "post": {
-        "summary": "Dispatch the finished artifact to the payer-verified email",
+        "summary": "Dispatch the milestone artifact to the payer-verified email",
         "parameters": [
           {
             "name": "sessionId",
@@ -269,9 +307,18 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "milestone_id": {
+                    "type": "string",
+                    "enum": [
+                      "m1",
+                      "m2",
+                      "m3"
+                    ],
+                    "default": "m1"
+                  },
                   "payer_email": {
                     "type": "string",
-                    "description": "Overrides the captured payer email"
+                    "description": "Fallback when the capture has not recorded the payer email yet"
                   }
                 }
               }
@@ -312,7 +359,7 @@
     },
     "/api/v1/delivery/{sessionId}/artifact": {
       "get": {
-        "summary": "Recipient download — served byte-identical to the dispatched copy and logged (IP, user agent, timestamp)",
+        "summary": "Recipient download of a milestone artifact — byte-identical to the dispatched copy, pickup logged (IP, user agent, timestamp)",
         "parameters": [
           {
             "name": "sessionId",
@@ -321,6 +368,21 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "milestone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "m1",
+                "m2",
+                "m3"
+              ],
+              "default": "m1"
+            },
+            "description": "Contract milestone to download"
           }
         ],
         "responses": {
@@ -452,6 +514,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "milestone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "m1",
+                "m2",
+                "m3"
+              ]
+            },
+            "description": "Scope proof-of-delivery to this milestone; default = latest accepted"
           }
         ],
         "responses": {
@@ -488,6 +564,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "milestone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "m1",
+                "m2",
+                "m3"
+              ]
+            },
+            "description": "Scope evidence to this milestone; default = latest accepted"
           }
         ],
         "responses": {
@@ -530,6 +620,15 @@
                 "properties": {
                   "session_id": {
                     "type": "string"
+                  },
+                  "milestone_id": {
+                    "type": "string",
+                    "enum": [
+                      "m1",
+                      "m2",
+                      "m3"
+                    ],
+                    "description": "Which milestone stage the evidence defends; default = latest accepted"
                   }
                 }
               }
@@ -650,6 +749,13 @@
                 "type": "boolean"
               }
             }
+          },
+          "payment_plan": {
+            "type": "array",
+            "description": "Deterministic milestone split of quoted_price (40/40/20) — part of the hashed frozen terms",
+            "items": {
+              "$ref": "#/components/schemas/PaymentPlanEntry"
+            }
           }
         }
       },
@@ -724,6 +830,75 @@
                 }
               }
             }
+          },
+          "milestone_id": {
+            "type": "string",
+            "description": "Milestone this proof-of-delivery defends"
+          },
+          "milestone_label": {
+            "type": "string"
+          },
+          "payment_ledger": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentLedgerEntry"
+            }
+          }
+        }
+      },
+      "PaymentPlanEntry": {
+        "type": "object",
+        "properties": {
+          "milestone_id": {
+            "type": "string",
+            "example": "m1"
+          },
+          "label": {
+            "type": "string",
+            "example": "Deposit (kick-off)"
+          },
+          "amount": {
+            "type": "number",
+            "example": 200.0
+          },
+          "release": {
+            "type": "string",
+            "example": "on_contract_signing",
+            "description": "m2/m3 release on acceptance of the previous milestone"
+          }
+        }
+      },
+      "PaymentLedgerEntry": {
+        "type": "object",
+        "properties": {
+          "milestone_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "custom_id": {
+            "type": "string",
+            "description": "`${contract_hash}:${milestone_id}`"
+          },
+          "capture_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

@@ -69,12 +69,12 @@
     },
     {
       "id": 6,
-      "name": "Idempotent replay of the same order intent",
-      "type": "idempotency_replay",
-      "action": "Send the same approved order request twice with an identical session_id / PayPal-Request-Id.",
+      "name": "Milestone payments: per-stage idempotent replay + locked-stage gating",
+      "type": "milestone_payments",
+      "action": "Check out m1 twice (same session_id + milestone_id -> same order), attempt m2 before m1 is captured + accepted (409), then dispatch + download m1.",
       "expected": {
-        "outcome": "SINGLE_ORDER",
-        "notes": "Both attempts must resolve to the same PayPal Order ID; no double charge under any circumstance."
+        "outcome": "MILESTONE_LEDGER",
+        "notes": "m1 replays the same PayPal Order ID; m2 stays locked until m1 is captured AND its deliverable is downloaded; the dossier embeds the full payment ledger."
       }
     }
   ]

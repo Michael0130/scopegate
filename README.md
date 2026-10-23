@@ -9,8 +9,9 @@ ScopeGate is a **merchant-side AI admission gateway** for bespoke digital servic
 Agentic commerce arms buyers with tireless agents that negotiate relentlessly, creep scope, and inject instructions to extract unpaid work. Meanwhile the dispute infrastructure (chargebacks, "no tracking number" rejections) puts intangible-goods sellers on the losing side of every conflict. ScopeGate flips the defaults back toward the **seller**:
 
 1. **Gatekeeper (before the order)** — buyer input is isolated in XML tags to neutralize prompt injection, then matched against `schemas/service.schema.json`. Pricing follows a **one-way ratchet** (add-ons may only raise the quote). Verdicts are discrete: `ACCEPT`, `COUNTER` (re-quote with locked revision rounds), or `REJECT` (exclusion/blacklist hit or injection detected).
-2. **Hash Anchor (at the order)** — the agreed contract JSON is SHA-256 hashed and written into the PayPal order as `purchase_units[0].custom_id`, an immutable anchor in PayPal's own ledger. Orders are intangible-service (`shipping_preference: NO_SHIPPING`) and idempotent via the `PayPal-Request-Id` header, so agent retries can never double-charge.
-3. **Evidence Dossier (after delivery)** — the delivery gateway records the payer-verified email dispatch, access IP, user agent, timestamps, and artifact SHA-256, then exports a one-click dispute package aligned with PayPal Seller Protection Intangible Goods Additional Requirements.
+2. **Hash Anchor (at every milestone order)** — the agreed contract JSON (scope, price, *and* the milestone payment plan) is SHA-256 hashed, and every PayPal order carries it as `purchase_units[0].custom_id` suffixed with its milestone id (`<hash>:m1`), an immutable anchor chain in PayPal's own ledger. Orders are intangible-service (`shipping_preference: NO_SHIPPING`) and idempotent per stage via the `PayPal-Request-Id` header, so agent retries can never double-charge one milestone.
+3. **Milestone payments (bespoke-software cadence)** — the contract splits the price into a deterministic plan (40% deposit → 40% on delivery & acceptance → 20% final release). Milestone *N* can only be checked out after milestone *N-1* is captured **and** its deliverable is downloaded, so the PayPal ledger grows one anchored row per stage and a dispute over any stage cites that stage's receipt.
+4. **Evidence Dossier (after delivery)** — each milestone's delivery gateway record (payer-verified email dispatch, access IP, user agent, timestamps, artifact SHA-256) plus the full payment ledger export as a one-click dispute package aligned with PayPal Seller Protection Intangible Goods Additional Requirements.
 
 ## Quick start
 
@@ -28,7 +29,7 @@ npm run spike
 
 ## Evaluation suite
 
-`test/eval-cases.json` contains the 6 canonical adjudication cases: prompt injection + exclusion violation, blacklist violation, rush surcharge re-quote, clean baseline acceptance, subjective-scope de-scoping, and idempotent replay.
+`test/eval-cases.json` contains the 6 canonical adjudication cases: prompt injection + exclusion violation, blacklist violation, rush surcharge re-quote, clean baseline acceptance, subjective-scope de-scoping, and milestone payments (per-stage idempotent replay + locked-stage gating). The full three-milestone progression with real captures is proven by a live sandbox E2E run (see `docs/failed-experiments.md` for the recorded runs).
 
 ## Project structure
 
