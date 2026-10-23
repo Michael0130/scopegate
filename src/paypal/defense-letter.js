@@ -42,7 +42,7 @@ function layoutLetter(dossier) {
   const para = (text, style = 'body') => wrap(text).forEach((l) => push(l, style));
 
   push('DISPUTE DEFENSE LETTER', 'title');
-  push('PayPal Seller Protection Policy - Section 11 (Intangible Goods & Services)', 'subtitle');
+  push('PayPal Seller Protection - Intangible Goods Additional Requirements', 'subtitle');
   push('');
   push(`Dossier ID:        ${dossier.dossier_id}`);
   push(`PayPal Order ID:   ${dossier.paypal_order_id}`);

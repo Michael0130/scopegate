@@ -2,7 +2,7 @@
   "dossier_id": "dos_88219",
   "paypal_order_id": "5O190127TN364715T",
   "paypal_custom_id_anchor": "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
-  "policy_compliance": "PayPal Seller Protection Policy Section 11 (Intangible Goods & Services)",
+  "policy_compliance": "PayPal Seller Protection - Intangible Goods Additional Requirements (compelling-evidence standard)",
   "contract_snapshot": {
     "agreed_deliverables": ["3 responsive sections", "24-hour rush delivery"],
     "explicit_exclusions": ["Native iOS/Android app", "Backend DB"],

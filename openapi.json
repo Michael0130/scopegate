@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ScopeGate Merchant Gateway API",
-    "description": "Merchant-side admission gateway for agentic commerce. Adjudicates buyer-agent requests against the merchant service baseline, anchors agreed terms on PayPal orders via a SHA-256 contract hash, and assembles Seller Protection §11 dispute dossiers with delivery proof.",
+    "description": "Merchant-side admission gateway for agentic commerce. Adjudicates buyer-agent requests against the merchant service baseline, anchors agreed terms on PayPal orders via a SHA-256 contract hash, and assembles Seller Protection Intangible-Goods dossiers with delivery proof.",
     "version": "0.3.0"
   },
   "servers": [
@@ -222,7 +222,7 @@
     },
     "/api/v1/sessions/{id}/dossier": {
       "get": {
-        "summary": "Export the Seller Protection §11 dispute dossier for a session",
+        "summary": "Export the Seller Protection Intangible-Goods dispute dossier for a session",
         "parameters": [
           {
             "name": "id",
@@ -439,7 +439,7 @@
     "/api/v1/sessions/{sessionId}/dossier/pdf": {
       "get": {
         "summary": "Download the dispute defense letter (PDF)",
-        "description": "The Seller Protection §11 dossier rendered as a human-readable defense letter PDF, byte-generated server-side with zero PDF dependencies. Attached as the evidence file when calling the Disputes API provide-evidence endpoint.",
+        "description": "The Seller Protection Intangible-Goods dossier rendered as a human-readable defense letter PDF, byte-generated server-side with zero PDF dependencies. Attached as the evidence file when calling the Disputes API provide-evidence endpoint.",
         "operationId": "downloadDefenseLetter",
         "tags": [
           "disputes"

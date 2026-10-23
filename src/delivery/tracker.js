@@ -1,6 +1,6 @@
 // Delivery gateway (Master Spec §3): every artifact pickup is logged with the
 // payer-verified email dispatch, access IP, user agent, timestamp, and artifact
-// SHA-256 — the raw material of the dispute dossier (Seller Protection §11).
+// SHA-256 — the raw material of the dispute dossier (Seller Protection Intangible-Goods).
 //
 // The demo deliverable is rendered deterministically from the session's frozen
 // contract, so the hash recorded at dispatch is identical to the one served on
