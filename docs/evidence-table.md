@@ -1,6 +1,6 @@
 # First-Hand Evidence: Intangible-Goods Disputes Hurt Independent Sellers
 
-> W2-D5 deliverable (Master Spec §5, research item 4): at least 5 first-hand community cases of
+> W2-D5 deliverable: at least 5 first-hand community cases of
 > freelancers losing PayPal disputes on intangible services because they had no physical tracking
 > number to submit as proof. Sources: V2EX, Reddit (`r/freelance`, `r/freelanceWriters`).
 >

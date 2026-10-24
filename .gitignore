@@ -5,3 +5,12 @@ node_modules/
 .DS_Store
 npm-debug.log*
 logs/
+
+# Local working notes — private, never published
+ScopeGate_Master_Spec.md
+
+# AI assistant working files
+.zcode/
+.claude/
+.cursor/
+.aider*
