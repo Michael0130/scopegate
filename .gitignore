@@ -8,6 +8,8 @@ logs/
 
 # Local working notes — private, never published
 ScopeGate_Master_Spec.md
+docs/architecture-comparison.zh.md
+scripts/keep-warm.sh
 
 # AI assistant working files
 .zcode/
