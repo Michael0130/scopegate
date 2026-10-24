@@ -24,6 +24,8 @@
 - **What we tried**: 6 endpoint/model combinations, then `thinking: {"type":"disabled"}` and JWT
   auth variants to bring latency under the 4-second fail-safe budget.
 - **Result / why it failed**: the plan silently routes `glm-4.6` to an always-thinking variant
+  (error 1210 — "this model always thinks; thinking cannot be disabled", translated from the
+  API's Chinese message). Gatekeeper verdicts took 12–17s with 8–16 token
   budgets burned entirely in `reasoning_content`. Under the spec's 4s timeout every live call fell
   back to the deterministic cache.
 - **Decision**: request `glm-5.3-flash` explicitly (thinking can be disabled on it) and slim the LLM
@@ -34,6 +36,8 @@
 - **Hypothesis**: any API key from the BigModel console can use the Coding Plan quota via the
   `/api/coding/paas/v4` endpoint.
 - **What we tried**: 11 models × both endpoints × raw-key and JWT auth — a full exhaustion matrix.
+- **Result / why it failed**: every combination returned `1113` — "insufficient balance or no
+  available resource package" (translated from the API's Chinese message) — while the same
   key could list models (auth valid, quota absent). The key was a regular open-platform key, not
   bound to the plan.
 - **Decision**: generated the plan-specific key; both endpoints immediately served traffic. Lesson:

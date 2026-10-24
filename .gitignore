@@ -10,6 +10,8 @@ logs/
 ScopeGate_Master_Spec.md
 docs/architecture-comparison.zh.md
 scripts/keep-warm.sh
+README.zh-CN.md
+*.zh-CN.md
 
 # AI assistant working files
 .zcode/
