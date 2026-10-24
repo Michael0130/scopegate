@@ -1,6 +1,6 @@
 # Failed Experiments & Scope Reduction Log
 
-> W2-D5 deliverable (Master Spec §8, D5): 3 failed experiments and one deliberately narrowed
+> W2-D5 deliverable: 3 failed experiments and one deliberately narrowed
 > over-claim. All entries below are real experiments from the D1–D4 build log (2026-10-21/22),
 > plus one from the phase-2 webhook integration (2026-10-22).
 
