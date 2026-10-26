@@ -44,25 +44,36 @@ function getSeller(id) {
   return SELLERS.get(id) ?? SELLERS.get(DEFAULT_SELLER_ID);
 }
 
-/** Resolve a seller's PayPal credentials from the env names declared in sellers.json. */
+/** Resolve a seller's PayPal credentials from the env names declared in sellers.json.
+ * Loud failure on purpose: a missing SELLER_* pair must never silently reroute one
+ * seller's money into the default account. */
 function sellerCredentials(seller) {
-  return {
-    clientId: process.env[seller.paypal.client_id_env],
-    clientSecret: process.env[seller.paypal.client_secret_env],
-  };
+  const clientId = process.env[seller.paypal.client_id_env];
+  const clientSecret = process.env[seller.paypal.client_secret_env];
+  if (!clientId || !clientSecret) {
+    throw new Error(`PayPal credentials missing for seller '${seller.id}' — set ${seller.paypal.client_id_env} / ${seller.paypal.client_secret_env}`);
+  }
+  return { clientId, clientSecret };
 }
 
-/** Every configured webhook registration — one per seller app; verified until SUCCESS. */
+/** Every configured webhook registration — one per seller app; verified until SUCCESS.
+ * Sellers whose credentials aren't configured yet are skipped (transitional deploys keep
+ * the default seller fully working instead of breaking verification for everyone). */
 function sellerWebhookTargets() {
   const legacy = getWebhookConfig();
   return [...SELLERS.values()]
-    .map((seller) => ({
-      seller_id: seller.id,
-      webhook_id: (seller.paypal.webhook_id_env && process.env[seller.paypal.webhook_id_env])
-        || (seller.id === DEFAULT_SELLER_ID ? legacy.webhook_id : null),
-      credentials: sellerCredentials(seller),
-    }))
-    .filter((target) => target.webhook_id);
+    .map((seller) => {
+      let credentials;
+      try {
+        credentials = sellerCredentials(seller);
+      } catch {
+        return null;
+      }
+      const webhookId = (seller.paypal.webhook_id_env && process.env[seller.paypal.webhook_id_env])
+        || (seller.id === DEFAULT_SELLER_ID ? legacy.webhook_id : null);
+      return webhookId ? { seller_id: seller.id, webhook_id: webhookId, credentials } : null;
+    })
+    .filter(Boolean);
 }
 
 // In-memory session ledger, keyed by session_id. One negotiation → one frozen decision →
