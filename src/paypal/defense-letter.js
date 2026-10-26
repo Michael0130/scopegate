@@ -63,7 +63,7 @@ function layoutLetter(dossier) {
   push('Payment ledger (each milestone order carries the contract hash as its custom_id prefix):', 'b');
   dossier.payment_ledger.forEach((row) => {
     para(
-      `- ${row.milestone_id} ${row.label}: ${row.amount.toFixed(2)} ${row.currency} - ` +
+      `- ${row.milestone_id} ${row.label}: ${row.amount.toFixed(2)} ${row.currency ?? c.currency ?? 'USD'} - ` +
       `order ${row.order_id ?? 'n/a'} - ${row.status ?? 'NONE'}${row.captured_at ? ` at ${row.captured_at}` : ''}`,
     );
     if (row.custom_id) para(`  custom_id: ${row.custom_id}`, 'mono');

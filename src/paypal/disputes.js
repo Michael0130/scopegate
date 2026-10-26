@@ -31,6 +31,7 @@ export function buildDossier(session, deliveryRecord, milestoneId) {
       explicit_exclusions: session.decision.locked_scope.explicit_exclusions,
       max_revisions: session.decision.locked_scope.max_revisions,
       quoted_price: session.decision.quoted_price,
+      currency: session.decision.currency ?? 'USD',
     },
     // v0.4: the full payment timeline — one anchor row per milestone order, all sharing
     // the same contract-hash prefix. This is the ledger a dispute officer can check.

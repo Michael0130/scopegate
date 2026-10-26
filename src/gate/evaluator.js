@@ -239,6 +239,7 @@ function finalize(decision, riskFlags, surcharges, reasoning, baseline, mode, la
     risk_flags: riskFlags,
     reasoning,
     quoted_price: quotedPrice,
+    currency: baseline.currency,
     applied_surcharges: surcharges,
     locked_scope: lockedScope,
     payment_plan: paymentPlan,
