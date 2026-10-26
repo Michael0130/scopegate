@@ -3,7 +3,7 @@
   "info": {
     "title": "ScopeGate Merchant Gateway API",
     "description": "Merchant-side admission gateway for agentic commerce. Adjudicates buyer-agent requests against the merchant service baseline, anchors agreed terms on PayPal orders via a SHA-256 contract hash, and assembles Seller Protection Intangible-Goods dossiers with delivery proof.",
-    "version": "0.4.0"
+    "version": "0.5.0"
   },
   "servers": [
     {
@@ -47,6 +47,46 @@
         }
       }
     },
+    "/api/v1/sellers": {
+      "get": {
+        "summary": "List storefronts (marketplace stalls)",
+        "description": "Every seller in config/sellers.json: display identity, its own PayPal settlement account, and the read-only service baseline the gate adjudicates against. Powers the marketplace stalls, the buyer-side concierge and the console's Agent-preset tab.",
+        "responses": {
+          "200": {
+            "description": "Seller registry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "default_seller": { "type": "string" },
+                    "sellers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "display_name": { "type": "string" },
+                          "store_domain": { "type": "string" },
+                          "store_tagline": { "type": "string" },
+                          "concierge_blurb": { "type": "string" },
+                          "keywords": { "type": "array", "items": { "type": "string" } },
+                          "paypal_email": { "type": "string", "description": "The seller's own PayPal settlement account" },
+                          "baseline": {
+                            "type": "object",
+                            "description": "Service baseline schema (deliverables, exclusions, surcharge rules) — the contract the gate enforces"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/scope/negotiate": {
       "post": {
         "summary": "Adjudicate a buyer-agent request against the merchant service baseline",
@@ -63,6 +103,10 @@
                   "buyer_message": {
                     "type": "string",
                     "description": "Natural-language service request from the buyer agent"
+                  },
+                  "seller": {
+                    "type": "string",
+                    "description": "Seller id from GET /api/v1/sellers; omitted = default seller"
                   },
                   "budget_usd": {
                     "type": "number",

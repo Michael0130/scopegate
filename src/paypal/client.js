@@ -8,16 +8,29 @@
 //     idempotency — agent retries can never double-charge one stage)
 // Recipe validated in spikes/test-paypal-order.js: the create response does NOT echo
 // custom_id — verify the anchor via getOrder() (the query path the dispute flow uses).
+//
+// v0.5 multi-seller: every call takes an optional `{ clientId, clientSecret }` credentials
+// object, so each seller's orders settle into THEIR OWN PayPal account. Omitting credentials
+// falls back to the legacy PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET pair (the default seller).
+// Tokens are cached per client id — three sellers, three independent token lifetimes.
 
 const BASE_URL = process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com';
 
-let tokenCache = { value: null, expiresAt: 0 };
+const tokenCaches = new Map(); // clientId -> { value, expiresAt }
 
-export async function getAccessToken() {
-  if (tokenCache.value && Date.now() < tokenCache.expiresAt) return tokenCache.value;
-  const clientId = process.env.PAYPAL_CLIENT_ID;
-  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-  if (!clientId || !clientSecret) throw new Error('PayPal credentials missing: set PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET');
+export function resolveCredentials(credentials) {
+  const clientId = credentials?.clientId ?? process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = credentials?.clientSecret ?? process.env.PAYPAL_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error('PayPal credentials missing: set PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET (or the seller-specific pair)');
+  }
+  return { clientId, clientSecret };
+}
+
+export async function getAccessToken(credentials) {
+  const { clientId, clientSecret } = resolveCredentials(credentials);
+  const cache = tokenCaches.get(clientId);
+  if (cache && Date.now() < cache.expiresAt) return cache.value;
 
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
   const res = await fetch(`${BASE_URL}/v1/oauth2/token`, {
@@ -27,20 +40,21 @@ export async function getAccessToken() {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(`PayPal auth failed: ${JSON.stringify(data)}`);
-  tokenCache = {
+  tokenCaches.set(clientId, {
     value: data.access_token,
     expiresAt: Date.now() + (Number(data.expires_in) - 60) * 1000,
-  };
-  return tokenCache.value;
+  });
+  return tokenCaches.get(clientId).value;
 }
 
 /**
  * Create (or idempotently re-fetch) a PayPal order for a frozen gatekeeper decision.
  * paypalRequestId MUST be stable per session+milestone — retries with the same value return
- * the same order instead of double-charging.
+ * the same order instead of double-charging. `credentials` routes the order to a specific
+ * seller's PayPal account (config/sellers.json → SELLER_*_CLIENT_ID/SECRET).
  */
-export async function createScopedOrder({ contractHash, paypalRequestId, amount, currency = 'USD', description }) {
-  const token = await getAccessToken();
+export async function createScopedOrder({ contractHash, paypalRequestId, amount, currency = 'USD', description, credentials }) {
+  const token = await getAccessToken(credentials);
   const res = await fetch(`${BASE_URL}/v2/checkout/orders`, {
     method: 'POST',
     headers: {
@@ -68,8 +82,8 @@ export async function createScopedOrder({ contractHash, paypalRequestId, amount,
   return order;
 }
 
-export async function getOrder(orderId) {
-  const token = await getAccessToken();
+export async function getOrder(orderId, credentials) {
+  const token = await getAccessToken(credentials);
   const res = await fetch(`${BASE_URL}/v2/checkout/orders/${orderId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -78,8 +92,8 @@ export async function getOrder(orderId) {
   return order;
 }
 
-export async function captureOrder(orderId) {
-  const token = await getAccessToken();
+export async function captureOrder(orderId, credentials) {
+  const token = await getAccessToken(credentials);
   const res = await fetch(`${BASE_URL}/v2/checkout/orders/${orderId}/capture`, {
     method: 'POST',
     headers: {

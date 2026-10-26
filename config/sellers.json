@@ -1,0 +1,99 @@
+{
+  "default_seller": "alex",
+  "sellers": [
+    {
+      "id": "alex",
+      "display_name": "Alex · Fullstack",
+      "store_domain": "alex.dev",
+      "store_tagline": "Bespoke front-end, fixed price. Every deal scoped, priced and fingerprinted before money moves.",
+      "concierge_blurb": "Bespoke Next.js landing pages from $500 — 3 responsive sections, Tailwind dark mode, deployed to Vercel. Rush 24h fits his rules at +$150.",
+      "keywords": ["landing", "page", "next", "nextjs", "react", "website", "web", "tailwind", "frontend", "hero", "responsive", "section"],
+      "paypal": {
+        "email": "sb-7qdxq53477312@business.example.com",
+        "app_name": "scopegate-spike",
+        "client_id_env": "PAYPAL_CLIENT_ID",
+        "client_secret_env": "PAYPAL_CLIENT_SECRET",
+        "webhook_id_env": "PAYPAL_WEBHOOK_ID"
+      },
+      "baseline_file": "schemas/service.schema.json"
+    },
+    {
+      "id": "bella",
+      "display_name": "Bella · Atelier",
+      "store_domain": "bella.atelier",
+      "store_tagline": "Brand & UI kits, scoped and frozen before a single pixel moves.",
+      "concierge_blurb": "Brand & UI kits from $800 — logo suite, color system, Figma components. Ask for 24h rush and her agent re-quotes at +$150, never below base.",
+      "keywords": ["brand", "logo", "design", "ui", "kit", "figma", "color", "identity", "style", "visual"],
+      "paypal": {
+        "email": "sb-a58tu53470508@business.example.com",
+        "app_name": "scopegate-bella",
+        "client_id_env": "SELLER_BELLA_CLIENT_ID",
+        "client_secret_env": "SELLER_BELLA_CLIENT_SECRET",
+        "webhook_id_env": "SELLER_BELLA_WEBHOOK_ID"
+      },
+      "baseline": {
+        "service_id": "srv_brand_ui_kit",
+        "merchant_name": "Bella (Independent Brand Designer)",
+        "title": "Brand & UI Kit Design",
+        "base_price": 800.00,
+        "currency": "USD",
+        "turnaround_days": 5,
+        "max_revisions": 2,
+        "deliverables": [
+          "Logo suite + color system",
+          "Figma component library",
+          "Usage & handover guide"
+        ],
+        "explicit_exclusions": [
+          "Front-end implementation of the design",
+          "Print & merch production files",
+          "3D or motion design"
+        ],
+        "surcharge_rules": {
+          "rush_24h_delivery": 150.00,
+          "extra_revision_per_round": 120.00,
+          "additional_page_section": 200.00
+        }
+      }
+    },
+    {
+      "id": "cj",
+      "display_name": "CJ · Integrations",
+      "store_domain": "cj.integrates",
+      "store_tagline": "Payment & API wiring with a receipt for every milestone.",
+      "concierge_blurb": "Payment & API integrations from $650 — checkout + webhook wiring, reconciliation dashboard, sandbox test suite.",
+      "keywords": ["api", "integration", "payment", "stripe", "paypal", "webhook", "backend", "checkout", "reconciliation", "wiring"],
+      "paypal": {
+        "email": "sb-ybms953470497@business.example.com",
+        "app_name": "scopegate-cj",
+        "client_id_env": "SELLER_CJ_CLIENT_ID",
+        "client_secret_env": "SELLER_CJ_CLIENT_SECRET",
+        "webhook_id_env": "SELLER_CJ_WEBHOOK_ID"
+      },
+      "baseline": {
+        "service_id": "srv_payment_api_integration",
+        "merchant_name": "CJ (Independent Integration Engineer)",
+        "title": "Payment & API Integration",
+        "base_price": 650.00,
+        "currency": "USD",
+        "turnaround_days": 5,
+        "max_revisions": 2,
+        "deliverables": [
+          "Checkout + webhook wiring for one provider",
+          "Reconciliation dashboard page",
+          "Sandbox end-to-end test suite"
+        ],
+        "explicit_exclusions": [
+          "Custom payment risk modeling",
+          "SEO & growth marketing",
+          "Legacy data migration"
+        ],
+        "surcharge_rules": {
+          "rush_24h_delivery": 150.00,
+          "extra_revision_per_round": 50.00,
+          "additional_page_section": 200.00
+        }
+      }
+    }
+  ]
+}

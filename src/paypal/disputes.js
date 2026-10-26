@@ -94,8 +94,8 @@ export function buildEvidencePayload(dossier, session) {
  * defense-letter PDF as the file attachment. Proven end-to-end against
  * sandbox dispute PP-R-LKW-10194104 (200 → dispute moved to UNDER_PAYPAL_REVIEW).
  */
-export async function provideEvidence({ disputeId, dossier, session, pdfBuffer }) {
-  const token = await getAccessToken();
+export async function provideEvidence({ disputeId, dossier, session, pdfBuffer, credentials }) {
+  const token = await getAccessToken(credentials);
   const BASE_URL = process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com';
   const payload = buildEvidencePayload(dossier, session);
 

@@ -18,3 +18,4 @@ README.zh-CN.md
 .claude/
 .cursor/
 .aider*
+scripts/local-dns.cjs

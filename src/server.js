@@ -7,7 +7,7 @@ import { evaluateScope } from './gate/evaluator.js';
 import { createScopedOrder, getOrder, captureOrder } from './paypal/client.js';
 import { buildDossier, buildEvidencePayload, provideEvidence } from './paypal/disputes.js';
 import { buildDefenseLetterPdf } from './paypal/defense-letter.js';
-import { verifyWebhookSignature, PAYPAL_TRANSMISSION_HEADERS } from './paypal/webhooks.js';
+import { verifyWebhookSignature, getWebhookConfig, PAYPAL_TRANSMISSION_HEADERS } from './paypal/webhooks.js';
 import { renderArtifact, artifactHash, recordDispatch, recordAccess, getDeliveryRecord } from './delivery/tracker.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -18,9 +18,52 @@ const PORT = process.env.PORT || 3000;
 // real client IP (evidence quality for the dispute dossier), not ::1.
 app.set('trust proxy', true);
 
-const baseline = JSON.parse(
-  readFileSync(path.join(__dirname, '..', 'schemas', 'service.schema.json'), 'utf8'),
+// Multi-seller registry (v0.5): config/sellers.json defines every storefront — display
+// identity, its OWN PayPal account (credentials via env-var names) and the service
+// baseline the gate adjudicates against. Alex keeps schemas/service.schema.json as the
+// baseline file of record; the other sellers carry their baseline inline. Money routes
+// per seller: an order created for Bella settles into Bella's PayPal account, not a
+// shared pot.
+const sellersConfig = JSON.parse(
+  readFileSync(path.join(__dirname, '..', 'config', 'sellers.json'), 'utf8'),
 );
+const SELLERS = new Map(
+  sellersConfig.sellers.map((entry) => [
+    entry.id,
+    {
+      ...entry,
+      baseline: entry.baseline_file
+        ? JSON.parse(readFileSync(path.join(__dirname, '..', entry.baseline_file), 'utf8'))
+        : entry.baseline,
+    },
+  ]),
+);
+const DEFAULT_SELLER_ID = sellersConfig.default_seller ?? SELLERS.keys().next().value;
+
+function getSeller(id) {
+  return SELLERS.get(id) ?? SELLERS.get(DEFAULT_SELLER_ID);
+}
+
+/** Resolve a seller's PayPal credentials from the env names declared in sellers.json. */
+function sellerCredentials(seller) {
+  return {
+    clientId: process.env[seller.paypal.client_id_env],
+    clientSecret: process.env[seller.paypal.client_secret_env],
+  };
+}
+
+/** Every configured webhook registration — one per seller app; verified until SUCCESS. */
+function sellerWebhookTargets() {
+  const legacy = getWebhookConfig();
+  return [...SELLERS.values()]
+    .map((seller) => ({
+      seller_id: seller.id,
+      webhook_id: (seller.paypal.webhook_id_env && process.env[seller.paypal.webhook_id_env])
+        || (seller.id === DEFAULT_SELLER_ID ? legacy.webhook_id : null),
+      credentials: sellerCredentials(seller),
+    }))
+    .filter((target) => target.webhook_id);
+}
 
 // In-memory session ledger, keyed by session_id. One negotiation → one frozen decision →
 // N milestone PayPal orders (v0.4: deposit → stages → final). Each milestone carries
@@ -94,23 +137,47 @@ app.get('/api/v1/health', (_req, res) => {
   });
 });
 
+// Storefront registry: powers the marketplace stalls, the buyer-side concierge agent and
+// the console's Agent-preset tab. The baselines exposed here are the exact contracts the
+// gate enforces — read-only, frozen, fingerprinted.
+app.get('/api/v1/sellers', (_req, res) => {
+  res.json({
+    default_seller: DEFAULT_SELLER_ID,
+    sellers: [...SELLERS.values()].map((s) => ({
+      id: s.id,
+      display_name: s.display_name,
+      store_domain: s.store_domain,
+      store_tagline: s.store_tagline,
+      concierge_blurb: s.concierge_blurb,
+      keywords: s.keywords,
+      paypal_email: s.paypal.email,
+      baseline: s.baseline,
+    })),
+  });
+});
+
 // Natural-language buyer request -> ACCEPT | COUNTER | REJECT (schemas/decision.schema.json).
+// `seller` selects the storefront (config/sellers.json); omitted = default seller, so the
+// eval suite and legacy API consumers keep working unchanged.
 app.post('/api/v1/scope/negotiate', async (req, res) => {
   const { buyer_message: buyerMessage } = req.body ?? {};
   if (!buyerMessage || typeof buyerMessage !== 'string') {
     return res.status(400).json({ error: 'bad_request', message: 'buyer_message (string) is required' });
   }
 
+  const seller = getSeller(req.body?.seller);
   const sessionId = typeof req.body.session_id === 'string' && req.body.session_id
     ? req.body.session_id
     : `req_scope_${crypto.randomBytes(6).toString('hex')}`;
 
   try {
-    const decision = await evaluateScope({ buyer_message: buyerMessage }, baseline);
+    const decision = await evaluateScope({ buyer_message: buyerMessage }, seller.baseline);
     decision.session_id = sessionId;
+    decision.seller_id = seller.id;
 
     const session = {
       session_id: sessionId,
+      seller_id: seller.id,
       decision,
       // One payment slot per contract milestone; delivery state lives in the tracker.
       payments: (decision.payment_plan ?? []).map((m) => ({
@@ -159,12 +226,14 @@ app.post('/api/v1/checkout', async (req, res) => {
   }
 
   try {
+    const seller = getSeller(session.seller_id);
     const order = await createScopedOrder({
       contractHash: `${session.decision.contract_hash}:${milestoneId}`,
       paypalRequestId: `${sessionId}:${milestoneId}`,
       amount: payment.amount,
-      currency: baseline.currency,
-      description: `${baseline.title} — ${payment.label}`,
+      currency: seller.baseline.currency,
+      description: `${seller.baseline.title} — ${payment.label}`,
+      credentials: sellerCredentials(seller),
     });
 
     const replay = payment.order_id !== null;
@@ -194,15 +263,17 @@ app.post('/api/v1/checkout', async (req, res) => {
 });
 
 // After the buyer approves on sandbox.paypal.com, the frontend calls this to capture funds
-// for that one milestone order.
+// for that one milestone order — into the SELLER's own PayPal account (resolved from the
+// session captured in the ledger, so the money lands where the storefront said it would).
 app.post('/api/v1/orders/:id/capture', async (req, res) => {
+  let hit = null;
+  for (const session of sessions.values()) {
+    const payment = session.payments?.find((p) => p.order_id === req.params.id);
+    if (payment) { hit = { session, payment }; break; }
+  }
+  const seller = hit ? getSeller(hit.session.seller_id) : null;
   try {
-    const capture = await captureOrder(req.params.id);
-    let hit = null;
-    for (const session of sessions.values()) {
-      const payment = session.payments?.find((p) => p.order_id === req.params.id);
-      if (payment) { hit = { session, payment }; break; }
-    }
+    const capture = await captureOrder(req.params.id, seller ? sellerCredentials(seller) : undefined);
     if (hit) {
       const { session, payment } = hit;
       payment.order_status = capture.status;
@@ -220,6 +291,11 @@ app.post('/api/v1/orders/:id/capture', async (req, res) => {
     });
   } catch (err) {
     console.error('[capture]', err.message);
+    // PayPal's 422 ORDER_NOT_APPROVED is a normal demo beat (capture before approval) —
+    // surface it as a clean 409 the console can translate into guidance, not raw JSON.
+    if (err.message?.includes('ORDER_NOT_APPROVED')) {
+      return res.status(409).json({ error: 'order_not_approved', message: 'The buyer has not approved this order in PayPal yet.' });
+    }
     res.status(502).json({ error: 'paypal_failure', message: err.message });
   }
 });
@@ -227,7 +303,12 @@ app.post('/api/v1/orders/:id/capture', async (req, res) => {
 app.get('/api/v1/sessions/:id', (req, res) => {
   const session = getSession(req.params.id);
   if (!session) return res.status(404).json({ error: 'session_not_found' });
-  res.json(session);
+  // Augment each milestone with delivery state so one poll drives the whole ladder UI.
+  const payments = (session.payments ?? []).map((p) => {
+    const record = getDeliveryRecord(session.session_id, p.milestone_id);
+    return { ...p, dispatched: !!record, access_count: record?.accesses.length ?? 0 };
+  });
+  res.json({ ...session, payments });
 });
 
 // Merchant dispatches the milestone artifact to the payer-verified email.
@@ -342,7 +423,13 @@ app.post('/api/v1/disputes/:disputeId/provide-evidence', async (req, res) => {
   try {
     const dossier = buildDossier(session, record, milestoneId);
     const pdf = buildDefenseLetterPdf(dossier);
-    const result = await provideEvidence({ disputeId: req.params.disputeId, dossier, session, pdfBuffer: pdf });
+    const result = await provideEvidence({
+      disputeId: req.params.disputeId,
+      dossier,
+      session,
+      pdfBuffer: pdf,
+      credentials: sellerCredentials(getSeller(session.seller_id)),
+    });
     session.dispute = { ...(session.dispute ?? {}), evidence_submitted_at: new Date().toISOString() };
     res.json(result);
   } catch (err) {
@@ -425,8 +512,15 @@ app.post('/api/webhooks/paypal', async (req, res) => {
     return res.status(401).json({ error: 'invalid_signature', message: 'missing PayPal transmission headers' });
   }
   try {
-    const verdict = await verifyWebhookSignature(headers, req.body);
-    if (verdict.verification_status !== 'SUCCESS') {
+    // Multiple sellers = multiple registrations. Try each seller's webhook id (with that
+    // seller's own credentials) until one returns SUCCESS — an event from Bella's app
+    // only verifies against Bella's webhook id.
+    let verdict = null;
+    for (const target of sellerWebhookTargets()) {
+      verdict = await verifyWebhookSignature(headers, req.body, target);
+      if (verdict.verification_status === 'SUCCESS') break;
+    }
+    if (!verdict || verdict.verification_status !== 'SUCCESS') {
       console.warn('[webhook] signature verification FAILED — dropping delivery');
       webhookAttempts.unshift({ at: new Date().toISOString(), headers: Object.keys(headers), verdict: 'rejected: ' + (verdict.verification_status ?? 'unknown') });
       webhookAttempts.length = Math.min(webhookAttempts.length, WEBHOOK_ATTEMPT_LIMIT);

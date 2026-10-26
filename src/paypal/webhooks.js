@@ -33,12 +33,15 @@ export function getWebhookConfig() {
 
 /**
  * Verify a delivery's PAYPAL-* headers against the raw request body.
+ * `options.webhookId` selects which registration to verify against — with multiple
+ * sellers each app has its own webhook id, so the receiver tries each until one
+ * returns SUCCESS. `options.credentials` verifies with that seller's own token.
  * Returns PayPal's verdict, e.g. { verification_status: 'SUCCESS' }.
  */
-export async function verifyWebhookSignature(headers, rawBody) {
-  const token = await getAccessToken();
-  const { webhook_id: webhookId } = getWebhookConfig();
+export async function verifyWebhookSignature(headers, rawBody, options = {}) {
+  const webhookId = options.webhookId ?? getWebhookConfig().webhook_id;
   if (!webhookId) throw new Error('No webhook id configured (config/webhook.json or PAYPAL_WEBHOOK_ID)');
+  const token = await getAccessToken(options.credentials);
 
   const res = await fetch(`${BASE_URL}/v1/notifications/verify-webhook-signature`, {
     method: 'POST',
