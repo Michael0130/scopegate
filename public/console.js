@@ -122,14 +122,16 @@ $('nav-console').addEventListener('click', () => { state.view = 'console'; apply
 // ── marketplace ──────────────────────────────────────────────────────────────
 function renderStalls() {
   $('stalls').innerHTML = state.sellers.map((s) => `
-    <div class="card stall">
+    <div class="card stall" data-shop="${s.id}">
       <div><h3>${esc(s.display_name)}</h3><div class="who">${esc(s.store_domain)}</div></div>
       <p>${esc(s.store_tagline)}</p>
       <div class="price">${money(s.baseline.base_price)}<small>from &middot; ${s.baseline.turnaround_days} days</small></div>
-      <button type="button" class="enter" data-shop="${s.id}">Enter shop</button>
+      <button type="button" class="enter">Enter shop</button>
     </div>`).join('');
-  $('stalls').querySelectorAll('[data-shop]').forEach((b) =>
-    b.addEventListener('click', () => enterShop(b.dataset.shop)));
+  // The whole stall card is the click target (the button inside just bubbles here),
+  // so a buyer can tap anywhere on a merchant to walk in.
+  $('stalls').querySelectorAll('.stall').forEach((card) =>
+    card.addEventListener('click', () => enterShop(card.dataset.shop)));
 }
 
 const CONCIERGE_SUGGESTIONS = [
