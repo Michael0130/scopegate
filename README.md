@@ -209,19 +209,31 @@ ScopeGate/
 
 ---
 
-## Quick start
+## Run it locally
 
-| Prerequisite | Notes |
-|---|---|
-| Node.js ≥ 22 | Runtime (ESM) |
-| PayPal developer account | Create Sandbox business + personal accounts at [developer.paypal.com](https://developer.paypal.com) |
-| `.env` | Copy from `.env.example`, fill in **SANDBOX** credentials (sandbox only — never live keys) |
+Your first sandbox capture, in about 15 minutes — the PayPal sandbox signup is the long pole. No install? [Open the live console →](https://scopegate.onrender.com/console)
+
+**Step 1 · Clone & run** (~30s) — needs Node.js ≥ 22. The gateway boots with no keys: the deterministic layers of the gate (injection firewall · exclusion match · eval cases) work out of the box; only free-form adjudication uses the LLM.
 
 ```bash
-npm install
-npm start               # http://localhost:3000 — marketplace demo: guarded stalls · seller console
-npm run spike           # validate the sandbox plumbing end-to-end: OAuth2 → contract-hash order → idempotent replay
-npm run eval            # run the 6 canonical adjudication cases (injection+exclusion · blacklist · rush surcharge · clean accept · de-scoping · milestone replay+gating)
+git clone https://github.com/Michael0130/scopegate
+cd scopegate && cp .env.example .env
+npm install && npm start   # http://localhost:3000 — marketplace demo: guarded stalls · seller console
+```
+
+**Step 2 · Add sandbox keys** (~10 min) — grab free keys at [developer.paypal.com](https://developer.paypal.com) (sandbox only — never live keys), then fill `.env`:
+
+```text
+PAYPAL_CLIENT_ID=...      # required — settles money
+PAYPAL_CLIENT_SECRET=...  # required
+LLM_API_KEY=...           # optional — without it the deterministic gate still runs, degraded verdicts only
+```
+
+**Step 3 · Prove the shield** (~10s):
+
+```bash
+npm run eval             # 6 canonical adjudication cases (injection+exclusion · blacklist · rush surcharge · clean accept · de-scoping · milestone replay+gating)
+npm run spike            # validate the sandbox plumbing end-to-end: OAuth2 → contract-hash order → idempotent replay
 ```
 
 The full three-milestone live sandbox E2E run (real captures) is recorded in [docs/failed-experiments.md](docs/failed-experiments.md). Measured results from the production deployment — **56/56 assertions passed, 2026-10-26** — are recorded in [docs/gatekeeper-eval.md](docs/gatekeeper-eval.md).
