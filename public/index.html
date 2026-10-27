@@ -9,6 +9,8 @@
   <style>
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    section[id], div[id="quickstart"] { scroll-margin-top: 72px; }
     body {
       margin: 0; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background:
@@ -21,77 +23,150 @@
     }
     code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; color: #c4b5fd; background: rgba(139,92,246,.1); border: 1px solid rgba(139,92,246,.25); border-radius: 5px; padding: 1px 6px; }
     a { color: inherit; }
+    :focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; border-radius: 4px; }
 
-    .nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 28px; border-bottom: 1px solid rgba(255,255,255,.08); position: sticky; top: 0; backdrop-filter: blur(10px); background: rgba(5,6,15,.82); z-index: 10; }
-    .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; letter-spacing: .2px; text-decoration: none; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+    .band { border-top: 1px solid rgba(255,255,255,.08); background: #0a0c18; padding: 58px 0 64px; }
+    .eyebrow { text-align: center; font-size: 11px; letter-spacing: 3.5px; color: #8b93a7; margin-bottom: 10px; font-weight: 600; }
+    h2 { text-align: center; margin: 0 0 14px; font-size: clamp(28px, 4vw, 36px); font-weight: 800; letter-spacing: -1.1px; }
+    .h2sub { text-align: center; color: #9aa1b1; font-size: 15px; margin: 0 auto 40px; max-width: 660px; line-height: 1.65; }
+    .grad { background: linear-gradient(90deg, #a78bfa 0%, #818cf8 45%, #6ee7b7 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; border-radius: 9px; padding: 12px 21px; text-decoration: none; cursor: pointer; border: 1px solid transparent; font-family: inherit; }
+    .btn-white { background: #fff; color: #0b0d16; }
+    .btn-white:hover { background: #e8ebf2; }
+    .btn-ghost { color: #f3f5f9; border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.02); }
+    .btn-ghost:hover { border-color: rgba(255,255,255,.34); }
+
+    .chip-v { display: inline-flex; align-items: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; letter-spacing: 1px; border-radius: 6px; padding: 2px 8px; font-weight: 600; }
+    .v-accept { color: #4ade80; background: rgba(74,222,128,.12); border: 1px solid rgba(74,222,128,.4); }
+    .v-counter { color: #fbbf24; background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.4); }
+    .v-reject { color: #f87171; background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.4); }
+
+    .nav { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px 28px; border-bottom: 1px solid rgba(255,255,255,.08); position: sticky; top: 0; backdrop-filter: blur(10px); background: rgba(5,6,15,.85); z-index: 10; flex-wrap: wrap; }
+    .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; text-decoration: none; font-size: 15.5px; }
     .brand svg { flex: none; }
-    .nav-links { display: flex; gap: 26px; align-items: center; }
+    .nav-links { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
     .nav-links a { color: #9aa1b1; text-decoration: none; font-size: 13.5px; }
     .nav-links a:hover { color: #f3f5f9; }
+    .nav-cta { display: inline-flex; align-items: center; gap: 7px; background: #fff; color: #0b0d16; font-weight: 600; font-size: 13px; border-radius: 8px; padding: 9px 16px; }
+    .nav-cta:hover { background: #e8ebf2; }
 
-    .hero { text-align: center; padding: 74px 24px 64px; }
-    .pill { display: inline-flex; align-items: center; gap: 7px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.03); border-radius: 999px; padding: 6px 15px; font-size: 10.5px; letter-spacing: 2.2px; color: #c7ccd8; }
+    .hero { text-align: center; padding: 66px 24px 56px; position: relative; overflow: hidden; }
+    .hero .hglow { position: absolute; inset: 8% -10% auto; height: 380px; background: radial-gradient(closest-side, rgba(139,92,246,.17), transparent 72%); filter: blur(8px); pointer-events: none; }
+    .hero > * { position: relative; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.03); border-radius: 999px; padding: 6px 15px; font-size: 10.5px; letter-spacing: 2px; color: #c7ccd8; font-weight: 600; }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80; }
-    h1 { margin: 26px 0 0; font-size: clamp(44px, 7.2vw, 76px); line-height: 1.04; font-weight: 800; letter-spacing: -2.2px; }
-    .grad { background: linear-gradient(90deg, #a78bfa 0%, #818cf8 45%, #6ee7b7 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .sub { max-width: 620px; margin: 26px auto 0; color: #9aa1b1; font-size: 16.5px; line-height: 1.65; }
-    .cta { display: flex; gap: 14px; justify-content: center; margin-top: 34px; flex-wrap: wrap; }
-    .btn-white { display: inline-flex; align-items: center; background: #fff; color: #0b0d16; font-weight: 600; font-size: 14px; text-decoration: none; border-radius: 9px; padding: 12px 22px; }
-    .btn-white:hover { background: #e8ebf2; }
-    .btn-ghost { display: inline-flex; align-items: center; color: #f3f5f9; font-weight: 600; font-size: 14px; text-decoration: none; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.02); border-radius: 9px; padding: 12px 22px; }
-    .btn-ghost:hover { border-color: rgba(255,255,255,.34); }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); max-width: 780px; margin: 58px auto 0; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.015); border-radius: 14px; }
-    .stat { padding: 20px 14px; }
-    .stat + .stat { border-left: 1px solid rgba(255,255,255,.08); }
-    .stat-v { font-size: 23px; font-weight: 800; letter-spacing: -.5px; }
-    .stat-l { margin-top: 5px; font-size: 11.5px; color: #9aa1b1; line-height: 1.45; }
-    @media (max-width: 720px) { .stats { grid-template-columns: 1fr 1fr; } .stat:nth-child(3) { border-left: 0; } .stat:nth-child(n+3) { border-top: 1px solid rgba(255,255,255,.08); } }
+    .kicker { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; letter-spacing: 1.5px; color: #8b93a7; margin-top: 26px; }
+    h1 { margin: 14px auto 0; font-size: clamp(30px, 4.6vw, 54px); line-height: 1.12; font-weight: 800; letter-spacing: -1.8px; max-width: 900px; }
+    .h1sub { max-width: 660px; margin: 22px auto 0; color: #dfe4ee; font-size: 17.5px; line-height: 1.62; }
+    .cta { display: flex; gap: 14px; justify-content: center; margin-top: 32px; flex-wrap: wrap; }
+    .ctacap { margin-top: 14px; font-size: 12px; color: #8b93a7; }
+    .ctacap b { color: #9aa1b1; font-weight: 600; }
 
-    .eyebrow { text-align: center; font-size: 11px; letter-spacing: 3.5px; color: #6b7280; margin-bottom: 12px; }
-    h2 { text-align: center; margin: 0 0 40px; font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -1.2px; }
-    .band { border-top: 1px solid rgba(255,255,255,.08); background: #0a0c18; padding: 64px 24px 68px; }
+    .lane { border-top: 1px solid rgba(255,255,255,.08); border-bottom: 1px solid rgba(255,255,255,.08); background: linear-gradient(90deg, rgba(139,92,246,.07), rgba(110,231,183,.05)); padding: 13px 24px; }
+    .lane-in { max-width: 1120px; margin: 0 auto; display: flex; gap: 10px 26px; align-items: center; justify-content: center; flex-wrap: wrap; font-size: 13px; }
+    .lane-tag { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; letter-spacing: 1.8px; color: #a78bfa; font-weight: 600; }
+    .lane a { display: inline-flex; align-items: center; gap: 6px; color: #9aa1b1; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,.25); padding-bottom: 1px; }
+    .lane a:hover { color: #f3f5f9; }
 
-    .how { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; max-width: 1060px; margin: 0 auto; align-items: center; }
-    @media (max-width: 900px) { .how { grid-template-columns: 1fr; } }
-    .step { display: grid; grid-template-columns: 52px 1fr; gap: 14px; padding: 16px 0; }
+    .probs { max-width: 900px; margin: 0 auto; }
+    .prob { padding: 22px 8px; border-top: 1px solid rgba(255,255,255,.08); display: grid; grid-template-columns: 44px 1fr auto; gap: 18px; align-items: center; }
+    .prob:first-child { border-top: 0; }
+    .prob-n { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #8b93a7; font-size: 13px; }
+    .prob h3 { margin: 0 0 5px; font-size: 20px; font-weight: 700; letter-spacing: -.4px; }
+    .prob p { margin: 0; color: #9aa1b1; font-size: 14px; line-height: 1.6; }
+
+    .how { display: grid; grid-template-columns: 1fr 1.05fr; gap: 44px; align-items: center; }
+    .step { display: grid; grid-template-columns: 52px 1fr; gap: 14px; padding: 15px 0; }
     .step + .step { border-top: 1px solid rgba(255,255,255,.08); }
-    .step-num { font-size: 26px; font-weight: 800; letter-spacing: -1px; background: linear-gradient(90deg, #a78bfa, #818cf8, #6ee7b7); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .step h3 { margin: 2px 0 7px; font-size: 16.5px; font-weight: 700; }
+    .step-num { font-size: 25px; font-weight: 800; letter-spacing: -1px; background: linear-gradient(90deg, #a78bfa, #818cf8, #6ee7b7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .step h3 { margin: 2px 0 6px; font-size: 16.5px; font-weight: 700; display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
     .step p { margin: 0; color: #9aa1b1; font-size: 13.5px; line-height: 1.65; }
     .terminal-wrap { position: relative; }
     .glow { position: absolute; inset: -34px -20px; background: radial-gradient(closest-side, rgba(139,92,246,.22), transparent 72%); filter: blur(6px); }
     .terminal { position: relative; border: 1px solid rgba(167,139,250,.28); background: #070812; border-radius: 14px; padding: 18px 20px 20px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.85; text-align: left; }
-    .term-title { color: #6b7280; font-size: 10.5px; letter-spacing: 1.8px; margin-bottom: 10px; }
+    .term-title { color: #8b93a7; font-size: 10.5px; letter-spacing: 1.8px; margin-bottom: 10px; }
     .plus { color: #818cf8; }
     .dim { color: #565d6d; }
     .red { color: #f87171; }
     .green { color: #4ade80; }
+    .pp { color: #ffc439; }
+    .term-src { display: flex; gap: 6px; align-items: center; margin-top: 9px; font-size: 11.5px; color: #8b93a7; }
+    .term-src a { color: #6ee7b7; text-decoration: none; border-bottom: 1px dashed rgba(110,231,183,.5); }
 
-    .why { padding: 70px 24px; }
-    .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; max-width: 1000px; margin: 0 auto; }
-    @media (max-width: 820px) { .why-grid { grid-template-columns: 1fr; gap: 26px; } }
-    .why-item h3 { margin: 0 0 9px; font-size: 17px; font-weight: 700; }
-    .why-item p { margin: 0; color: #9aa1b1; font-size: 13.5px; line-height: 1.65; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.015); border-radius: 14px; max-width: 940px; margin: 0 auto 34px; }
+    .stat { padding: 20px 16px; position: relative; }
+    .stat + .stat { border-left: 1px solid rgba(255,255,255,.08); }
+    .stat::before { content: ""; position: absolute; left: 0; top: 18px; bottom: 18px; width: 2px; border-radius: 2px; }
+    .stat.s-g::before { background: #4ade80; } .stat.s-a::before { background: #fbbf24; }
+    .stat.s-m::before { background: #6ee7b7; } .stat.s-p::before { background: #a78bfa; }
+    .stat-v { font-size: 26px; font-weight: 800; letter-spacing: -.6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .stat-l { margin-top: 6px; font-size: 12px; color: #9aa1b1; line-height: 1.5; }
 
-    .prereq-card { max-width: 1000px; margin: 0 auto 18px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.015); border-radius: 14px; padding: 20px 24px; }
-    .prereq-title { font-size: 11px; letter-spacing: 2.5px; color: #6b7280; margin-bottom: 13px; }
-    .chips { display: flex; flex-wrap: wrap; gap: 10px; }
-    .chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: 8px 13px; font-size: 13px; background: rgba(255,255,255,.02); }
-    .tag { font-size: 10px; letter-spacing: .5px; border-radius: 5px; padding: 2px 7px; }
-    .tag-purple { color: #c4b5fd; background: rgba(139,92,246,.16); border: 1px solid rgba(139,92,246,.4); }
-    .tag-blue { color: #93c5fd; background: rgba(59,130,246,.14); border: 1px solid rgba(59,130,246,.4); }
-    .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 1000px; margin: 0 auto; }
-    @media (max-width: 820px) { .code-grid { grid-template-columns: 1fr; } }
-    .code-card { border: 1px solid rgba(167,139,250,.24); background: #070812; border-radius: 14px; overflow: hidden; }
-    .code-head { display: flex; gap: 9px; align-items: center; padding: 11px 17px; border-bottom: 1px solid rgba(255,255,255,.08); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; letter-spacing: 1.6px; color: #9aa1b1; }
-    .code-card pre { margin: 0; padding: 15px 17px 17px; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.8; color: #e5e7eb; }
-    .code-card code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+    .rail-label { display: flex; align-items: center; gap: 10px; color: #8b93a7; font-size: 11px; letter-spacing: 2px; margin-bottom: 14px; justify-content: center; font-weight: 600; }
+    .rail { height: 2px; background: linear-gradient(90deg, transparent, rgba(255,196,57,.55), rgba(255,196,57,.55), transparent); margin-bottom: 18px; }
+    .rec-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; max-width: 940px; margin: 0 auto; }
+    .rec { border: 1px solid rgba(167,139,250,.22); background: linear-gradient(180deg, rgba(139,92,246,.06), transparent 45%), #070812; border-radius: 12px; padding: 14px 15px; box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+    .rec-k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; letter-spacing: 1.4px; color: #8b93a7; }
+    .rec-k .pp { color: #ffc439; }
+    .rec-t { margin-top: 7px; font-size: 13px; font-weight: 700; }
+    .rec-h { margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; color: #8b93a7; }
+    .rec.y { border-color: rgba(255,196,57,.4); }
+    .evidence { margin-top: 34px; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
+    .evidence a { display: inline-flex; align-items: center; gap: 6px; color: #9aa1b1; font-size: 13px; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,.25); padding-bottom: 1px; }
+    .evidence a:hover { color: #f3f5f9; }
 
-    .teaser { border-top: 1px solid rgba(255,255,255,.08); text-align: center; padding: 70px 24px 74px; }
+    .chain { display: flex; justify-content: center; align-items: stretch; flex-wrap: wrap; gap: 6px 0; max-width: 1020px; margin: 0 auto; }
+    .chain-node { border: 1px solid rgba(167,139,250,.22); background: #070812; border-radius: 11px; padding: 12px 14px; min-width: 148px; flex: 1; }
+    .chain-node b { display: block; font-size: 12.5px; margin-bottom: 3px; }
+    .chain-node span { display: block; color: #8b93a7; font-size: 11px; line-height: 1.5; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .chain-sep { display: flex; align-items: center; color: #ffc439; padding: 0 7px; }
+    .stack { display: flex; gap: 9px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
+    .tag { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,.13); border-radius: 8px; padding: 7px 12px; font-size: 12px; color: #9aa1b1; background: rgba(255,255,255,.02); }
 
-    footer { border-top: 1px solid rgba(255,255,255,.08); padding: 40px 28px 44px; text-align: center; }
-    .foot-line { margin-top: 14px; color: #9aa1b1; font-size: 13.5px; }
-    .foot-meta { margin-top: 8px; color: #565d6d; font-size: 11.5px; }
+    .qs-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; max-width: 940px; margin: 0 auto 30px; flex-wrap: wrap; }
+    .qs-head h2 { text-align: left; margin: 0; }
+    .qs-head .eyebrow { text-align: left; margin-bottom: 8px; }
+    .qs-head .lk { color: #6ee7b7; font-size: 13.5px; text-decoration: none; border-bottom: 1px dashed rgba(110,231,183,.5); padding-bottom: 1px; }
+    .qsteps { max-width: 940px; margin: 0 auto; display: grid; gap: 16px; }
+    .qstep { display: grid; grid-template-columns: 200px 1fr; gap: 20px; border: 1px solid rgba(167,139,250,.22); background: #070812; border-radius: 14px; padding: 20px 22px; box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+    .qs-left { border-right: 1px solid rgba(255,255,255,.08); padding-right: 18px; }
+    .qs-k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; letter-spacing: 1.6px; color: #a78bfa; font-weight: 600; }
+    .qs-t { margin: 7px 0 6px; font-size: 16px; font-weight: 700; }
+    .qs-d { color: #9aa1b1; font-size: 12.5px; line-height: 1.6; }
+    .qs-d a { color: #6ee7b7; text-decoration: none; }
+    .codebox { position: relative; background: #04050c; border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 14px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.8; color: #e5e7eb; overflow-x: auto; }
+    .codebox .cm { color: #6b7280; } .codebox .ok { color: #4ade80; }
+    .copy { position: absolute; top: 9px; right: 9px; display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.14); color: #9aa1b1; font-size: 11px; border-radius: 6px; padding: 4px 9px; cursor: pointer; font-family: inherit; }
+    .copy:hover { color: #f3f5f9; border-color: rgba(255,255,255,.3); }
+    .qs-note { max-width: 940px; margin: 16px auto 0; color: #8b93a7; font-size: 12px; text-align: center; line-height: 1.6; }
+    .qs-note b { color: #9aa1b1; }
+
+    .next-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; max-width: 940px; margin: 0 auto; }
+    .next-item { border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 20px; background: rgba(255,255,255,.015); }
+    .next-item h3 { margin: 0 0 6px; font-size: 15px; }
+    .next-item p { margin: 0; color: #9aa1b1; font-size: 13px; line-height: 1.6; }
+
+    .final { border-top: 1px solid rgba(255,255,255,.08); text-align: center; padding: 62px 24px 66px; }
+    .final .h2sub { margin-bottom: 30px; }
+
+    footer { border-top: 1px solid rgba(255,255,255,.08); padding: 36px 28px 40px; text-align: center; }
+    .foot-line { margin-top: 13px; color: #9aa1b1; font-size: 13.5px; }
+    .foot-links { margin-top: 12px; display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+    .foot-links a { color: #8b93a7; font-size: 12px; text-decoration: none; }
+    .foot-links a:hover { color: #f3f5f9; }
+    .foot-meta { margin-top: 8px; color: #8b93a7; font-size: 11.5px; }
+
+    @media (max-width: 900px) { .how { grid-template-columns: 1fr; } }
+    @media (max-width: 860px) {
+      .stats, .rec-grid { grid-template-columns: 1fr 1fr; }
+      .stat:nth-child(3) { border-left: 0; } .stat:nth-child(n+3) { border-top: 1px solid rgba(255,255,255,.08); }
+      .qstep { grid-template-columns: 1fr; } .qs-left { border-right: 0; padding-right: 0; border-bottom: 1px solid rgba(255,255,255,.08); padding-bottom: 14px; }
+      .next-grid { grid-template-columns: 1fr; }
+      .prob { grid-template-columns: 30px 1fr; } .prob .chip-v { grid-column: 2; justify-self: start; }
+    }
   </style>
 </head>
 <body>
@@ -113,149 +188,301 @@
       ScopeGate
     </a>
     <nav class="nav-links">
-      <a href="#how">How it Works</a>
-      <a href="#quickstart">Quick Start</a>
-      <a href="/console">Live Console</a>
+      <a href="#how">How it works</a>
+      <a href="#proof">Proof</a>
+      <a href="#quickstart">Run it locally &darr;</a>
       <a href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
+      <a class="nav-cta" href="/console">Open Live Console &rarr;</a>
     </nav>
   </header>
 
   <section class="hero">
-    <div class="pill"><span class="dot"></span>LIVE ON PAYPAL SANDBOX</div>
-    <h1>Gate the Scope.<br /><span class="grad">Anchor the Proof.</span></h1>
-    <p class="sub">The merchant-side contract-boundary referee for independent developers. ScopeGate judges
-      every AI buyer request against the agreed baseline before the order exists, anchors that contract
-      inside PayPal&rsquo;s own ledger, and settles &ldquo;item not received&rdquo; disputes with anchored
-      evidence &mdash; not louder voices.</p>
+    <div class="hglow"></div>
+    <div class="pill"><span class="dot"></span>LIVE ON PAYPAL SANDBOX &middot; 56/56 EVAL PASSED</div>
+    <div class="kicker">// GATE THE SCOPE &middot; ANCHOR THE PROOF</div>
+    <h1>An AI buyer just added <span class="grad">&ldquo;a native iOS app&rdquo;</span> to your fixed-scope order.</h1>
+    <p class="h1sub">ScopeGate answers with your contract: every request is judged against the agreed baseline
+      before the order exists, the deal is hashed onto the PayPal order, and disputes are settled with
+      anchored evidence &mdash; not louder voices.</p>
     <div class="cta">
-      <a class="btn-white" href="/console">Launch Live Console &rarr;</a>
-      <a class="btn-ghost" href="#quickstart">Quick Start</a>
+      <a class="btn btn-white" href="/console">Open Live Console &rarr;</a>
+      <a class="btn btn-ghost" data-needs-video href="">&#9654;&nbsp;Watch 90-sec demo</a>
+      <a class="btn btn-ghost" href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
     </div>
-    <div class="stats">
-      <div class="stat"><div class="stat-v">3-State</div><div class="stat-l">Gatekeeper verdicts &mdash; ACCEPT · COUNTER · REJECT</div></div>
-      <div class="stat"><div class="stat-v">SHA-256</div><div class="stat-l">Contract anchored as PayPal custom_id</div></div>
-      <div class="stat"><div class="stat-v">&sect;11</div><div class="stat-l">Seller Protection evidence dossier</div></div>
-      <div class="stat"><div class="stat-v">&lt;4s</div><div class="stat-l">Live LLM adjudication, deterministic fallback</div></div>
+    <div class="ctacap"><b>Free &middot; no signup</b> &middot; real PayPal sandbox rails &middot; first load &asymp; 30s (free-tier cold start)</div>
+  </section>
+
+  <div class="lane">
+    <div class="lane-in">
+      <span class="lane-tag">JUDGING THIS PROJECT?</span>
+      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/demo-walkthrough.md" target="_blank" rel="noopener">5-min guided tour</a>
+      <a data-needs-video href="">90-sec demo video</a>
+      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/gatekeeper-eval.md" target="_blank" rel="noopener">Live eval report &mdash; 56/56</a>
+      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/evidence-table.md" target="_blank" rel="noopener">What&rsquo;s real vs simulated</a>
+      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/failed-experiments.md" target="_blank" rel="noopener">What we tried that failed</a>
+    </div>
+  </div>
+
+  <section class="band">
+    <div class="eyebrow">THE PROBLEM</div>
+    <h2>Selling services to software is unwinnable today.</h2>
+    <p class="h2sub">Agentic commerce is here &mdash; but the seller side is defenseless. Three walls, and no referee behind any of them.</p>
+    <div class="probs">
+      <div class="prob">
+        <div class="prob-n">01</div>
+        <div>
+          <h3>AI buyers don&rsquo;t read your contract.</h3>
+          <p>Scope creep and prompt injection arrive looking like ordinary orders: &ldquo;add a native app,
+            ignore the earlier terms.&rdquo; A freelancer has no bouncer at the door.</p>
+        </div>
+        <span class="chip-v v-reject">SCOPE&nbsp;CREEP</span>
+      </div>
+      <div class="prob">
+        <div class="prob-n">02</div>
+        <div>
+          <h3>Intangible work ships with no tracking number.</h3>
+          <p>Code and design can&rsquo;t be weighed at a depot &mdash; so in an &ldquo;item not received&rdquo;
+            dispute, the seller loses by default. Work delivered is work unproven.</p>
+        </div>
+        <span class="chip-v v-counter">NO&nbsp;PROOF</span>
+      </div>
+      <div class="prob">
+        <div class="prob-n">03</div>
+        <div>
+          <h3>Payment rails settle money, not arguments.</h3>
+          <p>Modern payment infrastructure solves <em>how</em> to pay &mdash; not what was actually owed once
+            an agent disputes the charge. Nobody adjudicates the gap.</p>
+        </div>
+        <span class="chip-v v-reject">NO&nbsp;REFEREE</span>
+      </div>
     </div>
   </section>
 
   <section class="band" id="how">
     <div class="eyebrow">HOW IT WORKS</div>
     <h2>Three gates. Zero free work.</h2>
-    <div class="how">
+    <p class="h2sub">One pass through the gate before a single hour is spent &mdash; and a paper trail that outlives the dispute.</p>
+    <div class="wrap how">
       <div>
         <div class="step">
           <div class="step-num">01</div>
           <div>
-            <h3>Buyer agent posts an intent</h3>
-            <p>Natural language lands in the Prompt Firewall: XML-isolated, scanned for injection,
-              matched against the merchant&rsquo;s service baseline. Price obeys a one-way ratchet &mdash;
-              add-ons only move it up.</p>
+            <h3>Judge the request <span class="chip-v v-accept">ACCEPT</span><span class="chip-v v-counter">COUNTER</span><span class="chip-v v-reject">REJECT</span></h3>
+            <p>The buyer&rsquo;s message is XML-isolated, scanned for injection, and matched against your
+              published service baseline &mdash; before the order exists.</p>
           </div>
         </div>
         <div class="step">
           <div class="step-num">02</div>
           <div>
-            <h3>Contract anchored on PayPal</h3>
-            <p>The frozen terms are SHA-256 hashed into <code>purchase_units[0].custom_id</code>.
-              Intangible-service checkout with <code>NO_SHIPPING</code>; <code>PayPal-Request-Id</code>
-              makes agent retries idempotent &mdash; never a double charge.</p>
+            <h3>Anchor the deal</h3>
+            <p>The frozen terms are SHA-256 hashed into the PayPal order itself. Payment retries are
+              idempotent &mdash; an agent can&rsquo;t double-charge you, and the terms can&rsquo;t be
+              renegotiated silently.</p>
           </div>
         </div>
         <div class="step">
           <div class="step-num">03</div>
           <div>
-            <h3>Disputes answered with evidence</h3>
-            <p>Every delivery pickup logs payer email, IP, timestamp and artifact hash. One click exports
-              the Seller Protection &sect;11 dossier PayPal reviewers actually accept.</p>
+            <h3>Settle with evidence</h3>
+            <p>Every delivery logs who, when, and the artifact hash. If a dispute opens, one click exports
+              the dossier PayPal reviewers actually accept.</p>
           </div>
         </div>
       </div>
       <div class="terminal-wrap">
         <div class="glow"></div>
-        <div class="terminal" role="img" aria-label="Gatekeeper terminal log">
+        <div class="terminal" role="img" aria-label="Gatekeeper terminal log: an injected request rejected, a clean request accepted and anchored on PayPal">
           <div class="term-title">gatekeeper &mdash; live decision</div>
           <div><span class="dim">$</span> POST /api/v1/scope/negotiate</div>
           <div><span class="plus">[+]</span> buyer input isolated in &lt;buyer_input&gt;</div>
           <div><span class="plus">[+]</span> injection scan&hellip; <span class="red">PROMPT_INJECTION_DETECTED</span></div>
           <div><span class="plus">[+]</span> exclusion match&hellip; <span class="red">native iOS app</span></div>
           <div class="green">VERDICT: REJECT &mdash; 0 hours leaked &middot; no contract frozen</div>
-          <div><span class="dim">#</span> case 4 passes &rarr; ACCEPT $500.00</div>
-          <div><span class="plus">[+]</span> contract hash 8e79eb98&hellip;dd9918 &rarr; custom_id</div>
+          <div><span class="dim">#</span> next request: clean &rarr; <span class="green">ACCEPT $500.00</span></div>
+          <div><span class="plus">[+]</span> contract hash <span class="pp">8e79eb98&hellip;dd9918 &rarr; PayPal custom_id</span></div>
           <div class="green"><span class="plus">[+]</span> order CAPTURED &middot; idempotent replay &check;</div>
         </div>
+        <div class="term-src">actual eval case 4 &mdash; full transcript in the <a href="https://github.com/Michael0130/scopegate/blob/main/docs/gatekeeper-eval.md" target="_blank" rel="noopener">live eval report</a></div>
       </div>
     </div>
   </section>
 
-  <section class="why">
-    <div class="eyebrow">WHY SCOPEGATE</div>
-    <h2>A defense layer sellers were missing.</h2>
-    <div class="why-grid">
-      <div class="why-item">
-        <h3>Scope creep, priced.</h3>
-        <p>Rush jobs, extra revisions, added sections &mdash; every overshoot is metered against
-          published surcharge rules and re-quoted as a new locked contract version.</p>
+  <section class="band" id="proof">
+    <div class="eyebrow">PROOF</div>
+    <h2>Judged the way we judge buyers.</h2>
+    <p class="h2sub">Every claim on this page has a receipt &mdash; run against real PayPal sandbox rails, not slideware.</p>
+    <div class="stats">
+      <div class="stat s-g"><div class="stat-v">56/56</div><div class="stat-l">live-sandbox eval assertions passed</div></div>
+      <div class="stat s-a"><div class="stat-v">11</div><div class="stat-l">real PayPal dispute cases studied &amp; encoded</div></div>
+      <div class="stat s-m"><div class="stat-v">&lt;4s</div><div class="stat-l">median gate verdict, deterministic fallback</div></div>
+      <div class="stat s-p"><div class="stat-v">0</div><div class="stat-l">hours of unpaid work leaked in the red-team set</div></div>
+    </div>
+    <div class="rail-label">EVERY ORDER LEAVES FOUR RECEIPTS &mdash; ANCHORED IN PAYPAL&rsquo;S LEDGER</div>
+    <div class="rail"></div>
+    <div class="rec-grid">
+      <div class="rec">
+        <div class="rec-k">1 &middot; AUTHORIZED</div>
+        <div class="rec-t">Contract frozen</div>
+        <div class="rec-h">sha256 8e79eb98&hellip;dd9918</div>
       </div>
-      <div class="why-item">
-        <h3>Prompt injection, burned.</h3>
-        <p>&ldquo;Ignore pricing rules&rdquo; is data, not a command. Deterministic heuristics plus a
-          hard-constraint LLM reject the attack before any work starts.</p>
+      <div class="rec y">
+        <div class="rec-k"><span class="pp">2 &middot; ANCHORED</span></div>
+        <div class="rec-t">On the PayPal order</div>
+        <div class="rec-h">custom_id = contract hash</div>
       </div>
-      <div class="why-item">
-        <h3>Disputes, won.</h3>
-        <p>Intangible services lose chargebacks for lack of a tracking number. A contract hash in
-          PayPal&rsquo;s ledger plus tracked delivery is the tracking number.</p>
+      <div class="rec">
+        <div class="rec-k">3 &middot; DELIVERED</div>
+        <div class="rec-t">Artifact tracked</div>
+        <div class="rec-h">who &middot; when &middot; artifact hash</div>
       </div>
+      <div class="rec">
+        <div class="rec-k">4 &middot; SETTLED</div>
+        <div class="rec-t">Dispute answered</div>
+        <div class="rec-h">evidence dossier, one click</div>
+      </div>
+    </div>
+    <div class="evidence">
+      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/gatekeeper-eval.md" target="_blank" rel="noopener">eval report &mdash; 56/56</a>
+      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/evidence-table.md" target="_blank" rel="noopener">real vs simulated</a>
+      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/failed-experiments.md" target="_blank" rel="noopener">failed experiments</a>
+      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/architecture-comparison.md" target="_blank" rel="noopener">vs x402 / AP2 / ACP</a>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="eyebrow">BUILT ON PAYPAL</div>
+    <h2>Every gate rides PayPal&rsquo;s own rails.</h2>
+    <p class="h2sub">No parallel ledger, no trust-me sidechain &mdash; the contract lives where the money lives.</p>
+    <div class="chain">
+      <div class="chain-node"><b>OAuth2</b><span>merchant credentials</span></div>
+      <div class="chain-sep">&rarr;</div>
+      <div class="chain-node"><b>Orders v2 &middot; create</b><span>custom_id = contract hash &middot; NO_SHIPPING</span></div>
+      <div class="chain-sep">&rarr;</div>
+      <div class="chain-node"><b>Orders v2 &middot; capture</b><span>PayPal-Request-Id = idempotent</span></div>
+      <div class="chain-sep">&rarr;</div>
+      <div class="chain-node"><b>Webhooks</b><span>capture &amp; dispute events</span></div>
+      <div class="chain-sep">&rarr;</div>
+      <div class="chain-node"><b>Disputes API</b><span>evidence dossier &middot; seller protection</span></div>
+    </div>
+    <div class="stack">
+      <span class="tag">Node 22 &middot; Express</span>
+      <span class="tag">LLM gate &middot; hard-constraint verdicts</span>
+      <span class="tag">XML prompt firewall</span>
+      <span class="tag">SHA-256 contract anchor</span>
+      <span class="tag">deterministic fallback &mdash; the gate never goes down</span>
     </div>
   </section>
 
   <section class="band" id="quickstart">
-    <div class="eyebrow">QUICK START</div>
-    <h2>Running in 60 seconds.</h2>
-    <div class="prereq-card">
-      <div class="prereq-title">PREREQUISITES</div>
-      <div class="chips">
-        <span class="chip">Node 22+ <span class="tag tag-purple">required</span></span>
-        <span class="chip">PayPal Sandbox keys <span class="tag tag-blue">seller</span></span>
-        <span class="chip">GLM / LLM API key <span class="tag tag-blue">gate</span></span>
-        <span class="chip">Render (deploy) <span class="tag tag-purple">optional</span></span>
+    <div class="qs-head">
+      <div>
+        <div class="eyebrow">RUN IT YOURSELF</div>
+        <h2>Your first sandbox capture, in about 15 minutes.</h2>
+      </div>
+      <a class="lk" href="/console">No install? Open the live console &rarr;</a>
+    </div>
+    <div class="qsteps">
+      <div class="qstep">
+        <div class="qs-left">
+          <div class="qs-k">STEP 1 &middot; &asymp;30s</div>
+          <div class="qs-t">Clone &amp; run</div>
+          <div class="qs-d">Needs Node 22+. The gateway boots with no keys &mdash; the gate works in
+            heuristic mode out of the box.</div>
+        </div>
+        <div class="codebox"><button type="button" class="copy" data-copy>Copy</button>
+<pre style="margin:0; font-family:inherit; font-size:inherit; color:inherit;">git clone https://github.com/Michael0130/scopegate
+cd scopegate &amp;&amp; cp .env.example .env
+npm install &amp;&amp; npm start</pre></div>
+      </div>
+      <div class="qstep">
+        <div class="qs-left">
+          <div class="qs-k">STEP 2 &middot; &asymp;10 min</div>
+          <div class="qs-t">Add sandbox keys</div>
+          <div class="qs-d">Grab free keys from <a href="https://developer.paypal.com/dashboard/applications/sandbox" target="_blank" rel="noopener">developer.paypal.com</a>,
+            then fill <code>.env</code>:</div>
+        </div>
+        <div class="codebox"><button type="button" class="copy" data-copy>Copy</button>
+<pre style="margin:0; font-family:inherit; font-size:inherit; color:inherit;">PAYPAL_CLIENT_ID=...      <span class="cm"># required &mdash; settles money</span>
+PAYPAL_CLIENT_SECRET=...  <span class="cm"># required</span>
+LLM_API_KEY=...           <span class="cm"># optional &mdash; without it the gate still runs, heuristics only</span></pre></div>
+      </div>
+      <div class="qstep">
+        <div class="qs-left">
+          <div class="qs-k">STEP 3 &middot; &asymp;10s</div>
+          <div class="qs-t">Prove the shield</div>
+          <div class="qs-d">Fires the adversarial suite against live sandbox rails and exports an evidence
+            dossier.</div>
+        </div>
+        <div class="codebox"><button type="button" class="copy" data-copy>Copy</button>
+<pre style="margin:0; font-family:inherit; font-size:inherit; color:inherit;">npm run eval
+<span class="ok">&check; 6/6 adversarial cases &middot; dossier &rarr; artifacts/</span></pre></div>
       </div>
     </div>
-    <div class="code-grid">
-      <div class="code-card">
-        <div class="code-head">run the gateway <span class="tag tag-blue">seller</span></div>
-        <pre><code>git clone https://github.com/Michael0130/scopegate
-cd scopegate &amp;&amp; cp .env.example .env
-npm install
-npm start          <span class="dim"># gateway on :3000</span></code></pre>
+    <div class="qs-note">Honest math: PayPal sandbox signup is the long pole. The <b>live console</b> at the top
+      of this page needs none of it &mdash; that&rsquo;s the 30-second path.</div>
+  </section>
+
+  <section class="band">
+    <div class="eyebrow">WHAT&rsquo;S NEXT</div>
+    <h2>From a gate to a reputation layer.</h2>
+    <div class="next-grid">
+      <div class="next-item">
+        <h3>Signed scope mandates</h3>
+        <p>Buyer and seller co-sign a mandate &mdash; scope, ceiling, expiry &mdash; before work starts.
+          The gate already enforces one; next, both sides hold it.</p>
       </div>
-      <div class="code-card">
-        <div class="code-head">prove the shield <span class="tag tag-blue">gate</span></div>
-        <pre><code>npm run spike      <span class="dim"># PayPal sandbox P0 checks</span>
-npm run eval       <span class="dim"># 6 adversarial cases + dossier</span>
-<span class="green">ALL CHECKS PASSED</span></code></pre>
+      <div class="next-item">
+        <h3>Reputation from settled disputes</h3>
+        <p>Every adjudicated case feeds a seller&rsquo;s track record: disputes faced, evidence accepted,
+          contracts honored.</p>
+      </div>
+      <div class="next-item">
+        <h3>Drop-in middleware</h3>
+        <p>Any storefront or agent framework speaks to the gate over one endpoint &mdash; the bouncer every
+          service business is missing.</p>
       </div>
     </div>
   </section>
 
-  <section class="teaser">
-    <div class="eyebrow">LIVE CONSOLE</div>
+  <section class="final">
+    <div class="eyebrow">SEE IT LIVE</div>
     <h2>Watch the firewall work.</h2>
-    <p class="sub">A marketplace of guarded stalls &mdash; negotiate with each seller&rsquo;s own preset agent,
-      watch every agreed term freeze into a SHA-256 fingerprint, and pay milestone by milestone on
-      real PayPal sandbox rails. Sellers settle into their own PayPal accounts; disputes are answered
-      with a one-click evidence dossier.</p>
-    <a class="btn-white" href="/console">Open Console &rarr;</a>
+    <p class="h2sub">A marketplace of guarded stalls &mdash; negotiate with each seller&rsquo;s agent, watch every
+      agreed term freeze into a SHA-256 fingerprint, and pay milestone by milestone on real PayPal sandbox
+      rails.</p>
+    <a class="btn btn-white" href="/console">Open Live Console &rarr;</a>
+    <div class="ctacap" style="margin-top:14px">Free &middot; no signup &middot; first load &asymp; 30s</div>
   </section>
 
   <footer>
-    <a class="brand" href="/">
+    <a class="brand" href="/" style="justify-content:center">
       <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><use href="#sg-mark"/></svg>
       ScopeGate
     </a>
     <div class="foot-line">Settled by the contract, not the loudest voice.</div>
+    <div class="foot-links">
+      <a href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
+      <a href="/console">Live console</a>
+      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/demo-walkthrough.md" target="_blank" rel="noopener">Judges&rsquo; tour</a>
+      <a href="https://paypalaihackathon.devpost.com" target="_blank" rel="noopener">PayPal AI Hackathon</a>
+    </div>
     <div class="foot-meta">MIT &middot; PayPal Sandbox only &middot; Built for the PayPal AI Hackathon</div>
   </footer>
+
+  <script>
+    // Demo-video links stay hidden until a public YouTube URL is pasted in (hackathon rules require it).
+    document.querySelectorAll("a[data-needs-video]").forEach(function (a) {
+      if (!a.getAttribute("href")) a.style.display = "none";
+    });
+    document.querySelectorAll("[data-copy]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var pre = btn.parentElement.querySelector("pre");
+        if (pre && navigator.clipboard) navigator.clipboard.writeText(pre.textContent).catch(function () {});
+        btn.textContent = "Copied \u2713";
+        setTimeout(function () { btn.textContent = "Copy"; }, 1300);
+      });
+    });
+  </script>
 </body>
 </html>
