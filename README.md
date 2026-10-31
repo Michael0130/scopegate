@@ -275,8 +275,10 @@ The full three-milestone live sandbox E2E run (real captures) is recorded in [do
 | Runtime | Node.js ≥ 22 (ESM) |
 | HTTP | Express 5 (the only runtime dependency) |
 | Payment rail | PayPal Orders v2 · Capture · Disputes · Webhooks |
+| AI adjudicator | GLM glm-5.3-flash (BigModel) — hard-constraint verdicts · deterministic fallback |
 | Evidence anchor | SHA-256 (contract hash · artifact fingerprint) |
 | Demo UI | Vanilla HTML/JS marketplace console (guarded stalls · seller dashboard) |
+| Hosting | Render (free tier · PayPal sandbox only) |
 
 ---
 

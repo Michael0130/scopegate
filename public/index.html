@@ -126,6 +126,17 @@
     .stack { display: flex; gap: 9px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
     .tag { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,.13); border-radius: 8px; padding: 7px 12px; font-size: 12px; color: #9aa1b1; background: rgba(255,255,255,.02); }
 
+    .tools { max-width: 940px; margin: 0 auto; }
+    .tool { display: grid; grid-template-columns: 176px 1fr; gap: 18px; padding: 16px 8px; border-top: 1px solid rgba(255,255,255,.08); align-items: start; }
+    .tool:first-child { border-top: 0; }
+    .tool .chip-v { justify-self: start; margin-top: 3px; white-space: nowrap; }
+    .tool h3 { margin: 0 0 5px; font-size: 15.5px; }
+    .tool p { margin: 0; color: #9aa1b1; font-size: 13.5px; line-height: 1.65; }
+    .v-purple { color: #c4b5fd; background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.4); }
+    .v-mint { color: #6ee7b7; background: rgba(110,231,183,.12); border: 1px solid rgba(110,231,183,.4); }
+    .v-blue { color: #93c5fd; background: rgba(59,130,246,.14); border: 1px solid rgba(59,130,246,.4); }
+    .v-slate { color: #c7ccd8; background: rgba(199,204,216,.1); border: 1px solid rgba(199,204,216,.35); }
+
     .qs-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; max-width: 940px; margin: 0 auto 30px; flex-wrap: wrap; }
     .qs-head h2 { text-align: left; margin: 0; }
     .qs-head .eyebrow { text-align: left; margin-bottom: 8px; }
@@ -365,12 +376,63 @@
       <div class="chain-sep">&rarr;</div>
       <div class="chain-node"><b>Disputes API</b><span>evidence dossier &middot; seller protection</span></div>
     </div>
-    <div class="stack">
-      <span class="tag">Node 22 &middot; Express</span>
-      <span class="tag">LLM gate &middot; hard-constraint verdicts</span>
-      <span class="tag">XML prompt firewall</span>
-      <span class="tag">SHA-256 contract anchor</span>
-      <span class="tag">deterministic fallback &mdash; the gate never goes down</span>
+  </section>
+
+  <section class="band">
+    <div class="eyebrow">BUILT WITH</div>
+    <h2>Every tool, and exactly where it works.</h2>
+    <p class="h2sub">Nothing hidden &mdash; what this project runs on, and where each piece sits.</p>
+    <div class="tools">
+      <div class="tool">
+        <span class="chip-v v-accept">PAY &middot; DISPUTES</span>
+        <div>
+          <h3>PayPal Orders v2 &middot; Webhooks &middot; Disputes API</h3>
+          <p>The money and the ledger: the contract hash is frozen into <code>custom_id</code> at
+            create/capture, signature-verified webhooks drive order state, and the Disputes API
+            receives the evidence dossier.</p>
+        </div>
+      </div>
+      <div class="tool">
+        <span class="chip-v v-counter">THE GATE</span>
+        <div>
+          <h3>GLM glm-5.3-flash (BigModel)</h3>
+          <p>The AI adjudicator: free-form buyer requests are judged against the merchant&rsquo;s baseline
+            (ACCEPT / COUNTER / REJECT) under a hard-constraint prompt. If the model is slow or
+            unavailable, a deterministic fallback answers in its place &mdash; the gate never goes down.</p>
+        </div>
+      </div>
+      <div class="tool">
+        <span class="chip-v v-purple">THE ANCHOR</span>
+        <div>
+          <h3>SHA-256 (Node crypto)</h3>
+          <p>Freezes the agreed terms into the contract hash and fingerprints every delivered artifact
+            &mdash; the anchor every receipt and dispute answer points back to.</p>
+        </div>
+      </div>
+      <div class="tool">
+        <span class="chip-v v-blue">GATEWAY</span>
+        <div>
+          <h3>Node.js 22 + Express 5</h3>
+          <p>The whole gateway in one small process: every route, the XML prompt firewall, and the
+            idempotent payment flow. Express is the only runtime dependency.</p>
+        </div>
+      </div>
+      <div class="tool">
+        <span class="chip-v v-mint">CONSOLE</span>
+        <div>
+          <h3>Vanilla HTML / CSS / JS</h3>
+          <p>The marketplace console and seller dashboard. No framework, no build step &mdash; the same
+            files ship from the repo to your browser.</p>
+        </div>
+      </div>
+      <div class="tool">
+        <span class="chip-v v-slate">HOSTING</span>
+        <div>
+          <h3>Render</h3>
+          <p>Hosts the live gateway and the console you are looking at. Free tier, PayPal sandbox
+            only &mdash; no real money anywhere.</p>
+        </div>
+      </div>
     </div>
   </section>
 
