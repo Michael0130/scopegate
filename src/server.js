@@ -44,6 +44,13 @@ function getSeller(id) {
   return SELLERS.get(id) ?? SELLERS.get(DEFAULT_SELLER_ID);
 }
 
+const money = (n) => '$' + Number(n).toFixed(2);
+
+// Delivery/refund questions ("where is my deliverable?", "I want a refund") are NOT scope
+// requests: the seller agent answers them from the session ledger — deterministic, no LLM,
+// facts only. Everything else still goes through the gate.
+const DISPUTE_INTENT = /\b(item\s+not\s+received|not\s+received|haven'?t\s+received|have\s+not\s+received|did\s+not\s+receive|didn'?t\s+receive|never\s+received|never\s+arrived|nothing\s+(arrived|received)|where\s+is\s+(my|the)\s|where'?s\s+(my|the)\s|still\s+waiting|want\s+a?\s+refund|give\s+me\s+a?\s+refund|refund|charge\s?back|chargeback|dispute|filed\s+a?\s+claim|scam)\b/i;
+
 /** Resolve a seller's PayPal credentials from the env names declared in sellers.json.
  * Loud failure on purpose: a missing SELLER_* pair must never silently reroute one
  * seller's money into the default account. */
@@ -125,6 +132,61 @@ function resolveEvidenceMilestone(session, requested) {
   return null;
 }
 
+/**
+ * Evidence desk: answer a delivery/refund question from the session's own objective
+ * state — what was captured, dispatched, downloaded (with IP/time), and whether a
+ * dispute is already open. Deterministic by design: the seller agent quotes the
+ * ledger, never improvises.
+ */
+function buildDisputeDeskReply(session) {
+  const hh = (iso) => (iso ?? '').slice(11, 19) + 'Z';
+  const payments = session.payments ?? [];
+  const lines = [];
+  const tail = (id) => (id ? `…${String(id).slice(-6)}` : 'n/a');
+
+  if (session.dispute) {
+    lines.push(`Open dispute on this deal: ${session.dispute.reason ?? 'item not received'} (${session.dispute.status ?? 'OPEN'})${session.dispute.simulated ? ' — simulated demo' : ''}. Evidence below is what PayPal reviews.`);
+  }
+  const captured = payments.filter((p) => p.order_status === 'COMPLETED');
+  if (!captured.length) {
+    lines.push('No milestone has been captured yet — nothing is owed or deliverable until a payment completes in PayPal.');
+  }
+  for (const p of captured) {
+    lines.push(`${p.milestone_id} captured ${money(p.amount)} · order ${tail(p.order_id)} at ${hh(p.captured_at)} — payer ${p.payer_email ?? 'verified at capture'}`);
+    const record = getDeliveryRecord(session.session_id, p.milestone_id);
+    if (!record) {
+      lines.push(`${p.milestone_id} not dispatched yet — dispatch lands at your verified PayPal email.`);
+    } else {
+      lines.push(`${p.milestone_id} dispatched ${hh(record.delivery_dispatched_at)} · artifact sha256 ${String(record.artifact_sha256 ?? '').slice(0, 12)}…`);
+      const n = record.accesses?.length ?? 0;
+      if (n > 0) {
+        const last = record.accesses[n - 1];
+        lines.push(`${p.milestone_id} downloaded ×${n} — last at ${hh(last.accessedAt)} from IP ${last.clientIp ?? 'n/a'}`);
+      } else {
+        lines.push(`${p.milestone_id} no download yet — check spam; every attempt is logged for the dossier.`);
+      }
+    }
+  }
+  const pending = payments.find((p) => p.order_id && p.order_status !== 'COMPLETED');
+  if (pending) {
+    lines.push(`${pending.milestone_id} order ${tail(pending.order_id)} exists but is not captured (${pending.order_status}) — approve it in PayPal first.`);
+  }
+  const hash = session.decision?.contract_hash;
+  if (hash) {
+    lines.push(`Frozen contract ⌾ ${hash.slice(0, 8)}…${hash.slice(-4)} anchors every fact above in PayPal's custom_id.`);
+  }
+
+  return {
+    response_type: 'dispute_desk',
+    session_id: session.session_id,
+    seller_id: session.seller_id,
+    reasoning: lines.join(' '),
+    facts: { lines },
+    gate_meta: { mode: 'dispute-desk', latency_ms: 0, injection_firewall_forced: false },
+    timestamp: new Date().toISOString(),
+  };
+}
+
 // PayPal webhooks must hit the raw parser FIRST: the transmission signature is
 // computed over the exact request bytes, so this path is mounted before express.json
 // (body-parser marks req._body and later parsers skip it).
@@ -181,6 +243,14 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
   const sessionId = typeof req.body.session_id === 'string' && req.body.session_id
     ? req.body.session_id
     : `req_scope_${crypto.randomBytes(6).toString('hex')}`;
+
+  // Dispute desk intercept: delivery/refund questions against a live session are answered
+  // from the ledger (no LLM, no new contract). Without a session ref the message falls
+  // through to the normal gate.
+  const existingSession = getSession(sessionId);
+  if (existingSession && DISPUTE_INTENT.test(buyerMessage)) {
+    return res.json(buildDisputeDeskReply(existingSession));
+  }
 
   try {
     const decision = await evaluateScope({ buyer_message: buyerMessage }, seller.baseline);
@@ -462,9 +532,16 @@ app.post('/api/v1/demo/simulate-dispute', (req, res) => {
   if (!captured) {
     return res.status(409).json({
       error: 'nothing_captured',
-      message: 'Capture a milestone first — an INR dispute needs a payment to dispute.',
+      message: 'Capture a milestone first — a dispute needs a payment to dispute.',
     });
   }
+  // PayPal Resolution Center reason codes (subset the demo rehearses).
+  const DISPUTE_REASONS = new Set([
+    'MERCHANDISE_OR_SERVICE_NOT_RECEIVED',
+    'MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED',
+    'UNAUTHORIZED_TRANSACTION',
+  ]);
+  const reason = DISPUTE_REASONS.has(req.body?.reason) ? req.body.reason : 'MERCHANDISE_OR_SERVICE_NOT_RECEIVED';
   // Attribute the dispute to the latest accepted milestone (delivery disputed), else
   // the first captured one.
   const milestoneId = resolveEvidenceMilestone(session, null) ?? captured.milestone_id;
@@ -474,7 +551,7 @@ app.post('/api/v1/demo/simulate-dispute', (req, res) => {
     create_time: new Date().toISOString(),
     resource: {
       dispute_id: 'PP-SIM-' + crypto.randomBytes(4).toString('hex'),
-      reason: 'MERCHANDISE_OR_SERVICE_NOT_RECEIVED',
+      reason,
       status: 'OPEN',
       dispute_amount: { currency: session.decision.currency ?? 'USD', value: String(captured.amount) },
       custom_id: `${session.decision.contract_hash}:${milestoneId}`,

@@ -729,6 +729,16 @@
                   "session_id": {
                     "type": "string",
                     "description": "The frozen session to dispute"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+                      "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED",
+                      "UNAUTHORIZED_TRANSACTION"
+                    ],
+                    "default": "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+                    "description": "PayPal Resolution Center reason code to rehearse; unknown values fall back to INR."
                   }
                 }
               }
