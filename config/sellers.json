@@ -6,7 +6,8 @@
       "display_name": "Alex · Fullstack",
       "store_domain": "alex.dev",
       "store_tagline": "Bespoke front-end, fixed price. Every deal scoped, priced and fingerprinted before money moves.",
-      "concierge_blurb": "Bespoke Next.js landing pages from $500 — 3 responsive sections, Tailwind dark mode, deployed to Vercel. Rush 24h fits his rules at +$150.",
+      "concierge_blurb": "Bespoke Next.js landing pages from $500 — 3 responsive sections, Tailwind dark mode, deployed to Vercel.",
+      "agent_persona": "I'm Alex's scope clerk — I quote from the menu, never from mood. Ask for the standard build and I'll freeze it in one turn.",
       "keywords": ["landing", "page", "next", "nextjs", "react", "website", "web", "tailwind", "frontend", "hero", "responsive", "section"],
       "paypal": {
         "email": "sb-7qdxq53477312@business.example.com",
@@ -22,7 +23,8 @@
       "display_name": "Bella · Atelier",
       "store_domain": "bella.atelier",
       "store_tagline": "Brand & UI kits, scoped and frozen before a single pixel moves.",
-      "concierge_blurb": "Brand & UI kits from $800 — logo suite, color system, Figma components. Ask for 24h rush and her agent re-quotes at +$150, never below base.",
+      "concierge_blurb": "Brand & UI kits from $800 — logo suite, color system, Figma components. Quotes never fold below base.",
+      "agent_persona": "Atelier agent speaking. I price by the kit, not by the pixel-count debate — every quote traces to a rule on this page.",
       "keywords": ["brand", "logo", "design", "ui", "kit", "figma", "color", "identity", "style", "visual"],
       "paypal": {
         "email": "sb-a58tu53470508@business.example.com",
@@ -62,6 +64,7 @@
       "store_domain": "cj.integrates",
       "store_tagline": "Payment & API wiring with a receipt for every milestone.",
       "concierge_blurb": "Payment & API integrations from $650 — checkout + webhook wiring, reconciliation dashboard, sandbox test suite.",
+      "agent_persona": "Integration desk. I wire payments for a living — and my gate makes sure yours can't be renegotiated mid-wire.",
       "keywords": ["api", "integration", "payment", "stripe", "paypal", "webhook", "backend", "checkout", "reconciliation", "wiring"],
       "paypal": {
         "email": "sb-ybms953470497@business.example.com",

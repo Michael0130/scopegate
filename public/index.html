@@ -540,9 +540,16 @@ LLM_API_KEY=...           <span class="cm"># optional &mdash; without it the gat
     document.querySelectorAll("[data-copy]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var pre = btn.parentElement.querySelector("pre");
-        if (pre && navigator.clipboard) navigator.clipboard.writeText(pre.textContent).catch(function () {});
-        btn.textContent = "Copied \u2713";
-        setTimeout(function () { btn.textContent = "Copy"; }, 1300);
+        if (pre && navigator.clipboard) {
+          navigator.clipboard.writeText(pre.textContent).then(function () {
+            btn.textContent = "Copied \u2713";
+            setTimeout(function () { btn.textContent = "Copy"; }, 1300);
+          }).catch(function () {
+            // Clipboard denied — say so instead of faking success.
+            btn.textContent = "Copy blocked";
+            setTimeout(function () { btn.textContent = "Copy"; }, 1600);
+          });
+        }
       });
     });
   </script>

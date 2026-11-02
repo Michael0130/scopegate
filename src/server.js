@@ -160,6 +160,7 @@ app.get('/api/v1/sellers', (_req, res) => {
       store_domain: s.store_domain,
       store_tagline: s.store_tagline,
       concierge_blurb: s.concierge_blurb,
+      agent_persona: s.agent_persona,
       keywords: s.keywords,
       paypal_email: s.paypal.email,
       baseline: s.baseline,
@@ -447,6 +448,57 @@ app.post('/api/v1/disputes/:disputeId/provide-evidence', async (req, res) => {
     console.error('[provide-evidence]', err.message);
     res.status(502).json({ error: 'paypal_failure', message: err.message });
   }
+});
+
+// Demo dispute rehearsal: injects a clearly-marked SIMULATED CUSTOMER.DISPUTE.CREATED
+// event through the same matcher/state machine a real PayPal delivery uses, so the
+// dispute→dossier arc is demonstrable without a live Resolution Center filing. The
+// event is labelled `simulated` end-to-end (feed, session, responses) and is never
+// presented as signature-verified.
+app.post('/api/v1/demo/simulate-dispute', (req, res) => {
+  const session = getSession(req.body?.session_id);
+  if (!session) return res.status(404).json({ error: 'session_not_found' });
+  const captured = (session.payments ?? []).find((p) => p.order_status === 'COMPLETED');
+  if (!captured) {
+    return res.status(409).json({
+      error: 'nothing_captured',
+      message: 'Capture a milestone first — an INR dispute needs a payment to dispute.',
+    });
+  }
+  // Attribute the dispute to the latest accepted milestone (delivery disputed), else
+  // the first captured one.
+  const milestoneId = resolveEvidenceMilestone(session, null) ?? captured.milestone_id;
+  const event = {
+    id: 'SIM-' + crypto.randomBytes(6).toString('hex'),
+    event_type: 'CUSTOMER.DISPUTE.CREATED',
+    create_time: new Date().toISOString(),
+    resource: {
+      dispute_id: 'PP-SIM-' + crypto.randomBytes(4).toString('hex'),
+      reason: 'MERCHANDISE_OR_SERVICE_NOT_RECEIVED',
+      status: 'OPEN',
+      dispute_amount: { currency: session.decision.currency ?? 'USD', value: String(captured.amount) },
+      custom_id: `${session.decision.contract_hash}:${milestoneId}`,
+    },
+  };
+  const matched = applyWebhookEvent(event);
+  session.dispute = { ...session.dispute, simulated: true };
+  webhookEvents.unshift({
+    id: event.id,
+    event_type: event.event_type,
+    create_time: event.create_time,
+    verified: false,
+    simulated: true,
+    matched_session: matched?.session_id ?? null,
+    matched_milestone: matched?.milestone_id ?? null,
+    resource_summary: {
+      id: event.resource.dispute_id,
+      amount: event.resource.dispute_amount.value,
+      reason: event.resource.reason,
+    },
+    received_at: new Date().toISOString(),
+  });
+  webhookEvents.length = Math.min(webhookEvents.length, WEBHOOK_EVENT_LIMIT);
+  res.json({ session_id: session.session_id, dispute: session.dispute, simulated: true });
 });
 
 // ---------------------------------------------------------------------------
