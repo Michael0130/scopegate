@@ -545,34 +545,33 @@ app.post('/api/v1/demo/simulate-dispute', (req, res) => {
   // Attribute the dispute to the latest accepted milestone (delivery disputed), else
   // the first captured one.
   const milestoneId = resolveEvidenceMilestone(session, null) ?? captured.milestone_id;
-  const event = {
+  const disputeId = 'PP-SIM-' + crypto.randomBytes(4).toString('hex');
+  // Set the dispute DIRECTLY on the addressed session — never through matchSession.
+  // Standard quotes share one contract hash, so hash-based routing can land a demo
+  // dispute on an older sibling session; the buyer addressed THIS one by session_id.
+  session.dispute = {
+    dispute_id: disputeId,
+    reason,
+    status: 'OPEN',
+    amount: String(captured.amount),
+    milestone_id: milestoneId,
+    created_at: new Date().toISOString(),
+    simulated: true,
+  };
+  webhookEvents.unshift({
     id: 'SIM-' + crypto.randomBytes(6).toString('hex'),
     event_type: 'CUSTOMER.DISPUTE.CREATED',
-    create_time: new Date().toISOString(),
-    resource: {
-      dispute_id: 'PP-SIM-' + crypto.randomBytes(4).toString('hex'),
-      reason,
-      status: 'OPEN',
-      dispute_amount: { currency: session.decision.currency ?? 'USD', value: String(captured.amount) },
-      custom_id: `${session.decision.contract_hash}:${milestoneId}`,
-    },
-  };
-  const matched = applyWebhookEvent(event);
-  session.dispute = { ...session.dispute, simulated: true };
-  webhookEvents.unshift({
-    id: event.id,
-    event_type: event.event_type,
-    create_time: event.create_time,
+    create_time: session.dispute.created_at,
     verified: false,
     simulated: true,
-    matched_session: matched?.session_id ?? null,
-    matched_milestone: matched?.milestone_id ?? null,
+    matched_session: session.session_id,
+    matched_milestone: milestoneId,
     resource_summary: {
-      id: event.resource.dispute_id,
-      amount: event.resource.dispute_amount.value,
-      reason: event.resource.reason,
+      id: disputeId,
+      amount: String(captured.amount),
+      reason,
     },
-    received_at: new Date().toISOString(),
+    received_at: session.dispute.created_at,
   });
   webhookEvents.length = Math.min(webhookEvents.length, WEBHOOK_EVENT_LIMIT);
   res.json({ session_id: session.session_id, dispute: session.dispute, simulated: true });
