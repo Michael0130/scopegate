@@ -318,13 +318,18 @@ function renderShopDeal() {
         <a class="link" style="display:inline-block;margin-top:5px" href="/api/v1/sessions/${encodeURIComponent(session.session_id)}/dossier" target="_blank" rel="noopener">Answer with the dossier &nearr;</a>
       </div>`
     : '';
-  // The buyer's dispute entry point — mirrors PayPal's Resolution Center reasons.
+  // The buyer's dispute entry point. PayPal IS the third-party referee: the real path
+  // opens PayPal's Resolution Center, where a filing fires a real, signature-verified
+  // CUSTOMER.DISPUTE.CREATED webhook into this dashboard. The simulated chips only exist
+  // so the demo can rehearse the arc without leaving the page — always marked simulated.
   const canDispute = (session.payments ?? []).some((p) => p.order_status === 'COMPLETED') && !session.dispute;
   const disputeRow = session.dispute ? '' : `
     <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(0,0,0,.06)">
-      <div class="sub" style="font-size:12px">Something wrong? Raise it like PayPal would &mdash; the dossier answers:</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">
-        ${[['MERCHANDISE_OR_SERVICE_NOT_RECEIVED', 'Item not received'], ['MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED', 'Not as described'], ['UNAUTHORIZED_TRANSACTION', 'Unauthorized payment']]
+      <div style="font-size:13px">Something wrong? <b>PayPal is the referee</b> &mdash; file it there and the case lands here with a signed webhook:</div>
+      <a class="pay" style="text-decoration:none;margin-top:8px" href="https://www.sandbox.paypal.com/disputes" target="_blank" rel="noopener">Open PayPal Resolution Center &nearr;</a>
+      <div class="sub" style="font-size:11.5px;margin-top:9px">Demo shortcut &mdash; rehearses the same webhook state machine here, marked <b>simulated</b>${canDispute ? ':' : ' (unlocks after the first milestone is captured):'}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        ${[['MERCHANDISE_OR_SERVICE_NOT_RECEIVED', 'Simulate: item not received'], ['MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED', 'Simulate: not as described'], ['UNAUTHORIZED_TRANSACTION', 'Simulate: unauthorized payment']]
           .map(([code, label]) => `<button type="button" class="chip" data-dispute="${code}" ${canDispute ? '' : 'disabled title="Unlocks after the first milestone is captured"'}>${esc(label)}</button>`).join('')}
       </div>
     </div>`;
