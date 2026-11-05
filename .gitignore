@@ -6,12 +6,13 @@ node_modules/
 npm-debug.log*
 logs/
 
-# Local working notes — private, never published
-ScopeGate_Master_Spec.md
-docs/architecture-comparison.zh.md
-scripts/keep-warm.sh
+# Private internal docs & rules — only English README.md is committed
+AGENTS.md
 README.zh-CN.md
 *.zh-CN.md
+docs/
+ScopeGate_Master_Spec.md
+scripts/keep-warm.sh
 
 # AI assistant working files
 .zcode/
