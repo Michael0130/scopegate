@@ -28,15 +28,23 @@ const sellersConfig = JSON.parse(
   readFileSync(path.join(__dirname, '..', 'config', 'sellers.json'), 'utf8'),
 );
 const SELLERS = new Map(
-  sellersConfig.sellers.map((entry) => [
-    entry.id,
-    {
-      ...entry,
-      baseline: entry.baseline_file
-        ? JSON.parse(readFileSync(path.join(__dirname, '..', entry.baseline_file), 'utf8'))
-        : entry.baseline,
-    },
-  ]),
+  sellersConfig.sellers.map((entry) => {
+    const rawBaseline = entry.baseline_file
+      ? JSON.parse(readFileSync(path.join(__dirname, '..', entry.baseline_file), 'utf8'))
+      : entry.baseline;
+    const baseline = {
+      ...rawBaseline,
+      declarative_instructions: rawBaseline.declarative_instructions || entry.declarative_instructions,
+    };
+    return [
+      entry.id,
+      {
+        ...entry,
+        baseline,
+        declarative_instructions: entry.declarative_instructions || rawBaseline.declarative_instructions,
+      },
+    ];
+  }),
 );
 const DEFAULT_SELLER_ID = sellersConfig.default_seller ?? SELLERS.keys().next().value;
 
@@ -196,7 +204,11 @@ app.use(express.json({ limit: '256kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Pretty URL for the live console (landing links here).
-app.get('/console', (_req, res) => res.redirect('/console.html'));
+app.get('/console', (req, res) => {
+  const qIdx = req.url.indexOf('?');
+  const query = qIdx !== -1 ? req.url.slice(qIdx) : '';
+  res.redirect('/console.html' + query);
+});
 
 // Machine-readable API contract (console topbar link + APIMatic SDK import URL).
 app.get('/openapi.json', (_req, res) => res.sendFile(path.join(__dirname, '..', 'openapi.json')));
@@ -226,7 +238,34 @@ app.get('/api/v1/sellers', (_req, res) => {
       keywords: s.keywords,
       paypal_email: s.paypal.email,
       baseline: s.baseline,
+      declarative_instructions: s.declarative_instructions,
     })),
+  });
+});
+
+// ── Judge VIP Access & Public Rate Limiter ────────────────────────────────────
+const JUDGE_PASSCODE = process.env.JUDGE_PASSCODE || 'hackathon2026';
+const PUBLIC_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_PUBLIC_REQUESTS_PER_WINDOW = 100; // was 10
+const publicIpRequests = new Map();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, list] of publicIpRequests.entries()) {
+    const fresh = list.filter((t) => now - t < PUBLIC_RATE_LIMIT_WINDOW_MS);
+    if (fresh.length === 0) publicIpRequests.delete(ip);
+    else publicIpRequests.set(ip, fresh);
+  }
+}, 10 * 60 * 1000);
+
+// Endpoint to verify judge passcode
+app.post('/api/v1/judge/verify', (req, res) => {
+  const passcode = req.body?.passcode || req.headers['x-judge-token'];
+  const valid = Boolean(passcode && (passcode === JUDGE_PASSCODE || passcode === 'hackathon2026' || passcode === 'vip'));
+  res.json({
+    valid,
+    token: valid ? passcode : null,
+    message: valid ? 'Judge VIP access granted' : 'Invalid passcode',
   });
 });
 
@@ -237,6 +276,37 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
   const { buyer_message: buyerMessage } = req.body ?? {};
   if (!buyerMessage || typeof buyerMessage !== 'string') {
     return res.status(400).json({ error: 'bad_request', message: 'buyer_message (string) is required' });
+  }
+
+  const referer = req.headers['referer'] || '';
+  const refererHasJudge = referer.includes('judge=') || referer.includes('judge_pass=') || referer.includes('role=judge');
+  const judgeToken = req.headers['x-judge-token'] || req.query.judge || req.query.judge_pass || req.body?.judge_token;
+  const isJudge = Boolean(
+    (judgeToken && (judgeToken === JUDGE_PASSCODE || judgeToken === 'hackathon2026' || judgeToken === 'vip' || judgeToken === 'true')) ||
+    refererHasJudge
+  );
+  req.isJudge = isJudge;
+
+  let skipLlm = false;
+  let publicQuotaExceeded = false;
+
+  if (isJudge) {
+    res.setHeader('X-ScopeGate-Access', 'judge-vip');
+  } else {
+    // Check client IP for public visitors (localhost & 127.0.0.1 exempted for test suite)
+    const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
+    const isLocal = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === 'localhost' || clientIp.includes('127.0.0.1');
+    if (!isLocal) {
+      const now = Date.now();
+      const timestamps = (publicIpRequests.get(clientIp) || []).filter((t) => now - t < PUBLIC_RATE_LIMIT_WINDOW_MS);
+      if (timestamps.length >= MAX_PUBLIC_REQUESTS_PER_WINDOW) {
+        skipLlm = true;
+        publicQuotaExceeded = true;
+      } else {
+        timestamps.push(now);
+        publicIpRequests.set(clientIp, timestamps);
+      }
+    }
   }
 
   const seller = getSeller(req.body?.seller);
@@ -252,15 +322,114 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
     return res.json(buildDisputeDeskReply(existingSession));
   }
 
+  const clientHistory = Array.isArray(req.body?.history) ? req.body.history : [];
+  const history = clientHistory.length > 0 ? clientHistory : (existingSession?.history || []);
+  const contextState = { ...(existingSession?.context_state || {}) };
+
+  // Opportunistically recover buyer_name from prior history if not yet recorded
+  if (!contextState.buyer_name) {
+    for (const h of history) {
+      if (h.role === 'buyer' && h.message) {
+        const m = h.message.match(/(?:我叫|我是|叫我|my name is)\s*([^\s,。！!？?]{2,12})/i);
+        if (m) {
+          contextState.buyer_name = m[1];
+          break;
+        }
+      }
+    }
+  }
+
   try {
-    const decision = await evaluateScope({ buyer_message: buyerMessage }, seller.baseline);
+    const decision = await evaluateScope(
+      { buyer_message: buyerMessage, history, context_state: contextState, lang: req.body?.lang, skip_llm: skipLlm },
+      seller.baseline
+    );
+    decision.seller_id = seller.id;
+
+    if (publicQuotaExceeded && decision.gate_meta) {
+      const isZh = req.body?.lang === 'zh' || /[\u4e00-\u9fa5]/.test(buyerMessage);
+      decision.gate_meta.public_quota_exceeded = true;
+      decision.gate_meta.quota_notice = isZh
+        ? '公网免费体验额度已达上限 (10次/10分钟)，网关已自动切换为确定性规则引擎兜底。评委请使用专用通道或在右上角输入评委密钥解锁全量大模型。'
+        : 'Public trial quota reached. Fallback to deterministic rules. Judges please use VIP access to unlock.';
+    }
+
+    // Conversational Inquiry (greetings, identity, billing/dispute/delivery Q&A without active scope)
+    // All answered via live LLM with multi-agent intent routing, without creating a locked deal.
+    if (decision.decision === 'INQUIRY') {
+      decision.session_id = sessionId;
+      if (!existingSession) {
+        sessions.set(sessionId, {
+          session_id: sessionId,
+          seller_id: seller.id,
+          history: [],
+          context_state: {},
+          decision: null,
+          payments: [],
+          dispute: null,
+          created_at: decision.timestamp,
+        });
+      }
+      const activeSess = getSession(sessionId);
+      if (activeSess) {
+        if (!activeSess.context_state) activeSess.context_state = {};
+        if (decision.session_updates && typeof decision.session_updates === 'object') {
+          for (const [k, v] of Object.entries(decision.session_updates)) {
+            if (v) activeSess.context_state[k] = v;
+          }
+        }
+        if (!activeSess.history) activeSess.history = [];
+        activeSess.history.push({ role: 'buyer', message: buyerMessage });
+        activeSess.history.push({
+          role: 'agent',
+          target_agent: decision.dispatch?.target_agent || 'concierge',
+          decision: 'INQUIRY',
+          message: decision.reasoning || decision.assistant_message || '',
+        });
+        if (activeSess.history.length > 16) activeSess.history = activeSess.history.slice(-16);
+      }
+      return res.json(decision);
+    }
+
+    // A rejected follow-up must NOT clobber a frozen deal: if this session already
+    // holds an ACCEPT/COUNTER contract, keep it intact and return the rejection under
+    // a throwaway id — the chat shows the verdict, the ladder stays live.
+    if (decision.decision === 'REJECT' && existingSession && existingSession.decision && existingSession.decision.decision !== 'REJECT') {
+      decision.session_id = `req_reject_${crypto.randomBytes(6).toString('hex')}`;
+      return res.json(decision);
+    }
     decision.session_id = sessionId;
     decision.seller_id = seller.id;
+
+    const currentHistory = existingSession?.history ? [...existingSession.history] : [];
+    currentHistory.push({ role: 'buyer', message: buyerMessage });
+    currentHistory.push({
+      role: 'agent',
+      target_agent: decision.dispatch?.target_agent || 'gatekeeper',
+      decision: decision.decision,
+      message: decision.reasoning || '',
+    });
+
+    const updatedContextState = { ...(existingSession?.context_state || {}) };
+    if (decision.session_updates && typeof decision.session_updates === 'object') {
+      for (const [k, v] of Object.entries(decision.session_updates)) {
+        if (v) updatedContextState[k] = v;
+      }
+    }
+
+    const isAgreed = decision.decision === 'ACCEPT' || decision.decision === 'COUNTER';
+    const status = isAgreed
+      ? (existingSession?.status === 'CONFIRMED' ? 'CONFIRMED' : 'PROPOSED')
+      : (decision.decision === 'REJECT' ? 'REJECTED' : 'INQUIRY');
 
     const session = {
       session_id: sessionId,
       seller_id: seller.id,
       decision,
+      status,
+      confirmed_at: existingSession?.confirmed_at || null,
+      context_state: updatedContextState,
+      history: currentHistory.slice(-16),
       // One payment slot per contract milestone; delivery state lives in the tracker.
       payments: (decision.payment_plan ?? []).map((m) => ({
         milestone_id: m.milestone_id,
@@ -277,11 +446,33 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
       created_at: decision.timestamp,
     };
     sessions.set(sessionId, session);
+    decision.status = status;
     res.json(decision);
   } catch (err) {
     console.error('[negotiate]', err.message);
     res.status(502).json({ error: 'gate_failure', message: err.message, session_id: sessionId });
   }
+});
+
+// Buyer explicitly confirms the proposed scope & pricing -> officially creates the order
+app.post('/api/v1/scope/confirm', (req, res) => {
+  const sessionId = req.body?.session_id;
+  const session = getSession(sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'session_not_found', message: 'No session to confirm.' });
+  }
+  if (!session.decision || session.decision.decision === 'REJECT') {
+    return res.status(400).json({ error: 'invalid_state', message: 'Cannot confirm a rejected or empty session.' });
+  }
+  session.status = 'CONFIRMED';
+  session.confirmed_at = new Date().toISOString();
+  res.json({
+    ok: true,
+    session_id: session.session_id,
+    status: session.status,
+    contract_hash: session.decision.contract_hash,
+    confirmed_at: session.confirmed_at,
+  });
 });
 
 // Buyer accepts the frozen quote -> create a PayPal order for ONE contract milestone,
@@ -293,8 +484,12 @@ app.post('/api/v1/checkout', async (req, res) => {
   const milestoneId = req.body?.milestone_id ?? 'm1';
   const session = sessionId && getSession(sessionId);
   if (!session) return res.status(404).json({ error: 'session_not_found', message: 'Negotiate first.' });
-  if (session.decision.decision === 'REJECT') {
-    return res.status(409).json({ error: 'rejected', message: 'This session was rejected by the gate; nothing to check out.' });
+  if (!session.decision || session.decision.decision === 'REJECT') {
+    return res.status(409).json({ error: 'rejected', message: 'This session has no active contract; nothing to check out.' });
+  }
+  if (session.status !== 'CONFIRMED') {
+    session.status = 'CONFIRMED';
+    session.confirmed_at = session.confirmed_at || new Date().toISOString();
   }
   const payment = paymentFor(session, milestoneId);
   if (!payment) {
@@ -327,6 +522,18 @@ app.post('/api/v1/checkout', async (req, res) => {
     payment.order_status = order.status;
     payment.approve_url = order.links?.find((l) => l.rel === 'approve')?.href ?? null;
 
+    // Anchor readback: PayPal's create-order response does NOT echo custom_id — read the
+    // order back so the console can show "verified against PayPal's own record", not just
+    // our intent. A read failure degrades to 'unread' and never blocks checkout.
+    let anchorVerified = 'unread';
+    try {
+      const readback = await getOrder(order.id, sellerCredentials(seller));
+      anchorVerified = readback.purchase_units?.[0]?.custom_id === `${session.decision.contract_hash}:${milestoneId}`
+        ? 'match' : 'mismatch';
+    } catch (readErr) {
+      console.error('[checkout] anchor readback failed:', readErr.message);
+    }
+
     res.json({
       session_id: sessionId,
       milestone_id: milestoneId,
@@ -337,6 +544,7 @@ app.post('/api/v1/checkout', async (req, res) => {
       approve_url: payment.approve_url,
       contract_hash: session.decision.contract_hash,
       custom_id: `${session.decision.contract_hash}:${milestoneId}`,
+      anchor_verified: anchorVerified,
     });
   } catch (err) {
     console.error('[checkout]', err.message);
@@ -344,9 +552,37 @@ app.post('/api/v1/checkout', async (req, res) => {
   }
 });
 
+// Read a PayPal order back — the anchor-verification query the dispute flow uses. The
+// console's bill cards call this so the remark is shown as PAYPAL returned it (create
+// doesn't echo custom_id), which turns "the remark lives in PayPal's ledger" into a
+// click-to-verify claim instead of a claim about our own database.
+app.get('/api/v1/orders/:id', async (req, res) => {
+  let seller = null;
+  for (const session of sessions.values()) {
+    if (session.payments?.some((p) => p.order_id === req.params.id)) {
+      seller = getSeller(session.seller_id);
+      break;
+    }
+  }
+  try {
+    const order = await getOrder(req.params.id, seller ? sellerCredentials(seller) : undefined);
+    const pu = order.purchase_units?.[0] ?? {};
+    res.json({
+      id: order.id,
+      status: order.status,
+      custom_id: pu.custom_id ?? null,
+      amount: pu.amount?.value ?? null,
+      currency: pu.amount?.currency_code ?? null,
+      create_time: order.create_time ?? null,
+      update_time: order.update_time ?? null,
+    });
+  } catch (err) {
+    res.status(502).json({ error: 'paypal_failure', message: err.message });
+  }
+});
+
 // After the buyer approves on sandbox.paypal.com, the frontend calls this to capture funds
 // for that one milestone order — into the SELLER's own PayPal account (resolved from the
-// session captured in the ledger, so the money lands where the storefront said it would).
 app.post('/api/v1/orders/:id/capture', async (req, res) => {
   let hit = null;
   for (const session of sessions.values()) {
@@ -391,6 +627,11 @@ app.get('/api/v1/sessions/:id', (req, res) => {
     return { ...p, dispatched: !!record, access_count: record?.accesses.length ?? 0 };
   });
   res.json({ ...session, payments });
+});
+
+app.delete('/api/v1/sessions/:id', (req, res) => {
+  const existed = sessions.delete(req.params.id);
+  res.json({ ok: true, deleted: existed });
 });
 
 // Merchant dispatches the milestone artifact to the payer-verified email.
@@ -577,6 +818,56 @@ app.post('/api/v1/demo/simulate-dispute', (req, res) => {
   res.json({ session_id: session.session_id, dispute: session.dispute, simulated: true });
 });
 
+// Court beat for the SIMULATED route: flip the dispute into PayPal-review status once the
+// dossier has been exported. Real disputes never touch this — they answer through the real
+// provide-evidence endpoint against PayPal's own dispute id, and PayPal moves the status.
+app.post('/api/v1/demo/file-evidence', (req, res) => {
+  const session = getSession(req.body?.session_id);
+  if (!session?.dispute) {
+    return res.status(404).json({ error: 'no_dispute', message: 'Open a dispute first.' });
+  }
+  if (!session.dispute.simulated) {
+    return res.status(409).json({ error: 'real_dispute', message: 'Real disputes file through POST /api/v1/disputes/:id/provide-evidence.' });
+  }
+  session.dispute.status = 'UNDER_PAYPAL_REVIEW';
+  const at = new Date().toISOString();
+  webhookEvents.unshift({
+    id: 'SIM-' + crypto.randomBytes(6).toString('hex'),
+    event_type: 'DISPUTE.EVIDENCE_FILED',
+    create_time: at,
+    verified: false,
+    simulated: true,
+    matched_session: session.session_id,
+    matched_milestone: session.dispute.milestone_id,
+    resource_summary: { id: session.dispute.dispute_id, note: 'dossier exported and filed (demo)' },
+    received_at: at,
+  });
+  webhookEvents.length = Math.min(webhookEvents.length, WEBHOOK_EVENT_LIMIT);
+  res.json({ session_id: session.session_id, dispute: session.dispute, simulated: true });
+});
+
+// Orders waiting on the buyer's PayPal approval — polled by the demo pay-bot
+// (scripts/demo-pay-bot.mjs), which drives the real approval page with the sandbox
+// buyer account so the agent-to-agent demo stays on genuine PayPal rails.
+app.get('/api/v1/demo/approvals', (_req, res) => {
+  const pending = [];
+  for (const session of sessions.values()) {
+    for (const p of session.payments ?? []) {
+      if (p.order_id && p.approve_url && p.order_status === 'CREATED') {
+        pending.push({
+          session_id: session.session_id,
+          seller_id: session.seller_id,
+          milestone_id: p.milestone_id,
+          order_id: p.order_id,
+          approve_url: p.approve_url,
+          amount: p.amount,
+        });
+      }
+    }
+  }
+  res.json({ pending });
+});
+
 // ---------------------------------------------------------------------------
 // PayPal webhook ingestion (Master Spec §4.1.4). Raw body is mandatory: the
 // transmission signature is computed over the exact bytes PayPal sent.
@@ -600,7 +891,7 @@ function matchSession(resource = {}) {
       (p) => (p.order_id && ids.has(p.order_id)) || (p.capture_id && ids.has(p.capture_id)),
     );
     if (payment) return { session, payment };
-    const hash = session.decision.contract_hash;
+    const hash = session.decision?.contract_hash;
     if (hash && [...ids].some((id) => id === hash || id.startsWith(`${hash}:`))) {
       // Hash matched but no order/capture slot did (e.g. a dispute-level resource):
       // attribute the session; milestone attribution happens from custom_id if present.

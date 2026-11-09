@@ -6,8 +6,8 @@
   "private": true,
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
+    "start": "node --env-file=.env src/server.js",
+    "dev": "node --env-file=.env --watch src/server.js",
     "spike": "node spikes/test-paypal-order.js",
     "eval": "node test/run-eval.mjs"
   },

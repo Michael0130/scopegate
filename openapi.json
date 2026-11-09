@@ -3,7 +3,7 @@
   "info": {
     "title": "ScopeGate Merchant Gateway API",
     "description": "Merchant-side admission gateway for agentic commerce. Adjudicates buyer-agent requests against the merchant service baseline, anchors agreed terms on PayPal orders via a SHA-256 contract hash, and assembles Seller Protection Intangible-Goods dossiers with delivery proof.",
-    "version": "0.6.0"
+    "version": "0.7.0"
   },
   "servers": [
     {
@@ -155,6 +155,47 @@
         }
       }
     },
+    "/api/v1/scope/confirm": {
+      "post": {
+        "summary": "Buyer explicitly confirms an accepted/countered scope proposal to officially create the order",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["session_id"],
+                "properties": {
+                  "session_id": {
+                    "type": "string",
+                    "description": "Session identifier holding the agreed scope proposal"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proposal confirmed; order created and locked into ledger",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "session_id": { "type": "string" },
+                    "status": { "type": "string", "example": "CONFIRMED" },
+                    "contract_hash": { "type": "string" },
+                    "confirmed_at": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/checkout": {
       "post": {
         "summary": "Create (or idempotently re-fetch) the PayPal order for ONE contract milestone",
@@ -176,11 +217,10 @@
                     "type": "string",
                     "enum": [
                       "m1",
-                      "m2",
-                      "m3"
+                      "m2"
                     ],
                     "default": "m1",
-                    "description": "Contract milestone to bill (40% deposit / 40% delivery / 20% final)"
+                    "description": "Contract milestone to bill (40% deposit / 60% balance on final delivery)"
                   }
                 }
               }
@@ -328,8 +368,7 @@
               "type": "string",
               "enum": [
                 "m1",
-                "m2",
-                "m3"
+                "m2"
               ]
             },
             "description": "Scope proof-of-delivery to this milestone; default = latest accepted"
@@ -375,8 +414,7 @@
                     "type": "string",
                     "enum": [
                       "m1",
-                      "m2",
-                      "m3"
+                      "m2"
                     ],
                     "default": "m1"
                   },
@@ -441,8 +479,7 @@
               "type": "string",
               "enum": [
                 "m1",
-                "m2",
-                "m3"
+                "m2"
               ],
               "default": "m1"
             },
@@ -587,8 +624,7 @@
               "type": "string",
               "enum": [
                 "m1",
-                "m2",
-                "m3"
+                "m2"
               ]
             },
             "description": "Scope proof-of-delivery to this milestone; default = latest accepted"
@@ -637,8 +673,7 @@
               "type": "string",
               "enum": [
                 "m1",
-                "m2",
-                "m3"
+                "m2"
               ]
             },
             "description": "Scope evidence to this milestone; default = latest accepted"
@@ -689,8 +724,7 @@
                     "type": "string",
                     "enum": [
                       "m1",
-                      "m2",
-                      "m3"
+                      "m2"
                     ],
                     "description": "Which milestone stage the evidence defends; default = latest accepted"
                   }
@@ -914,7 +948,7 @@
           },
           "payment_plan": {
             "type": "array",
-            "description": "Deterministic milestone split of quoted_price (40/40/20) — part of the hashed frozen terms",
+            "description": "Deterministic milestone split of quoted_price (40/60 — deposit + balance) — part of the hashed frozen terms",
             "items": {
               "$ref": "#/components/schemas/PaymentPlanEntry"
             }
@@ -1026,7 +1060,7 @@
           "release": {
             "type": "string",
             "example": "on_contract_signing",
-            "description": "m2/m3 release on acceptance of the previous milestone"
+            "description": "m2 releases on acceptance of m1"
           }
         }
       },

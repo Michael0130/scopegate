@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ScopeGate — Live Console</title>
-  <meta name="description" content="ScopeGate live console: a guarded marketplace of independent sellers. Negotiate with each seller's preset agent, pay milestone by milestone on PayPal sandbox, and watch the contract fingerprint settle every stage." />
+  <title>ScopeGate — 买方采购门户</title>
+  <meta name="description" content="ScopeGate 智能体商务采购门户：在交易前守住合同边界，在 PayPal 账本锚定履约凭证。" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <style>
     :root { color-scheme: light; }
@@ -25,11 +25,83 @@
     .ap-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; text-decoration: none; color: inherit; }
     .ap-brand small { font-weight: 400; color: #6e6e73; font-size: 12px; }
     .ap-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .nav-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6.5px 14px;
+      font-size: 13px; font-weight: 500; color: #1d1d1f; background: #fff;
+      border: 1px solid rgba(0,0,0,.12); border-radius: 980px; cursor: pointer;
+      transition: all .15s ease; box-shadow: 0 1px 2px rgba(0,0,0,.03); user-select: none;
+    }
+    .nav-btn:hover { background: #fbfbfd; border-color: rgba(0,0,0,.22); box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+    .nav-btn:active { transform: scale(0.98); }
+    .nav-btn.active { background: #f0f4fc; border-color: #0071e3; color: #0071e3; font-weight: 600; }
+    .nav-btn.open { background: #eef4fe; border-color: #0071e3; color: #0071e3; box-shadow: 0 0 0 3px rgba(0,113,227,.15); }
+    .nav-btn[disabled], .nav-btn.disabled {
+      opacity: .45;
+      background: #f5f5f7 !important;
+      color: #86868b !important;
+      border-color: rgba(0,0,0,.08) !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+      pointer-events: none;
+    }
+    .nav-btn[disabled]:hover, .nav-btn.disabled:hover {
+      background: #f5f5f7 !important;
+      border-color: rgba(0,0,0,.08) !important;
+      box-shadow: none !important;
+    }
+    .nav-btn[disabled] .hud-pulse-dot, .nav-btn.disabled .hud-pulse-dot {
+      background: #86868b !important;
+      box-shadow: none !important;
+      animation: none !important;
+    }
+    .nav-btn[disabled] .hud-pill-tag, .nav-btn.disabled .hud-pill-tag {
+      background: #e5e5ea !important;
+      color: #86868b !important;
+      border-color: rgba(0,0,0,.1) !important;
+    }
+    .nav-orders-wrap { position: relative; display: inline-flex; }
+    .nav-badge {
+      background: #0071e3; color: #fff; font-size: 11px; font-weight: 600;
+      line-height: 1; padding: 2.5px 6.5px; border-radius: 999px; display: inline-block; margin-left: 2px;
+    }
+    .nav-orders-dropdown {
+      position: absolute; top: calc(100% + 8px); right: 0; width: 380px; max-width: calc(100vw - 32px);
+      background: #ffffff; border: 1px solid rgba(0,0,0,.08); border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.14), 0 2px 6px rgba(0,0,0,.04); padding: 12px;
+      z-index: 60; transform-origin: top right; animation: navDropFadeIn .18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-orders-dropdown[hidden] { display: none !important; }
+    @keyframes navDropFadeIn {
+      from { opacity: 0; transform: translateY(-6px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .nav-orders-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px 10px; border-bottom: 1px solid rgba(0,0,0,.06); font-size: 13px; font-weight: 600; color: #1d1d1f; }
+    .nav-orders-list { max-height: 400px; overflow-y: auto; padding: 8px 0 2px; display: flex; flex-direction: column; gap: 8px; }
+    .nav-order-item { display: flex; flex-direction: column; gap: 6px; padding: 11px 13px; border-radius: 10px; background: #fbfbfd; border: 1px solid rgba(0,0,0,.06); cursor: pointer; transition: all .16s ease; text-align: left; }
+    .nav-order-item:hover { background: #f0f4fc; border-color: rgba(0,113,227,.25); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,113,227,.08); }
+    .nav-order-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .nav-order-title { font-size: 13px; font-weight: 600; color: #1d1d1f; display: flex; align-items: center; gap: 6px; }
+    .nav-order-domain { font-size: 11px; color: #6e6e73; font-family: ui-monospace, "SF Mono", monospace; font-weight: 400; }
+    .nav-order-price { font-size: 13px; font-weight: 700; color: #1d1d1f; }
+    .nav-order-desc { font-size: 12px; color: #555; line-height: 1.4; }
+    .nav-order-footer { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; margin-top: 2px; padding-top: 6px; border-top: 1px dashed rgba(0,0,0,.06); }
+    .nav-order-hash { font-family: ui-monospace, "SF Mono", monospace; color: #86868b; font-size: 11px; }
+    .nav-order-cta { color: #0071e3; font-weight: 600; font-size: 11.5px; display: inline-flex; align-items: center; gap: 3px; }
+    .btn-cancel-mini {
+      font-size: 11px; color: #ff3b30; background: rgba(255,59,48,.06);
+      border: 1px solid rgba(255,59,48,.2); border-radius: 5px; padding: 2px 7px;
+      cursor: pointer; font-weight: 500; transition: all .15s ease;
+    }
+    .btn-cancel-mini:hover { background: #ff3b30; color: #fff; }
+    .btn.danger-ghost {
+      color: #ff3b30; border: 1px solid rgba(255,59,48,.25); background: rgba(255,59,48,.04);
+      font-size: 11.5px; padding: 4px 10px; border-radius: 7px; font-weight: 500; cursor: pointer;
+      transition: all .15s ease;
+    }
+    .btn.danger-ghost:hover { background: rgba(255,59,48,.12); border-color: #ff3b30; }
+    .nav-orders-empty { padding: 24px 16px; text-align: center; color: #6e6e73; font-size: 13px; }
     .ap-pill { font-size: 11px; color: #6e6e73; border: 1px solid rgba(0,0,0,.1); border-radius: 980px; padding: 3px 11px; background: #fff; display: inline-flex; align-items: center; gap: 6px; }
     .ap-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-    .ap-seg { display: inline-flex; background: #e9e9eb; border-radius: 9px; padding: 2px; }
-    .ap-seg button { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; font-size: 12.5px; font-weight: 500; border-radius: 7px; color: #6e6e73; }
-    .ap-seg button[aria-pressed="true"] { background: #fff; color: #1d1d1f; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
 
     .stage { max-width: 1080px; margin: 0 auto; padding: 26px 22px 40px; }
     .stage[hidden] { display: none; }
@@ -46,13 +118,53 @@
     .hero h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -.5px; }
     .hero p { margin: 8px 0 0; color: #6e6e73; font-size: 15px; }
 
-    .chat { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; padding: 2px; }
-    .bubble { max-width: 84%; padding: 9px 13px; border-radius: 16px; font-size: 13.5px; }
-    .bubble.me { align-self: flex-end; background: #e9e9eb; border-bottom-right-radius: 5px; }
-    .bubble.agent { align-self: flex-start; background: #fff; border: 1px solid rgba(0,0,0,.08); border-bottom-left-radius: 5px; }
-    .bubble.agent.thinking { color: #a1a1a6; }
+    .chat { display: flex; flex-direction: column; gap: 14px; flex: 1; min-height: 280px; overflow-y: auto; padding: 6px 4px; }
+    
+    .msg-row { display: flex; gap: 11px; align-items: flex-start; max-width: 90%; }
+    .msg-row.me { align-self: flex-end; flex-direction: row-reverse; }
+    .msg-row.agent { align-self: flex-start; }
+
+    .msg-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08); position: relative;
+    }
+    .msg-avatar svg { width: 18px; height: 18px; }
+    .msg-avatar.concierge { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+    .msg-avatar.gatekeeper { background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; }
+    .msg-avatar.finance { background: linear-gradient(135deg, #d97706, #f59e0b); color: #fff; }
+    .msg-avatar.legal { background: linear-gradient(135deg, #7c3aed, #9333ea); color: #fff; }
+    .msg-avatar.delivery { background: linear-gradient(135deg, #059669, #10b981); color: #fff; }
+    .msg-avatar.buyer { background: linear-gradient(135deg, #475569, #334155); color: #fff; }
+    .msg-avatar.thinking { background: linear-gradient(135deg, #64748b, #94a3b8); color: #fff; animation: pulseAvatar 1.5s infinite; }
+    @keyframes pulseAvatar { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .82; transform: scale(0.96); } }
+
+    .msg-main { display: flex; flex-direction: column; gap: 4.5px; min-width: 0; }
+    .msg-header { display: flex; align-items: center; gap: 7px; font-size: 11.5px; flex-wrap: wrap; }
+    .msg-header.right { justify-content: flex-end; }
+    .msg-name { font-weight: 600; color: #1d1d1f; }
+    .msg-badge {
+      font-size: 10px; font-weight: 600; padding: 1.5px 7px; border-radius: 5px;
+      letter-spacing: .02em; display: inline-flex; align-items: center;
+    }
+    .msg-badge.concierge { background: rgba(99,102,241,.1); color: #4f46e5; border: 1px solid rgba(99,102,241,.25); }
+    .msg-badge.gatekeeper { background: rgba(2,132,199,.1); color: #0284c7; border: 1px solid rgba(2,132,199,.25); }
+    .msg-badge.finance { background: rgba(217,119,6,.1); color: #b45309; border: 1px solid rgba(217,119,6,.25); }
+    .msg-badge.legal { background: rgba(124,58,237,.1); color: #7c3aed; border: 1px solid rgba(124,58,237,.25); }
+    .msg-badge.delivery { background: rgba(5,150,105,.1); color: #047857; border: 1px solid rgba(5,150,105,.25); }
+    
+    .msg-route-pill {
+      font-size: 10.5px; color: #6e6e73; background: #f5f5f7; border: 1px solid rgba(0,0,0,.08);
+      border-radius: 999px; padding: 2px 8.5px; display: inline-flex; align-items: center; gap: 4px;
+    }
+
+    .bubble { max-width: 100%; padding: 10px 14px; border-radius: 15px; font-size: 13.5px; line-height: 1.55; }
+    .bubble.me { background: #0071e3; color: #fff; border-top-right-radius: 4px; box-shadow: 0 1px 3px rgba(0,113,227,.25); }
+    .bubble.agent { background: #fff; border: 1px solid rgba(0,0,0,.08); border-top-left-radius: 4px; color: #1d1d1f; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .bubble.agent.thinking { color: #86868b; background: #fbfbfd; font-style: italic; }
     .sys { align-self: center; font-size: 11.5px; color: #a1a1a6; text-align: center; }
-    .inputrow { display: flex; gap: 8px; margin-top: 12px; }
+    .shop-chat-card { display: flex; flex-direction: column; min-height: 520px; }
+    .inputrow { display: flex; gap: 8px; margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(0,0,0,.06); flex-shrink: 0; }
     .input { flex: 1; border: 1px solid rgba(0,0,0,.12); border-radius: 980px; padding: 8px 15px; font: inherit; font-size: 13.5px; background: #fff; color: #1d1d1f; }
     .send { background: #1d1d1f; color: #fff; border-radius: 980px; padding: 8px 18px; font-size: 13px; font-weight: 500; }
     .send:hover { background: #000; }
@@ -66,22 +178,47 @@
 
     .link { color: #0071e3; text-decoration: none; font-size: 13px; cursor: pointer; }
     .link:hover { text-decoration: underline; }
-    .stall { display: flex; flex-direction: column; gap: 7px; padding: 18px; cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
-    .stall:hover { border-color: rgba(0,0,0,.2); box-shadow: 0 6px 18px rgba(0,0,0,.09); transform: translateY(-1px); }
-    .stall h3 { margin: 0; font-size: 15px; }
-    .stall .who { font-size: 12.5px; color: #6e6e73; }
-    .stall p { margin: 0; font-size: 13px; color: #6e6e73; }
-    .price { font-size: 21px; font-weight: 600; letter-spacing: -.3px; }
-    .price small { font-size: 12px; font-weight: 400; color: #6e6e73; margin-left: 5px; }
-    .enter { align-self: flex-start; background: #1d1d1f; color: #fff; border-radius: 980px; padding: 7px 16px; font-size: 12.5px; font-weight: 500; margin-top: 4px; }
-    .enter:hover { background: #000; }
+    .stall {
+      display: flex; flex-direction: column; justify-content: space-between;
+      gap: 14px; padding: 22px 20px; cursor: pointer;
+      background: #ffffff; border: 1px solid rgba(0,0,0,.08); border-radius: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.03);
+      transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .stall:hover {
+      border-color: rgba(0,113,227,.3); box-shadow: 0 10px 28px rgba(0,113,227,.09); transform: translateY(-2px);
+    }
+    .stall-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .stall-identity { display: flex; align-items: center; gap: 11px; }
+    .stall-avatar {
+      width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 21px; background: #f8fafc; border: 1px solid rgba(0,0,0,.06); flex-shrink: 0;
+    }
+    .stall h3 { margin: 0; font-size: 16px; font-weight: 700; color: #0f172a; letter-spacing: -.2px; }
+    .stall-role { font-size: 11.5px; font-weight: 600; color: #0071e3; margin-top: 1.5px; }
+    .stall-domain { font-size: 10.5px; color: #64748b; background: rgba(0,0,0,.04); padding: 2px 7px; border-radius: 6px; font-family: ui-monospace, monospace; }
+    .stall-bio {
+      margin: 0; font-size: 12.5px; line-height: 1.55; color: #475569;
+      display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .stall-skills { display: flex; flex-wrap: wrap; gap: 5.5px; }
+    .stall-pill {
+      font-size: 10.5px; font-weight: 500; color: #334155; background: #f1f5f9;
+      padding: 3px 8.5px; border-radius: 999px;
+    }
+    .stall-footer {
+      display: flex; justify-content: flex-end; align-items: center;
+      padding-top: 13px; border-top: 1px solid rgba(0,0,0,.06); margin-top: auto;
+    }
+    .stall-enter-btn {
+      background: #0f172a; color: #fff; border-radius: 980px; padding: 7px 16px;
+      font-size: 12.5px; font-weight: 600; transition: all .15s ease;
+    }
+    .stall:hover .stall-enter-btn { background: #0071e3; transform: scale(1.02); }
     .back { display: inline-flex; align-items: center; gap: 6px; color: #0071e3; font-size: 13px; margin-bottom: 14px; cursor: pointer; }
     .store { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-    .store b { font-size: 17px; letter-spacing: -.2px; }
+    .store b { font-size: 17px; letter-spacing: -.2px; display: inline-flex; align-items: center; gap: 6px; }
     .store b span { color: #0071e3; }
-    .open { font-size: 12px; color: #6e6e73; display: inline-flex; align-items: center; gap: 6px; }
-    .open i { width: 6px; height: 6px; border-radius: 50%; background: #34c759; display: inline-block; }
-    .secure { font-size: 11px; font-weight: 600; letter-spacing: .4px; color: #6e6e73; border: 1px solid rgba(0,0,0,.1); border-radius: 980px; padding: 4px 12px; background: #fff; }
     .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 3px 0; }
     .kv b { font-weight: 400; color: #6e6e73; }
     .hash { display: inline-flex; align-items: center; gap: 6px; font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: #1d1d1f; background: #f5f5f7; border: 1px solid rgba(0,0,0,.06); border-radius: 8px; padding: 5px 10px; word-break: break-all; }
@@ -101,7 +238,7 @@
     .btn:hover { background: #000; }
     .btn[disabled] { opacity: .4; cursor: not-allowed; }
     .btn.ghost { background: #fff; color: #1d1d1f; border: 1px solid rgba(0,0,0,.14); }
-    .btn.ghost:hover { border-color: #6e6e73; }
+    .btn.ghost:hover { background: #f5f5f7; color: #1d1d1f; border-color: rgba(0,0,0,.25); }
 
     .step { display: grid; grid-template-columns: 22px 1fr; gap: 10px; position: relative; padding-bottom: 16px; }
     .step::before { content: ""; position: absolute; left: 10px; top: 20px; bottom: 0; width: 2px; background: rgba(0,0,0,.07); }
@@ -122,40 +259,1118 @@
     .req:hover { background: #fafafa; }
     .ava { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: #e9e9eb; font-size: 12px; font-weight: 600; }
 
-    .ctool { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-    .idwrap { position: relative; }
-    .idchip { display: inline-flex; align-items: center; gap: 11px; background: #fff; border: 1px solid rgba(0,0,0,.08); border-radius: 13px; padding: 7px 13px 7px 8px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
-    .idchip:hover { border-color: rgba(0,0,0,.18); }
-    .idchip .ava { width: 34px; height: 34px; font-size: 14px; border-radius: 10px; }
-    .idmain b { display: block; font-size: 13.5px; line-height: 1.3; font-weight: 600; }
-    .idmain span { display: block; font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-size: 11px; color: #6e6e73; }
-    .menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 320px; background: #fff; border: 1px solid rgba(0,0,0,.08); border-radius: 13px; box-shadow: 0 12px 34px rgba(0,0,0,.14); padding: 5px; z-index: 30; }
-    .mi { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; border-radius: 9px; }
-    .mi:hover { background: #f5f5f7; }
-    .mi .ava { width: 28px; height: 28px; font-size: 12px; border-radius: 8px; }
-    .mi b { display: block; font-size: 13px; font-weight: 500; }
-    .mi .em { display: block; font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-size: 10.5px; color: #6e6e73; }
-    .mi .chk { margin-left: auto; opacity: 0; }
-    .mi[aria-checked="true"] .chk { opacity: 1; }
+    /* Compact Merchant Baseline Bar */
+    .compact-merchant {
+      position: relative; /* Anchor for floating popover */
+      background: #f9f9fb;
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 12px;
+      padding: 9px 13px;
+      margin-bottom: 12px;
+    }
+    .cm-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .cm-info {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 13px;
+    }
+    .cm-name { font-weight: 600; font-size: 13.5px; }
+    .cm-domain { color: #6e6e73; font-size: 11px; }
+    .cm-price { font-weight: 600; color: #0071e3; font-size: 12.5px; }
+    .cm-meta { color: #6e6e73; font-size: 11.5px; }
+    .cm-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #0071e3;
+      background: #fff;
+      border: 1px solid rgba(0,0,0,.12);
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: all .15s ease;
+    }
+    .cm-toggle:hover { background: #f0f4fa; border-color: #0071e3; }
+    .cm-toggle.active { background: #0071e3; color: #fff; border-color: #0071e3; }
 
-    .field { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid rgba(0,0,0,.06); font-size: 13px; }
-    .field:first-of-type { border-top: 0; }
-    .field b { font-weight: 400; color: #6e6e73; }
-    .play { display: grid; grid-template-columns: 1fr 16px 1.15fr; gap: 8px; align-items: baseline; padding: 7px 0; border-top: 1px solid rgba(0,0,0,.06); font-size: 12.5px; }
-    .play:first-of-type { border-top: 0; }
-    .play .arr { color: #a1a1a6; text-align: center; }
-    .swrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid rgba(0,0,0,.06); font-size: 13px; }
-    .swrow:first-of-type { border-top: 0; }
-    .sw { position: relative; width: 38px; height: 22px; flex: none; }
-    .sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
-    .sw i { position: absolute; inset: 0; background: #e9e9eb; border-radius: 980px; transition: background .2s; pointer-events: none; }
-    .sw i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: left .2s; }
-    .sw input:checked + i { background: #34c759; }
-    .sw input:checked + i::after { left: 18px; }
+    /* Floating Popover: Zero Layout Shift */
+    .cm-popover {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: min(560px, calc(100vw - 44px));
+      background: #ffffff;
+      border: 1px solid rgba(0,0,0,.12);
+      border-radius: 14px;
+      box-shadow: 0 16px 42px -6px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.04);
+      padding: 16px 18px;
+      z-index: 70;
+      animation: cmPopIn .18s ease-out;
+    }
+    @keyframes cmPopIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .cm-popover-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(0,0,0,.06);
+    }
+    .cm-popover-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #1d1d1f;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cm-popover-close {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #f0f0f2;
+      color: #6e6e73;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      transition: all .15s ease;
+    }
+    .cm-popover-close:hover { background: #e5e5ea; color: #1d1d1f; }
+
+    /* Agent Knowledge Base Popover */
+    .cm-kb-popover {
+      width: min(640px, calc(100vw - 44px));
+      max-height: min(540px, calc(100vh - 160px));
+      overflow-y: auto;
+    }
+    .cm-kb-popover::-webkit-scrollbar { width: 5px; }
+    .cm-kb-popover::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 999px; }
+
+    .kb-chips-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(0,0,0,.06);
+      padding-bottom: 8px;
+      overflow-x: auto;
+    }
+    .kb-chips-row::-webkit-scrollbar { display: none; }
+    .kb-chip-btn {
+      background: #f8fafc;
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .kb-chip-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .kb-chip-btn.active {
+      background: #0071e3;
+      color: #ffffff;
+      border-color: #0071e3;
+    }
+
+    .cm-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 680px) {
+      .cm-grid { grid-template-columns: 1fr; gap: 8px; }
+    }
+    .cm-col { font-size: 12px; }
+    .cm-col-title {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: #6e6e73;
+      margin-bottom: 5px;
+    }
+    .cm-item {
+      font-size: 12px;
+      line-height: 1.45;
+      padding: 2.5px 0;
+      display: flex;
+      gap: 5px;
+    }
+    .cm-item em { font-style: normal; }
+    .cm-item.ok em { color: #34c759; }
+    .cm-item.no em { color: #ff3b30; }
+    .cm-item.surcharge { color: #333; align-items: baseline; }
+    .cm-tag { font-size: 10px; color: #64748b; background: rgba(0,0,0,.04); padding: 1px 6px; border-radius: 4px; margin-left: auto; flex-shrink: 0; }
+    .cm-blurb {
+      font-size: 12px;
+      color: #6e6e73;
+      margin-bottom: 10px;
+      line-height: 1.45;
+    }
+    .cm-footnote {
+      font-size: 11px;
+      color: #86868b;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(0,0,0,.06);
+    }
+
 
     .toast { position: fixed; right: 20px; bottom: 20px; max-width: 400px; background: #fff; border: 1px solid rgba(0,0,0,.08); border-radius: 14px; padding: 12px 15px; font-size: 13px; box-shadow: 0 8px 30px rgba(0,0,0,.16); z-index: 60; }
     .toast[hidden] { display: none; }
+
+    /* ── demo layer (?demo) — banner + autopilot + anchor cards ── */
+    .demoline { max-width: 1080px; margin: 10px auto 0; padding: 9px 18px; font-size: 12px; color: #6e6e73; background: #fff; border: 1px solid rgba(0,0,0,.08); border-radius: 12px; }
+    .demoline b { color: #1d1d1f; font-weight: 600; }
+    .bubble .wholabel { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-size: 10px; letter-spacing: .05em; color: #6e6e73; margin-bottom: 3px; }
+    .callout { background: #f5f5f7; border: 1px solid rgba(0,0,0,.1); border-radius: 10px; padding: 8px 12px; font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-size: 11px; color: #1d1d1f; }
+    .callout .ch { font-size: 10px; letter-spacing: .05em; color: #6e6e73; margin-bottom: 4px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    .callout .cl { white-space: pre-wrap; }
+    .callout .hl { background: #fff3c4; border: 1px solid #ffc439; border-radius: 4px; padding: 1px 5px; }
+    .callout .cf { margin-top: 5px; font-size: 10.5px; color: #6e6e73; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    .remarkrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 6px; font-size: 10.5px; }
+    .remarkrow .link { font-size: 11px; }
+    .ms-json { margin-top: 7px; background: #fafafa; border: 1px solid rgba(0,0,0,.08); border-radius: 8px; padding: 8px 10px; font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-size: 10.5px; color: #6e6e73; white-space: pre; overflow-x: auto; }
+    .ms-json .hl { background: #fff3c4; border-radius: 4px; padding: 1px 4px; color: #1d1d1f; }
+    
+    /* ── Streaming Cursor & Memo Confirmation Card ── */
+    @keyframes streamBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .stream-cursor { display: inline-block; animation: streamBlink .7s infinite; color: #0071e3; margin-left: 2px; font-weight: 600; font-family: ui-monospace, monospace; }
+    .stream-content { display: inline; }
+    .memo-card {
+      background: #fbfbfd;
+      border: 1px solid #d2d2d7;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 12.5px;
+    }
+    .memo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: #6e6e73;
+    }
+    .memo-badge {
+      font-family: ui-monospace, monospace;
+      font-size: 10.5px;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+    .memo-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      padding: 3px 0;
+    }
+    .memo-row b { font-weight: 500; color: #6e6e73; }
+    .memo-val { font-family: ui-monospace, monospace; font-size: 11px; word-break: break-all; color: #1d1d1f; }
+    .memo-tip {
+      font-size: 11px;
+      color: #6e6e73;
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(0,0,0,.1);
+      line-height: 1.45;
+    }
+
     @media (prefers-reduced-motion: reduce) { #sg * { animation: none !important; transition: none !important; } }
+
+    /* ── Seller Autonomous Mesh HUD Drawer ── */
+    .hud-pulse-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #10b981;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: hudPulse 2s infinite; display: inline-block;
+    }
+    @keyframes hudPulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .hud-pill-tag {
+      font-size: 10px; font-weight: 700; background: #f0fdf4; color: #16a34a;
+      border: 1px solid rgba(22, 163, 74, 0.3); border-radius: 999px; padding: 1.5px 6px;
+      margin-left: 2px;
+    }
+    /* HUD Dropdown 与未进店悬浮提示 */
+    .nav-hud-wrap { position: relative; display: inline-flex; }
+    .nav-hud-wrap.has-disabled-tip { cursor: not-allowed; }
+    .nav-hud-tooltip {
+      position: absolute; top: calc(100% + 9px); left: 50%;
+      transform: translateX(-50%) translateY(-4px);
+      background: rgba(29, 29, 31, 0.94);
+      color: #ffffff;
+      font-size: 11.5px; font-weight: 500; letter-spacing: .2px; line-height: 1.4;
+      padding: 6px 12px; border-radius: 8px; white-space: nowrap; pointer-events: none;
+      box-shadow: 0 4px 18px rgba(0,0,0,.22), 0 1px 3px rgba(0,0,0,.1);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.1);
+      opacity: 0; visibility: hidden;
+      transition: opacity .18s cubic-bezier(0.16, 1, 0.3, 1), transform .18s cubic-bezier(0.16, 1, 0.3, 1), visibility .18s;
+      z-index: 70;
+    }
+    .nav-hud-tooltip::before {
+      content: '';
+      position: absolute; bottom: 100%; left: 50%;
+      transform: translateX(-50%);
+      border-width: 5px; border-style: solid;
+      border-color: transparent transparent rgba(29, 29, 31, 0.94) transparent;
+    }
+    .nav-hud-wrap.has-disabled-tip:hover .nav-hud-tooltip {
+      opacity: 1; visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+    .nav-hud-wrap:not(.has-disabled-tip) .nav-hud-tooltip {
+      display: none !important;
+    }
+    .nav-hud-dropdown {
+      position: absolute; top: calc(100% + 8px); right: -140px;
+      width: 840px; max-width: min(880px, calc(100vw - 24px)); height: 570px; max-height: calc(100vh - 84px);
+      background: #ffffff; border: 1px solid rgba(0,0,0,.09); border-radius: 18px;
+      box-shadow: 0 32px 72px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.05);
+      z-index: 60; transform-origin: top right;
+      animation: navDropFadeIn .18s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex; flex-direction: column; overflow: hidden; color: #1d1d1f; font-size: 13px;
+    }
+    .nav-hud-dropdown[hidden] { display: none !important; }
+    .nav-hud-header {
+      padding: 12px 20px; border-bottom: 1px solid rgba(0,0,0,.07);
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      background: #fbfbfd; flex-shrink: 0;
+    }
+    .hud-title-wrap { display: flex; align-items: center; gap: 10px; }
+    .hud-title { font-size: 14px; font-weight: 700; color: #0f172a; letter-spacing: -.2px; }
+    .hud-subtitle { font-size: 11px; color: #64748b; margin-top: 1.5px; }
+    .hud-mesh-live-badge {
+      font-size: 10.5px; font-weight: 700; font-family: ui-monospace, monospace;
+      color: #059669; background: #ecfdf5; border: 1px solid rgba(5, 150, 105, 0.25);
+      border-radius: 999px; padding: 2.5px 8.5px; display: inline-flex; align-items: center; gap: 5px;
+    }
+    .hud-close {
+      width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,.05);
+      color: #6e6e73; display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px; line-height: 1; transition: all .15s ease; border: 0;
+    }
+    .hud-close:hover { background: rgba(0,0,0,.1); color: #1d1d1f; }
+
+    /* Dual Column Layout */
+    .nav-hud-body {
+      flex: 1; display: grid; grid-template-columns: 290px 1fr;
+      min-height: 0; overflow: hidden; background: #ffffff; padding: 0;
+    }
+    /* Left Rail */
+    .hud-rail {
+      background: #f8fafc; border-right: 1px solid rgba(0,0,0,.07);
+      display: flex; flex-direction: column; min-height: 0; overflow-y: auto;
+    }
+    .hud-rail-header {
+      padding: 11px 14px 7px; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid rgba(0,0,0,.04); flex-shrink: 0;
+    }
+    .hud-rail-list {
+      display: flex; flex-direction: column; gap: 5px; padding: 8px;
+    }
+    .hud-rail-item {
+      display: flex; flex-direction: column; gap: 3.5px; padding: 9px 12px;
+      border-radius: 10px; background: transparent; border: 1px solid transparent;
+      cursor: pointer; text-align: left; transition: all .15s ease; width: 100%;
+      position: relative; user-select: none; font-family: inherit;
+    }
+    .hud-rail-item:hover {
+      background: #eef2f6; border-color: rgba(0,0,0,.04);
+    }
+    .hud-rail-item.active {
+      background: #ffffff; border-color: rgba(0, 113, 227, 0.28);
+      box-shadow: 0 2px 10px rgba(0, 113, 227, 0.09);
+    }
+    .hud-rail-item.active::before {
+      content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3.5px;
+      background: #0071e3; border-radius: 0 4px 4px 0;
+    }
+    .hud-rail-row {
+      display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 6px;
+    }
+    .hud-rail-name {
+      font-weight: 700; font-size: 12.5px; color: #0f172a; display: flex; align-items: center; gap: 6px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hud-rail-role {
+      font-size: 10.5px; color: #64748b; font-weight: 500; line-height: 1.3;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hud-rail-task {
+      font-size: 10px; font-family: ui-monospace, monospace; color: #475569;
+      background: rgba(0,0,0,.04); border-radius: 4px; padding: 2px 6px; width: fit-content;
+      max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hud-rail-item.working .hud-rail-task { background: #ecfdf5; color: #047857; font-weight: 600; }
+    .hud-rail-item.concurrent .hud-rail-task { background: #faf5ff; color: #6d28d9; font-weight: 600; }
+    .hud-rail-item.defending .hud-rail-task { background: #fef2f2; color: #b91c1c; font-weight: 600; }
+
+    /* Status Badges */
+    .hud-status-badge {
+      font-family: ui-monospace, "SF Mono", monospace; font-size: 9.5px; font-weight: 700;
+      letter-spacing: .4px; padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .status-working { background: #ecfdf5; color: #059669; border: 1px solid rgba(5, 150, 105, 0.3); }
+    .status-active { background: #ecfdf5; color: #059669; border: 1px solid rgba(5, 150, 105, 0.3); }
+    .status-standby { background: #f1f5f9; color: #64748b; border: 1px solid rgba(100, 116, 139, 0.2); }
+    .status-awaiting { background: #f8fafc; color: #64748b; border: 1px solid rgba(148, 163, 184, 0.3); }
+    .status-ready { background: #f0fdf4; color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.3); }
+    .status-concurrent { background: #faf5ff; color: #7c3aed; border: 1px solid rgba(124, 58, 237, 0.3); }
+    .status-coordinating { background: #faf5ff; color: #7c3aed; border: 1px solid rgba(124, 58, 237, 0.3); }
+    .status-reported { background: #eff6ff; color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.3); }
+    .status-defending { background: #fef2f2; color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.3); }
+    .status-frozen { background: #f1f5f9; color: #475569; border: 1px solid rgba(71, 85, 105, 0.25); }
+    .status-locked { background: #fef2f2; color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.3); }
+    .status-audited { background: #eff6ff; color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.3); }
+
+    /* Right Inspector Stage */
+    .hud-stage {
+      flex: 1; min-height: 0; padding: 14px 18px 16px;
+      display: flex; flex-direction: column; gap: 10px; background: #ffffff;
+      overflow: hidden;
+    }
+    .hud-stage-header {
+      display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px;
+      border-bottom: 1px solid rgba(0,0,0,.06); flex-shrink: 0;
+    }
+    .hud-stage-top {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .hud-stage-title {
+      font-size: 14.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;
+    }
+    .hud-stage-role {
+      font-size: 10px; font-family: ui-monospace, monospace; font-weight: 600;
+      color: #64748b; background: #f1f5f9; padding: 1.5px 6px; border-radius: 4px;
+    }
+    .hud-stage-bio {
+      font-size: 12.5px; color: #475569; line-height: 1.5; margin: 2px 0 0;
+    }
+    .hud-stage-boundary {
+      display: inline-flex; align-items: flex-start; gap: 8px;
+      font-size: 11.5px; line-height: 1.5; color: #475569;
+      background: #f8fafc; border: 1px solid rgba(226, 232, 240, 0.85);
+      border-radius: 8px; padding: 6px 10px; margin-top: 2px;
+    }
+    .hud-boundary-tag {
+      font-weight: 700; color: #0284c7; flex-shrink: 0;
+      font-size: 10px; font-family: ui-monospace, monospace;
+      background: #e0f2fe; padding: 2px 6px; border-radius: 4px;
+    }
+    .hud-stage-label {
+      font-size: 10.5px; font-weight: 700; letter-spacing: .5px; color: #64748b;
+      text-transform: uppercase; display: flex; align-items: center; justify-content: space-between; gap: 5px;
+    }
+
+    /* Logs Section: Primary Hero taking all available space */
+    .hud-stage-logs-section {
+      flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
+    }
+    .hud-stage-logs {
+      flex: 1; min-height: 240px; max-height: none; background: #090d16;
+      border: 1px solid rgba(255,255,255,.09); border-radius: 9px;
+      padding: 10px 12px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 10.5px;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,.35);
+    }
+    .hud-stage-logs::-webkit-scrollbar { width: 5px; }
+    .hud-stage-logs::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 999px; }
+    .hud-drawer-log-row {
+      display: flex; gap: 8px; line-height: 1.45; color: #cbd5e1;
+    }
+    .hud-drawer-log-time {
+      color: #64748b; flex-shrink: 0; font-size: 10px; font-weight: 500;
+    }
+    .hud-drawer-log-text {
+      word-break: break-word; color: #e2e8f0;
+    }
+    .hud-drawer-log-text.success { color: #86efac; }
+    .hud-drawer-log-text.alert { color: #fca5a5; }
+    .hud-drawer-log-text.concurrent { color: #d8b4fe; }
+    .hud-drawer-log-text.info { color: #93c5fd; }
+
+    @media (max-width: 960px) {
+      .nav-hud-dropdown {
+        right: -40px !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-hud-dropdown {
+        width: calc(100vw - 20px) !important;
+        right: -8px !important;
+        height: 85vh !important;
+      }
+      .nav-hud-body {
+        grid-template-columns: 1fr !important;
+        grid-template-rows: auto 1fr !important;
+      }
+      .hud-rail {
+        border-right: none !important;
+        border-bottom: 1px solid rgba(0,0,0,.08) !important;
+        max-height: 140px !important;
+      }
+      .hud-rail-list {
+        flex-direction: row !important;
+        overflow-x: auto !important;
+      }
+      .hud-rail-item {
+        min-width: 170px !important;
+      }
+    }
+
+    /* Order Confirmation Proposal Card & Actions */
+    .order-proposal-card {
+      margin-top: 10px;
+      background: #ffffff;
+      border: 1px solid rgba(0, 113, 227, 0.22);
+      border-radius: 12px;
+      padding: 13px 15px;
+      box-shadow: 0 4px 14px rgba(0, 113, 227, 0.06);
+      color: #1d1d1f;
+    }
+    .op-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 9px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      margin-bottom: 10px;
+    }
+    .op-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #0071e3;
+      background: rgba(0, 113, 227, 0.08);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .op-price {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1d1d1f;
+      font-feature-settings: "tnum";
+    }
+    .op-section {
+      margin-bottom: 9px;
+    }
+    .op-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #86868b;
+      letter-spacing: 0.3px;
+      margin-bottom: 3px;
+    }
+    .op-deliverables {
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #333336;
+    }
+    .op-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      background: #fbfbfd;
+      border: 1px solid rgba(0,0,0,.04);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 11px;
+    }
+    .op-grid-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .op-grid-label {
+      font-size: 10.5px;
+      color: #86868b;
+    }
+    .op-grid-val {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+    .op-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-confirm-order {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: #34c759;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 6px rgba(52, 199, 89, 0.3);
+    }
+    .btn-confirm-order:hover {
+      background: #2ebd4f;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(52, 199, 89, 0.4);
+    }
+    .btn-confirm-order:active {
+      transform: translateY(0);
+    }
+    .btn-confirm-order.confirmed {
+      background: #e5e5ea;
+      color: #8e8e93;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+    .op-hint {
+      font-size: 11px;
+      color: #86868b;
+    }
+
+    /* HUD Stage Content Panels */
+    .hud-stage-content {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+    .hud-stage-content::-webkit-scrollbar { width: 5px; }
+    .hud-stage-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 999px; }
+
+    /* Permission Matrix Card */
+    .perm-card {
+      background: #fbfbfd;
+      border: 1px solid rgba(0,0,0,.06);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .perm-level {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: ui-monospace, monospace;
+      color: #0071e3;
+      background: rgba(0,113,227,.08);
+      padding: 2.5px 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    .perm-col-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .perm-col-title.can { color: #16a34a; }
+    .perm-col-title.cannot { color: #dc2626; }
+    .perm-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    .perm-item {
+      display: flex;
+      gap: 7px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #334155;
+    }
+    .perm-item.can em { color: #16a34a; font-style: normal; font-weight: 700; flex-shrink: 0; }
+    .perm-item.cannot em { color: #dc2626; font-style: normal; font-weight: 700; flex-shrink: 0; }
+
+    /* Knowledge Base Card */
+    .kb-card {
+      background: #ffffff;
+      border: 1px solid rgba(0,0,0,.07);
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.02);
+    }
+    .kb-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .kb-text {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #475569;
+    }
+    .kb-kv-row {
+      display: flex;
+      margin-bottom: 4px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .kb-kv-label {
+      width: 90px;
+      flex-shrink: 0;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .kb-kv-val {
+      color: #1e293b;
+      flex: 1;
+    }
+    .kb-case-item {
+      background: #f8fafc;
+      border: 1px solid rgba(0,0,0,.04);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+    }
+    .kb-case-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3px;
+    }
+    .kb-case-client {
+      font-weight: 700;
+      font-size: 12px;
+      color: #0f172a;
+    }
+    .kb-case-tag {
+      font-size: 10px;
+      background: #ecfdf5;
+      color: #059669;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .kb-case-desc {
+      font-size: 11.5px;
+      color: #475569;
+      line-height: 1.4;
+    }
+    .kb-faq-item {
+      border-bottom: 1px solid rgba(0,0,0,.05);
+      padding: 7px 0;
+    }
+    .kb-faq-item:last-child { border-bottom: none; }
+    .kb-faq-q {
+      font-weight: 600;
+      font-size: 12px;
+      color: #0071e3;
+      margin-bottom: 2px;
+    }
+    .kb-faq-a {
+      font-size: 11.5px;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    /* Judge VIP & Public Gate Styles */
+    .judge-access-wrap {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 4px;
+    }
+    .judge-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid rgba(217,119,6,.28);
+      background: rgba(254,243,199,.5);
+      color: #b45309;
+      font-weight: 600;
+      transition: all .15s ease;
+    }
+    .judge-btn:hover {
+      background: rgba(254,243,199,.9);
+      border-color: #d97706;
+      color: #92400e;
+    }
+    .judge-vip-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #7c3aed;
+      background: rgba(124,58,237,.08);
+      border: 1px solid rgba(124,58,237,.25);
+      border-radius: 999px;
+      padding: 4px 10px;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(124,58,237,.1);
+      transition: all .15s ease;
+    }
+    .judge-vip-pill:hover {
+      background: rgba(124,58,237,.14);
+      border-color: #7c3aed;
+    }
+    .judge-vip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #7c3aed;
+      box-shadow: 0 0 0 2px rgba(124,58,237,.25);
+      animation: vipPulse 1.8s infinite;
+    }
+    @keyframes vipPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: .7; }
+    }
+
+    /* Judge Modal */
+    .judge-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn .15s ease-out;
+    }
+    .judge-modal {
+      width: min(440px, calc(100vw - 32px));
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid rgba(0,0,0,.12);
+      box-shadow: 0 24px 48px -12px rgba(0,0,0,.25);
+      padding: 20px 22px;
+      animation: cmPopIn .18s ease-out;
+    }
+    .judge-modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .judge-modal-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .judge-modal-close {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .judge-modal-close:hover { background: #e2e8f0; color: #0f172a; }
+    .judge-modal-desc {
+      font-size: 12.5px;
+      color: #4b5563;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+    .judge-input-wrap {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .judge-input {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 13px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      outline: none;
+      font-family: inherit;
+    }
+    .judge-input:focus {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 2px rgba(124,58,237,.15);
+    }
+    .judge-submit-btn {
+      background: #7c3aed;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s ease;
+      white-space: nowrap;
+    }
+    .judge-submit-btn:hover { background: #6d28d9; }
+    .judge-modal-hint {
+      font-size: 11.5px;
+      min-height: 16px;
+      line-height: 1.4;
+    }
+    .judge-modal-hint.err { color: #dc2626; font-weight: 500; }
+    .judge-modal-hint.ok { color: #16a34a; font-weight: 600; }
+
+    /* Preset Prompt Scenarios Dropdown (商户店铺栏快捷场景预设按钮) */
+    .shop-presets-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      margin-left: 6px;
+    }
+    .shop-presets-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #0071e3;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 980px;
+      cursor: pointer;
+      padding: 4px 12px;
+      transition: all .15s ease;
+      user-select: none;
+      white-space: nowrap;
+      line-height: 1.35;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+    .shop-presets-toggle:hover {
+      background: #f0f7ff;
+      border-color: #0071e3;
+      color: #0071e3;
+      box-shadow: 0 2px 6px rgba(0, 113, 227, 0.1);
+    }
+    .shop-presets-toggle.active {
+      background: #e8f2ff;
+      border-color: #0071e3;
+    }
+    .shop-presets-toggle .sp-arrow {
+      font-size: 9px;
+      display: inline-block;
+      transition: transform .2s ease;
+    }
+    .shop-presets-toggle.active .sp-arrow {
+      transform: rotate(180deg);
+    }
+    .shop-presets-drawer {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      z-index: 100;
+      width: 660px;
+      max-width: 92vw;
+      max-height: 80vh;
+      overflow-y: auto;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scrollbar-width: thin;
+    }
+    .sp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      padding-bottom: 10px;
+      gap: 12px;
+    }
+    .sp-header-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #1d1d1f;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sp-header-badge {
+      font-size: 10.5px;
+      font-weight: 600;
+      background: rgba(0, 113, 227, 0.08);
+      color: #0071e3;
+      padding: 2px 7px;
+      border-radius: 980px;
+    }
+    .sp-header-desc {
+      font-size: 11.5px;
+      color: #6e6e73;
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+    .sp-close-btn {
+      font-size: 18px;
+      line-height: 1;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #86868b;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: all .15s ease;
+    }
+    .sp-close-btn:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1d1d1f;
+    }
+    .sp-category-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .sp-category-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      letter-spacing: 0.01em;
+    }
+    .sp-category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+      gap: 7px;
+    }
+    .sp-card {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 10px;
+      padding: 9px 12px;
+      cursor: pointer;
+      transition: all .15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+    }
+    .sp-card:hover {
+      background: #f8fbff;
+      border-color: #0071e3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 113, 227, 0.09);
+    }
+    .sp-card.attack:hover {
+      background: #fff8f8;
+      border-color: #ff3b30;
+      box-shadow: 0 4px 12px rgba(255, 59, 48, 0.09);
+    }
+    .sp-card.counter:hover {
+      background: #fffdf5;
+      border-color: #f59e0b;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.09);
+    }
+    .sp-card.legal:hover {
+      background: #faf6ff;
+      border-color: #af52de;
+      box-shadow: 0 4px 12px rgba(175, 82, 222, 0.09);
+    }
+    .sp-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .sp-card-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1d1d1f;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .sp-card-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1.5px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+    .sp-card-tag.ok {
+      background: rgba(52, 199, 89, 0.12);
+      color: #1b7a32;
+    }
+    .sp-card-tag.counter {
+      background: rgba(255, 149, 0, 0.12);
+      color: #b45309;
+    }
+    .sp-card-tag.danger {
+      background: rgba(255, 59, 48, 0.12);
+      color: #c91a25;
+    }
+    .sp-card-tag.legal {
+      background: rgba(175, 82, 222, 0.12);
+      color: #7c2d9e;
+    }
+    .sp-card-tag.info {
+      background: rgba(0, 113, 227, 0.1);
+      color: #0071e3;
+    }
+    .sp-card-desc {
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.35;
+    }
   </style>
 </head>
 <body>
@@ -174,54 +1389,195 @@
   <header class="ap-nav">
     <a class="ap-brand" href="/">
       <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true"><use href="#sgc-mark"/></svg>
-      ScopeGate <small>Demo Console</small>
+      ScopeGate <small id="brand-sub">智能体商务网关</small>
     </a>
     <div class="ap-right">
-      <span class="ap-pill"><span class="dot" style="color:#34c759"></span>PayPal Sandbox</span>
-      <span class="ap-pill" id="gate-mode"><span class="dot"></span>Gate: checking…</span>
-      <div class="ap-seg" role="group" aria-label="Switch perspective">
-        <button type="button" id="nav-market" aria-pressed="true">Marketplace</button>
-        <button type="button" id="nav-console" aria-pressed="false">Seller console</button>
+      <button type="button" class="nav-btn active" id="nav-market-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <span id="nav-market-text">服务市集</span>
+      </button>
+
+      <div class="nav-hud-wrap has-disabled-tip" id="nav-hud-wrap" title="点进具体商家后才能查看">
+        <button type="button" class="nav-btn disabled" id="nav-hud-btn" disabled aria-haspopup="true" aria-expanded="false">
+          <span class="hud-pulse-dot"></span>
+          <span id="nav-hud-text">智能体网格透视</span>
+          <span class="hud-pill-tag">HUD</span>
+        </button>
+        <div class="nav-hud-tooltip" id="nav-hud-tooltip" role="tooltip">点进具体商家后才能查看</div>
+        <div class="nav-hud-dropdown" id="nav-hud-dropdown" hidden>
+          <div class="nav-hud-header">
+            <div class="hud-title-wrap">
+              <span class="hud-pulse-dot"></span>
+              <div class="hud-title" id="hud-heading-title">商户自治智能体网格</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="hud-mesh-live-badge">● MESH ONLINE</span>
+              <button type="button" class="hud-close" id="hud-close-btn" aria-label="关闭透视面板" title="关闭">&times;</button>
+            </div>
+          </div>
+
+          <div class="nav-hud-body">
+            <!-- Left Rail: 6 Agents Navigation List -->
+            <aside class="hud-rail" aria-label="智能体导航">
+              <div class="hud-rail-list" id="hud-rail-list">
+                <!-- 1. Supervisor -->
+                <button type="button" class="hud-rail-item active" id="agent-card-supervisor" data-agent="supervisor" aria-selected="true">
+                  <div class="hud-rail-row">
+                    <span class="hud-rail-name">🎯 Master Dispatcher</span>
+                    <span class="hud-status-badge status-ready" id="sup-status-badge" data-status="READY">就绪</span>
+                  </div>
+                  <div class="hud-rail-role">中枢意图调度 · 路由协同</div>
+                  <div class="hud-rail-task" id="sup-intent-tag">意图: 等待买家输入</div>
+                </button>
+
+                <!-- 2. Concierge -->
+                <button type="button" class="hud-rail-item" id="agent-card-concierge" data-agent="concierge">
+                  <div class="hud-rail-row">
+                    <span class="hud-rail-name" id="name-concierge">💼 商务总管</span>
+                    <span class="hud-status-badge status-standby" id="status-concierge" data-status="STANDBY">前台待命</span>
+                  </div>
+                  <div class="hud-rail-role">concierge · 前台唯一接待与协同统筹</div>
+                  <div class="hud-rail-task" id="task-concierge">🟢 前台实时聆听客户 (Listening)</div>
+                </button>
+
+                <!-- 3. Gatekeeper -->
+                <button type="button" class="hud-rail-item" id="agent-card-gatekeeper" data-agent="gatekeeper">
+                  <div class="hud-rail-row">
+                    <span class="hud-rail-name" id="name-gatekeeper">🛡️ 技术守门人</span>
+                    <span class="hud-status-badge status-awaiting" id="status-gatekeeper" data-status="AWAITING">待总管唤起</span>
+                  </div>
+                  <div class="hud-rail-role">gatekeeper · 交付基准核验/9类防注入</div>
+                  <div class="hud-rail-task" id="task-gatekeeper">⚪ 等待总管唤起审查 (Awaiting)</div>
+                </button>
+
+                <!-- 4. Finance -->
+                <button type="button" class="hud-rail-item" id="agent-card-finance" data-agent="finance">
+                  <div class="hud-rail-row">
+                    <span class="hud-rail-name" id="name-finance">💳 财务清算</span>
+                    <span class="hud-status-badge status-awaiting" id="status-finance" data-status="AWAITING">待总管唤起</span>
+                  </div>
+                  <div class="hud-rail-role">finance · 40/60确定性算价/PayPal锁账</div>
+                  <div class="hud-rail-task" id="task-finance">⚪ 等待总管唤起算价 (Awaiting)</div>
+                </button>
+
+                <!-- 5. Delivery -->
+                <button type="button" class="hud-rail-item" id="agent-card-delivery" data-agent="delivery">
+                  <div class="hud-rail-row">
+                    <span class="hud-rail-name" id="name-delivery">📦 履约交付</span>
+                    <span class="hud-status-badge status-awaiting" id="status-delivery" data-status="AWAITING">待总管唤起</span>
+                  </div>
+                  <div class="hud-rail-role">delivery · 存证/Vault 网关/行为审计</div>
+                  <div class="hud-rail-task" id="task-delivery">⚪ 等待总管协同履约 (Awaiting)</div>
+                </button>
+
+                <!-- 6. Legal -->
+                <button type="button" class="hud-rail-item" id="agent-card-legal" data-agent="legal">
+                  <div class="hud-rail-row">
+                    <span class="hud-rail-name" id="name-legal">⚖️ 法务举证</span>
+                    <span class="hud-status-badge status-awaiting" id="status-legal" data-status="AWAITING">待总管唤起</span>
+                  </div>
+                  <div class="hud-rail-role">legal · 卖家保护规则/法定抗辩</div>
+                  <div class="hud-rail-task" id="task-legal">⚪ 等待总管协调查账 (Awaiting)</div>
+                </button>
+              </div>
+            </aside>
+
+            <!-- Right Stage: Focused Agent Inspector -->
+            <main class="hud-stage" id="hud-stage" aria-live="polite">
+              <!-- Dynamically populated by hud.renderStage() -->
+            </main>
+          </div>
+        </div>
       </div>
+
+      <div class="nav-orders-wrap">
+        <button type="button" class="nav-btn" id="nav-deals-btn" aria-haspopup="true" aria-expanded="false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          <span id="nav-deals-text">我的订单</span>
+          <span class="nav-badge" id="my-deals-count" style="display:none">0</span>
+        </button>
+        <div class="nav-orders-dropdown" id="nav-orders-dropdown" hidden>
+          <div class="nav-orders-header">
+            <span id="nav-orders-heading">我的定制订单</span>
+            <span class="sub mono" id="nav-orders-total" style="font-size:11.5px">共 0 笔</span>
+          </div>
+          <div class="nav-orders-list" id="nav-orders-list"></div>
+        </div>
+      </div>
+
+      <div class="judge-access-wrap" id="judge-access-wrap">
+        <button type="button" class="nav-btn judge-btn" id="btn-judge-toggle" title="评委专属通道 (Hackathon Judge Access)">
+          <span>⚖️</span>
+          <span id="judge-btn-text">评委通道</span>
+        </button>
+        <div class="judge-vip-pill" id="judge-vip-pill" hidden title="评委专属免验通道已激活：享受全量大模型实时深度裁决与沙盒清算">
+          <span class="judge-vip-dot"></span>
+          <span id="judge-vip-text">⚖️ 评委 VIP</span>
+        </div>
+      </div>
+
+      <button type="button" class="nav-btn" id="lang-toggle-btn" aria-label="切换语言 (Toggle Language)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:2px"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+        <span id="lang-zh" style="color:#0071e3;font-weight:600">中</span><span style="color:#a1a1a6;margin:0 2px">/</span><span id="lang-en" style="color:#6e6e73">EN</span>
+      </button>
     </div>
   </header>
 
+  <div class="demoline" id="demo-banner">
+    <b>当前处于【买家采购与测试视角】</b> — 您正在与商户的全自治托管智能体洽谈。您可以自由输入需求或使用预设芯片（可尝试攻击排除项），切身体验 ScopeGate 中台如何在背后全自动为卖家守门、锚定底账与举证抗辩。
+  </div>
+
   <!-- ══ MARKETPLACE ══ -->
-  <section class="stage" id="view-market" aria-label="Marketplace">
+  <section class="stage" id="view-market" aria-label="服务市集">
     <div class="hero">
-      <h1>Commission independent developers, guarded end to end.</h1>
-      <p>Pick a stall. Negotiate with the seller&rsquo;s own agent. ScopeGate freezes every agreed term into a contract fingerprint &mdash; before money moves, and answers disputes with it afterwards.</p>
+      <h1 id="hero-h1">下一代智能体商务网络 · 刚性契约与全链路底账守护</h1>
+      <p id="hero-p">专业卖家专注做好核心服务，销售、法务、财务、清算与争议抗辩全交由 ScopeGate 智能体集群守护。在资金流转前冻结不可篡改的契约哈希，在 PayPal 官方账本完成存证与分期清算。</p>
     </div>
 
     <div class="grid g3" id="stalls"></div>
   </section>
 
   <!-- ══ SHOP ══ -->
-  <section class="stage" id="view-shop" aria-label="Seller shop" hidden>
-    <a class="back" id="shop-back">&larr; Back to the market</a>
+  <section class="stage" id="view-shop" aria-label="商户店铺" hidden>
     <div class="store">
-      <b id="shop-title">store</b>
-      <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <span class="open"><i aria-hidden="true"></i>Commissions open</span>
-        <span class="secure">SECURED BY SCOPEGATE</span>
-      </span>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <b id="shop-title">商户店铺</b>
+        <!-- Preset Prompt Scenarios Dropdown (快捷场景预设按钮) -->
+        <div class="shop-presets-wrap" id="shop-presets-wrap">
+          <button type="button" class="shop-presets-toggle" id="btn-toggle-presets" aria-expanded="false" title="展开/收起快捷预设场景">
+            <span>💡</span>
+            <span id="shop-presets-label">快捷场景预设</span>
+            <span class="sp-arrow" id="sp-toggle-arrow">▼</span>
+          </button>
+          <div class="shop-presets-drawer" id="shop-presets-drawer" hidden>
+            <!-- Dynamically populated by renderPresetChips() in console.js -->
+          </div>
+        </div>
+      </div>
     </div>
     <div class="grid g2">
-      <div class="card sec">
-        <div class="h" id="shop-agent-head">Chat with the seller&rsquo;s agent <span class="sub" style="font-weight:400;text-transform:none;letter-spacing:0">&middot; preset negotiation agent</span></div>
+      <div class="card sec shop-chat-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+          <div class="h" id="shop-agent-head" style="margin-bottom:0">与商户专属商务智能体沟通 <span class="sub" style="font-weight:400;text-transform:none;letter-spacing:0">&middot; 多智能体商务中台守护</span></div>
+          <button type="button" class="btn ghost" id="btn-reset-chat" style="font-size:11.5px;padding:3.5px 11px;border-radius:980px;cursor:pointer;line-height:1.2" title="重置对话">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span id="btn-reset-chat-text">重置对话</span>
+          </button>
+        </div>
         <div class="chat" id="shop-thread" aria-live="polite">
-          <div class="sys">This agent can only offer what&rsquo;s on the menu &mdash; ScopeGate freezes whatever you both accept.</div>
+          <div class="sys" id="shop-thread-sys">该智能体严格按照商户公示的服务基准提供报价 —— 任何越界要求与提示注入均会被拦截，达成一致后由 ScopeGate 冻结契约。</div>
         </div>
         <div class="inputrow">
-          <input type="text" class="input" id="shop-input" placeholder="Describe what you want…" aria-label="Message the seller agent" />
-          <button type="button" class="send" id="shop-send">Send</button>
+          <input type="text" class="input" id="shop-input" placeholder="请描述您的定制需求（如：需要做3段式Next.js落地页，支持暗黑模式）…" aria-label="向商户智能体发送消息" />
+          <button type="button" class="send" id="shop-send">发送</button>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px" id="shop-chips"></div>
       </div>
       <div class="card">
         <div class="sec" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-          <div class="h" style="margin:0">The deal</div>
-          <span class="hash" id="deal-hash" hidden></span>
+          <div class="h" id="deal-workbench-title" style="margin:0">契约与分期履约工作台</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="hash" id="deal-hash" hidden></span>
+            <button type="button" class="btn danger-ghost" id="btn-cancel-deal" style="display:none" title="取消当前订单并重置洽谈">取消订单</button>
+          </div>
         </div>
         <div class="sec" id="deal-body" aria-live="polite"></div>
         <div class="sec" id="deal-files" aria-live="polite" hidden></div>
@@ -229,68 +1585,23 @@
     </div>
   </section>
 
-  <!-- ══ SELLER CONSOLE ══ -->
-  <section class="stage" id="view-console" aria-label="Seller console" hidden>
-    <div class="ctool">
-      <div class="idwrap">
-        <button type="button" class="idchip" id="acct-chip" aria-haspopup="menu" aria-expanded="false">
-          <span class="ava" id="acct-ava">A</span>
-          <span class="idmain"><b id="acct-name">—</b><span id="acct-mail">—</span></span>
-          <span aria-hidden="true" style="color:#a1a1a6">&#9662;</span>
-        </button>
-        <div class="menu" id="acct-menu" role="menu" hidden></div>
+  <!-- Judge Passcode Modal -->
+  <div class="judge-modal-overlay" id="judge-modal-overlay" hidden>
+    <div class="judge-modal">
+      <div class="judge-modal-head">
+        <div class="judge-modal-title">⚖️ <span id="judge-modal-title-text">评委专属通道 (Judge VIP Access)</span></div>
+        <button type="button" class="judge-modal-close" id="btn-close-judge-modal" aria-label="关闭">&times;</button>
       </div>
-      <div class="ap-seg" role="group" aria-label="Console view">
-        <button type="button" id="tab-deal" aria-pressed="true">Deal</button>
-        <button type="button" id="tab-agent" aria-pressed="false">Agent preset</button>
+      <p class="judge-modal-desc" id="judge-modal-desc">
+        请输入比赛主办方分配的评委测试密钥（可在 Devpost 提交的 <b>Testing Instructions</b> 中获取）。激活后将解除公网 IP 体验限流，开启全量大模型实时深度裁决。
+      </p>
+      <div class="judge-input-wrap">
+        <input type="text" id="input-judge-passcode" class="judge-input" placeholder="输入评委密钥 (默认: hackathon2026)" autocomplete="off">
+        <button type="button" class="judge-submit-btn" id="btn-submit-judge-passcode">立即激活</button>
       </div>
+      <div class="judge-modal-hint" id="judge-modal-hint"></div>
     </div>
-
-    <div id="con-deal">
-      <div class="grid g2">
-        <div class="card sec">
-          <div class="h">Requests</div>
-          <div id="req-list"><div class="sub" style="font-size:12.5px">This browser&rsquo;s sessions appear here. Send a request from the Marketplace.</div></div>
-        </div>
-        <div class="card">
-          <div class="sec" style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
-            <div class="h" style="margin:0">Deal status</div>
-            <span id="deal-status" class="sub" style="font-size:12.5px">Waiting…</span>
-          </div>
-          <div class="sec" id="d-contract" hidden>
-            <div class="h">Frozen contract</div>
-            <div class="kv"><b>Buyer</b><span id="d-buyer" class="mono">—</span></div>
-            <div class="kv"><b>Scope</b><span id="d-scope">—</span></div>
-            <div class="kv"><b>Excluded</b><span id="d-excl">—</span></div>
-            <div class="kv"><b>Price</b><span id="d-price">—</span></div>
-            <div class="hash" style="margin-top:8px" id="d-hashline">—</div>
-          </div>
-          <div class="sec" id="d-milestones" hidden>
-            <div class="h">Milestones</div>
-            <div id="d-stepper"></div>
-          </div>
-          <div class="sec" id="d-activity-wrap" hidden>
-            <div class="h">Activity &middot; signature-verified</div>
-            <div id="d-activity"></div>
-          </div>
-          <div class="sec">
-            <div class="h">When a dispute comes &mdash; PayPal referees, evidence answers</div>
-            <div class="sub" style="font-size:12px;margin-bottom:8px">Buyers file at PayPal&rsquo;s Resolution Center (or use the shop&rsquo;s simulated shortcut) &mdash; each filing arrives here as a signature-verified CUSTOMER.DISPUTE.CREATED webhook.</div>
-            <div class="kv"><b>Item not received (INR)</b><span style="font-size:12px">delivery log &middot; dispatch + download (IP &middot; time)</span></div>
-            <div class="kv"><b>Not as described (SNAD)</b><span style="font-size:12px">frozen contract &middot; locked scope + hash</span></div>
-            <div class="kv"><b>Unauthorized payment</b><span style="font-size:12px">PayPal payer verification &middot; capture record</span></div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
-              <a class="btn ghost" id="btn-dossier" target="_blank" rel="noopener" aria-disabled="true" style="pointer-events:none;opacity:.4">Export dossier JSON</a>
-              <a class="btn ghost" id="btn-pdf" target="_blank" rel="noopener" aria-disabled="true" style="pointer-events:none;opacity:.4">Defense letter PDF</a>
-              <span class="sub" style="font-size:11.5px">dossier unlocks after a deliverable is downloaded</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="con-agent" hidden></div>
-  </section>
+  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>

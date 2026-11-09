@@ -48,14 +48,14 @@ for (const testCase of adjudication) {
   }
   if (body.decision !== 'REJECT') {
     check('contract_hash is 64-char hex', /^[0-9a-f]{64}$/.test(body.contract_hash ?? ''), `got ${body.contract_hash}`);
-    check('payment_plan has 3 milestones', body.payment_plan?.length === 3, JSON.stringify(body.payment_plan?.map((m) => m.milestone_id)));
+    check('payment_plan has 2 milestones (deposit + balance)', body.payment_plan?.length === 2, JSON.stringify(body.payment_plan?.map((m) => m.milestone_id)));
     const sum = (body.payment_plan ?? []).reduce((s, m) => s + m.amount, 0);
     check('payment_plan sums to quoted_price', Math.abs(sum - body.quoted_price) < 0.001, `${sum} vs ${body.quoted_price}`);
   }
 }
 
 // Case 6: milestone payments — per-stage idempotent replay + locked-stage gating.
-// NOTE: this suite runs headless, so no PayPal capture happens here; the m2/m3 unlock
+// NOTE: this suite runs headless, so no PayPal capture happens here; the m2 unlock
 // path (capture → download → next stage) is proven by the live sandbox E2E run instead.
 const case6 = evalSuite.cases.find((c) => c.type === 'milestone_payments');
 console.log(`\nCase ${case6.id}: ${case6.name}`);
@@ -91,7 +91,7 @@ if (!acceptSession) {
 }
 
 // D3: delivery gateway + dispute dossier (dispatch -> tracked download -> export), now
-// milestone-scoped: m1 dispatch/download feeds a dossier whose ledger covers all 3 stages.
+// milestone-scoped: m1 dispatch/download feeds a dossier whose ledger covers both stages.
 console.log('\nD3: delivery tracking & dispute dossier export');
 const sid = acceptSession;
 if (!sid) {
@@ -122,7 +122,7 @@ if (!sid) {
   check('dossier anchors the m1 paypal order id', dossier.paypal_order_id === case6OrderId, `${dossier.paypal_order_id} vs ${case6OrderId}`);
   const contractHash = await hashOf(sid);
   check('dossier anchors the contract hash (custom_id prefix)', dossier.paypal_custom_id_anchor === contractHash);
-  check('dossier ledger has all 3 milestones', dossier.payment_ledger?.length === 3, `got ${dossier.payment_ledger?.length}`);
+  check('dossier ledger has both milestones', dossier.payment_ledger?.length === 2, `got ${dossier.payment_ledger?.length}`);
   check('ledger row 1 custom_id = hash:m1', dossier.payment_ledger?.[0]?.custom_id === `${contractHash}:m1`, dossier.payment_ledger?.[0]?.custom_id);
   check('ledger row 1 order id matches m1 order', dossier.payment_ledger?.[0]?.order_id === case6OrderId);
   check('ledger row 2 shows the locked stage (NONE)', dossier.payment_ledger?.[1]?.status === 'NONE', dossier.payment_ledger?.[1]?.status);
