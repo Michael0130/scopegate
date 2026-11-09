@@ -261,9 +261,9 @@ setInterval(() => {
 app.get('/api/v1/quota', (req, res) => {
   const clientDeviceId = req.headers['x-client-device-id'] || req.query.device_id || '';
   const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
-  const isLocal = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === 'localhost' || clientIp.includes('127.0.0.1');
+  const isLocal = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === 'localhost' || clientIp.includes('127.0.0.1') || process.env.NODE_ENV === 'development';
   if (isLocal) {
-    return res.json({ limit: MAX_SANDBOX_QUOTA, remaining: MAX_SANDBOX_QUOTA, is_local: true });
+    return res.json({ limit: MAX_SANDBOX_QUOTA, remaining: 9999, is_local: true });
   }
   const quotaKey = clientDeviceId ? `dev_${clientDeviceId}` : `ip_${clientIp}`;
   const now = Date.now();
@@ -271,7 +271,7 @@ app.get('/api/v1/quota', (req, res) => {
   const remaining = Math.max(0, MAX_SANDBOX_QUOTA - timestamps.length);
   res.setHeader('X-Quota-Limit', String(MAX_SANDBOX_QUOTA));
   res.setHeader('X-Quota-Remaining', String(remaining));
-  res.json({ limit: MAX_SANDBOX_QUOTA, remaining, window_min: 60 });
+  res.json({ limit: MAX_SANDBOX_QUOTA, remaining, window_min: 60, is_local: false });
 });
 
 // Natural-language buyer request -> ACCEPT | COUNTER | REJECT (schemas/decision.schema.json).
@@ -285,7 +285,7 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
 
   const clientDeviceId = req.headers['x-client-device-id'] || req.body?.device_id || '';
   const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
-  const isLocal = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === 'localhost' || clientIp.includes('127.0.0.1');
+  const isLocal = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === 'localhost' || clientIp.includes('127.0.0.1') || process.env.NODE_ENV === 'development';
 
   let skipLlm = false;
   let remaining = MAX_SANDBOX_QUOTA;
@@ -302,6 +302,8 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
       sandboxQuotaUsage.set(quotaKey, timestamps);
       remaining = Math.max(0, MAX_SANDBOX_QUOTA - timestamps.length);
     }
+  } else {
+    remaining = 9999;
   }
 
   res.setHeader('X-Quota-Limit', String(MAX_SANDBOX_QUOTA));
@@ -344,7 +346,7 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
     );
     decision.seller_id = seller.id;
 
-    decision.quota = { limit: MAX_SANDBOX_QUOTA, remaining, window_min: 60 };
+    decision.quota = { limit: MAX_SANDBOX_QUOTA, remaining, window_min: 60, is_local: isLocal };
 
     if (skipLlm && decision.gate_meta) {
       const isZh = req.body?.lang === 'zh' || /[\u4e00-\u9fa5]/.test(buyerMessage);

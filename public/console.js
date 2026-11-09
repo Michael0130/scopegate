@@ -1362,6 +1362,16 @@ function updateQuotaUI(quota) {
   const text = $('quota-text');
   if (!text) return;
 
+  const isLocal = Boolean(quota.is_local || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+  if (isLocal) {
+    if (dot) dot.className = 'quota-dot';
+    text.textContent = currentLang === 'zh'
+      ? '本地开发环境 · 大模型实时调用无限制 (Local Dev Mode)'
+      : 'Local Dev Environment · Unlimited Live LLM Invocations';
+    text.style.color = '#10b981';
+    return;
+  }
+
   const rem = typeof quota.remaining === 'number' ? quota.remaining : 20;
   const limit = typeof quota.limit === 'number' ? quota.limit : 20;
 
