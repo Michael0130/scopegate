@@ -258,8 +258,65 @@ function fallbackInquiryVerdict(buyerMessage, baseline, contextState, isZh) {
   const nameMatch = trimmed.match(/(?:我叫|我是|叫我|my\s*name\s*is)\s*([^\s,。！!？?]{2,12})/i);
   const detectedName = nameMatch ? nameMatch[1] : contextState?.buyer_name;
 
-  // 1. Profile / Experience / Cases / Portfolio
-  const isProfile = /(?:介绍|经历|履历|背景|案例|作品|资历|关于|从业|代表作|portfolio|experience|cases|profile|showcase|bio|background|who\s*are\s*you|about)/i.test(trimmed);
+  // 1. AI / Bot / ChatGPT inquiry
+  const isAiQuery = /(?:机器人|ai|chatgpt|人类|真人|是不是ai|是大模型吗|bot|gpt)/i.test(trimmed);
+  if (isAiQuery) {
+    return {
+      dispatch: {
+        target_agent: 'concierge',
+        intent: isZh ? '智能体身份与服务定位解答' : 'Agent Identity & Capability Inquiry',
+        router_note: isZh ? '买方询问是否为AI，由商务总管说明多智能体商务网关定位' : 'Buyer asks about AI identity, handled by Master Concierge',
+      },
+      decision: Decision.INQUIRY,
+      risk_flags: ['NONE'],
+      applied_surcharges: [],
+      reasoning: isZh
+        ? '您好！我是独立开发者 Alex 的专属商务总管智能体。这里是由商务、技术守门人、财务、法务与交付组成的专业智能体网格，7×24 小时为您提供严谨的范围把控、契约存证与分期清算服务。方便聊聊您想打造什么样的网站或产品吗？'
+        : 'Hello! I am Alex\'s Master Concierge Agent. Our multi-agent mesh handles 24/7 scope bounding, contract freezing, and PayPal milestone settlement for independent full-stack developer Alex. What kind of project are you looking to build?',
+      session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'GREETING' } : undefined,
+    };
+  }
+
+  // 2. Pricing / Expensive / Surcharge / Discount / Budget
+  const isPricing = /(?:多少钱|怎么收费|收费标准|价格|预算|费用|怎么算|报价|按什么收费|太贵|便宜|抢钱|打折|优惠|券|性价比|300|100|200|500|pricing|price|cost|how\s*much|rate|expensive|cheap|discount)/i.test(trimmed);
+  if (isPricing && !/(?:\d+\s*区块|\d+\s*section|确认下单|同意报价)/i.test(trimmed)) {
+    return {
+      dispatch: {
+        target_agent: 'finance',
+        intent: isZh ? '收费标准与透明单向定价咨询' : 'Pricing & Rate Structure Inquiry',
+        router_note: isZh ? '买方咨询价格与预算，由财务智能体提供透明基准计价说明' : 'Buyer asks about pricing, handled by Finance Agent',
+      },
+      decision: Decision.INQUIRY,
+      risk_flags: ['NONE'],
+      applied_surcharges: [],
+      reasoning: isZh
+        ? 'Alex 的定制开发采用清晰透明的基准计价：标准 3 区块响应式 Web 页面基础起步价为 $500.00，包含 3 天极速交付与 2 轮修改。我们的机制是严格从基价单向按公开规则核算，不设口头砍价也没有隐藏增项；若您预算较为紧张，我们可以先帮您把需求收敛到最核心的展示版块。您看方便先聊聊哪些版块是当前必须的吗？'
+        : 'Pricing starts deterministically at $500.00 for a standard 3-section responsive web experience (3-day turnaround, 2 revision rounds included). Pricing only moves via published add-on rules without hidden fees. If budget is constrained, we can narrow scope to your essential core sections first. What sections do you need most?',
+      session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'DISCOVERY' } : undefined,
+    };
+  }
+
+  // 3. Refund / Dispute / Security / Escrow / Deposit
+  const isSecurity = /(?:退款|不满意|退钱|跑路|骗子|定金|安全|担保|维权|争议|refund|dispute|escrow|deposit|security)/i.test(trimmed);
+  if (isSecurity) {
+    return {
+      dispatch: {
+        target_agent: 'legal',
+        intent: isZh ? '资金安全与分期履约保障咨询' : 'Payment Escrow & Dispute Protection Inquiry',
+        router_note: isZh ? '买方咨询资金安全与退款，由法务智能体说明双里程碑与争议机制' : 'Buyer asks about payment security, handled by Legal Agent',
+      },
+      decision: Decision.INQUIRY,
+      risk_flags: ['NONE'],
+      applied_surcharges: [],
+      reasoning: isZh
+        ? '合作采用两阶段 PayPal 官方分期清算（40% 启动定金 + 60% 验收尾款）。在方案达成前您可以随时无责取消；双方达成约定后，合同哈希将直接作为 custom_id 锚定在 PayPal 官方账本中，若商户因不可抗力未能按约定履约，您受 PayPal 官方争议机制与买家保护全程保障，资金安全完全透明。'
+        : 'All transactions run on PayPal milestone rails (40% kick-off deposit + 60% final balance). Contract terms are frozen as a 64-char SHA-256 hash in PayPal\'s official ledger. You are fully backed by PayPal\'s official dispute resolution, making escrow safe and accountable.',
+      session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'DISCOVERY' } : undefined,
+    };
+  }
+
+  // 4. Profile / Experience / Cases / Portfolio
+  const isProfile = /(?:介绍|经历|履历|背景|案例|作品|资历|关于|从业|代表作|吹牛|portfolio|experience|cases|profile|showcase|bio|background|who\s*are\s*you|about)/i.test(trimmed);
   if (isProfile) {
     return {
       dispatch: {
@@ -271,13 +328,13 @@ function fallbackInquiryVerdict(buyerMessage, baseline, contextState, isZh) {
       risk_flags: ['NONE'],
       applied_surcharges: [],
       reasoning: isZh
-        ? 'Alex 拥有 8 年全栈数字化 Web 与交互产品开发经验，精通 React/Next.js/Node.js 全栈生态。曾交付过多个面向全球用户的 SaaS 官网、高转化落地页及现代化互动 Web 应用，在工程质量与交付效率上有严苛保障。请问您计划打造一个什么样的 Web 项目？'
-        : 'Alex brings 8+ years of full-stack digital web and interactive craftsmanship, specializing in Next.js, Tailwind, and Node.js. He has built high-converting SaaS landing pages and bespoke web products for global teams. What kind of website or vision are you looking to create?',
+        ? 'Alex 拥有 8 年全栈数字化 Web 与交互产品架构经验，精通现代 React/Node.js 生态。曾主导交付过 FinFlow 出海官网（首屏 0.6 秒秒开、移动端转化提升 42%）、DevSphere 开发者平台暗黑主题落地页等多款高质量产品。我们坚持用代码和交付说话。请问您的项目大概属于什么业务方向呢？'
+        : 'Alex brings 8+ years of full-stack web and interactive craft, specializing in Next.js and high-performance frontends (e.g. FinFlow global site, DevSphere dark-mode portal). We let code quality and track record do the talking. What kind of project vision are you looking to build?',
       session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'DISCOVERY' } : undefined,
     };
   }
 
-  // 2. Copyright / Source Code / IP / Ownership
+  // 5. Copyright / Source Code / IP / Ownership
   const isCopyright = /(?:版权|源码|代码|所有权|归属|归我|知识产权|开源|商用|二次开发|专利|copyright|ip|source\s*code|ownership|license)/i.test(trimmed);
   if (isCopyright) {
     return {
@@ -290,91 +347,71 @@ function fallbackInquiryVerdict(buyerMessage, baseline, contextState, isZh) {
       risk_flags: ['NONE'],
       applied_surcharges: [],
       reasoning: isZh
-        ? '交付完成并结清尾款后，项目的完整源码及资产版权 100% 归属于您（买方），包含全部源代码与部署配置文件，完全支持自由二次开发与商业化使用，绝无任何隐藏授权费或厂商绑定。'
+        ? '交付完成并结清尾款后，项目的完整源码及资产版权 100% 永久买断归属于您，包含全部源代码、样式表与部署配置文件，完全支持自由二次开发与商业化使用，绝无任何隐藏授权费或厂商绑定。'
         : '100% of the deliverables and full source code belong entirely to you upon milestone completion and final settlement, with no recurring vendor royalties or proprietary lock-in.',
       session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'DISCOVERY' } : undefined,
     };
   }
 
-  // 3. Name greeting / Self-intro / Greeting / Short or Casual
-  const isGreetingOrCasual = trimmed.length <= 4
-    || /^(?:hi|hello|hey|ok|好的|收到|在吗|你好|1+|test|\?|？)$/i.test(trimmed)
-    || /(?:你好|您好|hi|hello|在吗|在不在|测试|test|有人吗|我叫|我是|叫我|my\s*name\s*is)/i.test(trimmed);
+  // 6. Turnaround / Process / Delivery / Domain / Deployment
+  const isProcess = /(?:流程|周期|工期|几天|多长时间|怎么交付|交付方式|部署|域名|上线|资料|需要提供|turnaround|process|workflow|how\s*to\s*deliver|deploy|domain)/i.test(trimmed);
+  if (isProcess) {
+    return {
+      dispatch: {
+        target_agent: 'delivery',
+        intent: isZh ? '交付流程与工期部署咨询' : 'Turnaround & Delivery Process Inquiry',
+        router_note: isZh ? '买方咨询交付周期与上线流程，由履约交付智能体解答' : 'Buyer asks about workflow, handled by Delivery Agent',
+      },
+      decision: Decision.INQUIRY,
+      risk_flags: ['NONE'],
+      applied_surcharges: [],
+      reasoning: isZh
+        ? '标准交付周期为 3 个工作日（支持加急至 24 小时交付），包含 2 轮细节微调。交付物包含生产级完整源码包与部署脚本，Alex 会协助您一键绑定自有域名；准备建站只需提供品牌名称/Logo、核心展示文案及喜欢的风格参考即可。'
+        : 'Standard turnaround is 3 days (with 24h rush options available), including 2 revision rounds. Deliverables include production-ready code and deployment configs, with custom domain guidance. You only need to supply branding assets, core copy, and style preferences.',
+      session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'DISCOVERY' } : undefined,
+    };
+  }
+
+  // 7. Name greeting / Self-intro / Greeting / Short / Casual / Laughter / Emoji
+  const isGreetingOrCasual = trimmed.length <= 6
+    || /^(?:hi|hello|hey|ok|好的|收到|在吗|你好|1+|2+|3+|test|\?|？|哈哈+|呵呵+|嘻嘻+)$/i.test(trimmed)
+    || /(?:你好|您好|hi|hello|在吗|在不在|测试|test|有人吗|我叫|我是|叫我|my\s*name\s*is|哈哈)/i.test(trimmed);
 
   if (isGreetingOrCasual) {
     return {
       dispatch: {
         target_agent: 'concierge',
         intent: isZh ? '常规问候与需求顾问' : 'General Inquiry & Consultative Discovery',
-        router_note: isZh ? '买方输入问候或自我介绍，由商务总管前台顾问式接洽' : 'Greeting or self-intro, handled by Master Concierge',
+        router_note: isZh ? '买方输入问候或互动，由商务总管前台顾问式接洽' : 'Greeting or casual remark, handled by Master Concierge',
       },
       decision: Decision.INQUIRY,
       risk_flags: ['NONE'],
       applied_surcharges: [],
       reasoning: isZh
         ? (detectedName
-          ? `您好，${detectedName}！很高兴为您服务。我是 Alex 的专属商务总管。我们专注于高品质数字化 Web 与现代化定制页面开发，交付高效、工程严谨。请问您计划打造一个什么样的项目或产品？方便先聊聊您的核心展示诉求或设计偏好吗？`
-          : '您好！很高兴为您服务。我是 Alex 的专属商务总管。我们专注于高品质数字化 Web 与现代化定制页面开发，交付高效、工程严谨。请问您计划打造一个什么样的项目或产品？方便先聊聊您的核心展示诉求或设计偏好吗？')
-        : 'Hello! I am Alex\'s Master Concierge. We specialize in high-performance bespoke web development and modern digital craft. What kind of project or vision are you looking to build?',
+          ? `您好，${detectedName}！很高兴为您服务。我是 Alex 的专属商务总管。请问您计划打造一个什么样的 Web 项目？可以随时聊聊您的核心展示诉求或设计偏好。`
+          : '您好！很高兴为您服务。我是 Alex 的专属商务总管。请问您计划打造一个什么样的 Web 项目？方便先聊聊您的核心展示诉求或设计偏好吗？')
+        : 'Hello! I am Alex\'s Master Concierge. What kind of project or digital experience are you looking to build?',
       session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'GREETING' } : undefined,
     };
   }
 
-  // 4. General Pricing / Quote / Budget questions without specific project spec
-  const isPricing = /(?:多少钱|怎么收费|收费标准|价格|预算|费用|怎么算|报价|按什么收费|pricing|price|cost|how\s*much|rate)/i.test(trimmed);
-  if (isPricing && !/(?:\d+\s*区块|\d+\s*section|加急|修改|做个|建站|开发一套)/i.test(trimmed)) {
-    return {
-      dispatch: {
-        target_agent: 'finance',
-        intent: isZh ? '收费标准与透明计价咨询' : 'Pricing & Rate Structure Inquiry',
-        router_note: isZh ? '买方咨询收费标准，由财务智能体提供透明基准报价说明' : 'Buyer asks about pricing, handled by Finance Agent',
-      },
-      decision: Decision.INQUIRY,
-      risk_flags: ['NONE'],
-      applied_surcharges: [],
-      reasoning: isZh
-        ? 'Alex 的定制开发采用清晰透明的基准计价：3 区块标准响应式 Web 页面基础起步价为 $500.00，含 3 天极速交付与 2 轮修改；如有加急、额外定制区块等需求，按公示规则透明单向核算。方便先聊聊您需要展示的具体模块吗？'
-        : 'Pricing starts transparently at $500.00 for a standard 3-section responsive web experience (3-day turnaround, 2 revision rounds). Add-ons such as rush capacity are computed deterministically via published surcharge rules.',
-      session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'DISCOVERY' } : undefined,
-    };
-  }
-
-  // 5. Turnaround / Process / Delivery
-  const isProcess = /(?:流程|周期|工期|几天|多长时间|怎么交付|交付方式|流程是怎样|turnaround|process|workflow|how\s*to\s*deliver)/i.test(trimmed);
-  if (isProcess) {
-    return {
-      dispatch: {
-        target_agent: 'delivery',
-        intent: isZh ? '交付流程与工期咨询' : 'Turnaround & Delivery Process Inquiry',
-        router_note: isZh ? '买方咨询交付周期与履约流程，由履约交付智能体解答' : 'Buyer asks about workflow, handled by Delivery Agent',
-      },
-      decision: Decision.INQUIRY,
-      risk_flags: ['NONE'],
-      applied_surcharges: [],
-      reasoning: isZh
-        ? '标准交付周期为 3 个工作日（支持加急至 24 小时交付），包含 2 轮设计与细节微调。双方达成约定后通过 PayPal 分期托管（40% 启动定金 + 60% 验收尾款），并通过 ScopeGate 交付保险库安全交付完整源码与部署配置。'
-        : 'Standard turnaround is 3 days (with 24h rush options available), including 2 revision rounds. Payment is split into PayPal milestone escrow (40% kick-off deposit + 60% final balance) with delivery via ScopeGate Deliverables Vault.',
-      session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'DISCOVERY' } : undefined,
-    };
-  }
-
-  // 6. Any other general question/inquiry (ends with ?, ？, or contains question words like 吗/么/呢/能否/可以/如何/怎样/什么)
-  // and does NOT contain explicit project creation terms
-  const isQuestion = /(?:\?|？|吗|么|呢|能否|可以吗|如何|怎样|什么|有没有|支持吗|行不行|can\s*you|could\s*you|how\s*do|what\s*is)/i.test(trimmed);
-  const isNotBuildOrder = !/(?:\d+\s*区块|\d+\s*section|做个|写个|开发一套|帮我做|建站|加急24小时|增加.*修改)/i.test(trimmed);
-  if (isQuestion && isNotBuildOrder) {
+  // 8. General inquiry fallback: Any general request without explicit actionable order specification
+  // NEVER push a $500 lock on an open-ended question!
+  const hasExplicitOrderSpec = /(?:(?:\d+|三|四|五)\s*(?:个)?(?:区块|section)|确认下单|锁定基线|签合同|同意基价|确定做这个)/i.test(trimmed);
+  if (!hasExplicitOrderSpec) {
     return {
       dispatch: {
         target_agent: 'concierge',
         intent: isZh ? '咨询答疑与需求引导' : 'General Consultation & Guidance',
-        router_note: isZh ? '买方提出咨询疑问，由商务总管进行解答与引导' : 'Buyer asks general question, handled by Master Concierge',
+        router_note: isZh ? '买方提出开放式咨询，由商务总管进行解答与引导' : 'Buyer asks open-ended question, handled by Master Concierge',
       },
       decision: Decision.INQUIRY,
       risk_flags: ['NONE'],
       applied_surcharges: [],
       reasoning: isZh
-        ? 'Alex 专注于高品质定制数字化 Web 与现代化交互体验开发。针对您的咨询，我们支持高度定制化的响应式页面与工程交付。方便进一步沟通您的具体业务场景与功能期望吗？'
-        : 'Alex specializes in bespoke digital web and modern interactive experiences. We support tailored responsive sections and rigorous engineering. Could you share more about your target use case?',
+        ? '您好！Alex 专注于高品质定制数字化 Web 与现代化交互体验开发。针对您的想法，我们可以为您量身梳理落地方案。方便进一步聊聊您具体需要展示哪些板块，或者期望的风格方向吗？'
+        : 'Hello! Alex specializes in bespoke digital web and modern interactive craft. We can tailor a dedicated plan for your vision. Could you share what key sections or style direction you have in mind?',
       session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'DISCOVERY' } : undefined,
     };
   }
@@ -382,24 +419,26 @@ function fallbackInquiryVerdict(buyerMessage, baseline, contextState, isZh) {
   return null;
 }
 
-// Conservative degraded verdict for unknown requests when the LLM is down: never ACCEPT,
+// Conservative degraded verdict for explicit orders when the LLM is down: never ACCEPT,
 // never invent scope — hand the quote back for the buyer to confirm the objective baseline.
 function degradedVerdict(baseline, isZh = false) {
+  const readableDeliverables = isZh
+    ? '最多 3 个核心响应式页面区块（如开篇展示、方案报价、常见问答）、高品质暗色主题视觉与生产级自动化部署配置'
+    : baseline.deliverables.join('; ');
   return {
     dispatch: {
       target_agent: 'gatekeeper',
-      intent: isZh ? '降级模式审核' : 'Degraded Fallback Scope',
-      router_note: isZh ? '网关处于保护模式，由技术守门人维持基准' : 'Gateway running in degraded mode',
+      intent: isZh ? '按基准服务范围核定' : 'Baseline Scope Fallback',
+      router_note: isZh ? '技术守门人按标准交付基线核定方案' : 'Scope gatekeeper holds baseline deliverables',
     },
     decision: Decision.COUNTER,
     risk_flags: ['NONE'],
     applied_surcharges: [],
     reasoning: isZh
-      ? `网关当前处于降级保护模式。本次定制诉求暂按标准交付基线锁定：${baseline.deliverables.join('；')}。标准周期 ${baseline.turnaround_days} 天，包含 ${baseline.max_revisions} 轮修改。请确认此范围即可推进，或使用具体指标重新描述。`
-      : 'Gateway is operating in degraded mode and cannot adjudicate free-form scope right now. '
-        + 'The request is held at the baseline quote: ' + baseline.deliverables.join('; ')
+      ? `本次定制诉求已按标准交付基线为您锁定范围：${readableDeliverables}。标准交付工期 ${baseline.turnaround_days} 个工作日，包含 ${baseline.max_revisions} 轮细节微调。请确认此范围即可推进签约并锁定排期，如需追加功能或加急可随时告知。`
+      : 'The request is held at the standard baseline quote: ' + readableDeliverables
         + `. Turnaround ${baseline.turnaround_days} days, ${baseline.max_revisions} revision rounds included. `
-        + 'Confirm this exact scope to proceed, or rephrase with measurable terms.',
+        + 'Confirm this exact scope to proceed, or specify further add-ons.',
   };
 }
 
