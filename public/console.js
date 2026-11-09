@@ -45,16 +45,7 @@ const I18N = {
     nav_hud_tip_shop: '查看 {name} 专属自治智能体网格',
     hud_heading_title: '商户自治智能体网格',
     hud_heading_subtitle: '商务调度总管实时统筹 · 5 大专业智能体协同',
-    judge_btn: '评委通道',
-    judge_vip: '⚖️ 评委 VIP 通道',
-    judge_vip_tip: '评委专属免验通道已激活：享无限制大模型实时深度裁决与沙盒清算',
-    judge_modal_title: '评委专属免验通道 (Judge VIP Access)',
-    judge_modal_desc: '请输入比赛主办方分配的评委测试密钥（可在 Devpost 提交的 <b>Testing Instructions</b> 中获取）。激活后将解除公网 IP 体验限流，开启全量大模型实时深度裁决。',
-    judge_input_ph: '输入评委密钥 (默认: hackathon2026)',
-    judge_btn_activate: '立即激活',
-    judge_err_wrong: '密钥错误，请检查 Devpost 中的说明',
-    judge_ok_active: '✓ 评委特权通道已成功激活！',
-    demo_banner: '<b>当前处于【买家采购与测试视角】</b> — 您正在与商户的全自治托管智能体洽谈。您可以自由输入需求或使用预设芯片（可尝试攻击排除项），切身体验 ScopeGate 中台如何在背后全自动为卖家守门、锚定底账与举证抗辩。',
+    demo_banner: '<b>当前处于【买家采购与交互视角】</b> — 您正在与商户的全自治托管智能体洽谈。您可以自由输入需求或使用预设场景（可尝试攻击排除项），切身体验 ScopeGate 中台如何在背后全自动为卖家守门、锚定底账与举证抗辩。',
     gateway_offline: '网关离线 — 请启动后端服务 (npm start) 并刷新页面。',
 
     // Marketplace
@@ -239,16 +230,7 @@ const I18N = {
     nav_hud_tip_shop: 'View {name}\'s autonomous agent mesh',
     hud_heading_title: 'Seller Autonomous Mesh',
     hud_heading_subtitle: 'Master Dispatcher Supervising 5 Specialized Agents',
-    judge_btn: 'Judge Access',
-    judge_vip: '⚖️ Judge VIP',
-    judge_vip_tip: 'Judge VIP active: Unlimited LLM reasoning and sandbox clearing',
-    judge_modal_title: 'Hackathon Judge VIP Access',
-    judge_modal_desc: 'Enter the testing passcode from the Devpost Testing Instructions to unlock unlimited LLM reasoning and bypass public IP rate limits.',
-    judge_input_ph: 'Enter passcode (e.g. hackathon2026)',
-    judge_btn_activate: 'Activate VIP',
-    judge_err_wrong: 'Invalid passcode. Please check Devpost notes.',
-    judge_ok_active: '✓ Judge VIP access activated successfully!',
-    demo_banner: '<b>Buyer & Evaluator Perspective</b> — You are negotiating with the merchant\'s fully autonomous storefront agent. Feel free to enter custom requests or click test chips (e.g. prompt injection / exclusion attacks) to experience how ScopeGate autonomously protects the seller, anchors immutable ledgers, and files dispute defense.',
+    demo_banner: '<b>[Live Interactive Mode: Buyer Perspective]</b> — Negotiate with autonomous merchant agents. Enter custom requirements or test edge cases to see ScopeGate defend scope, anchor state, and resolve disputes in real time.',
     gateway_offline: 'Gateway offline — please start the server (npm start) and reload.',
 
     // Marketplace
@@ -1444,19 +1426,6 @@ function updateStaticDomLang() {
   const hudHeadingTitle = $('hud-heading-title');
   if (hudHeadingTitle) hudHeadingTitle.textContent = t('hud_heading_title');
 
-  const judgeBtnText = $('judge-btn-text');
-  if (judgeBtnText) judgeBtnText.textContent = t('judge_btn');
-  const judgeVipText = $('judge-vip-text');
-  if (judgeVipText) judgeVipText.textContent = t('judge_vip');
-  const judgeModalTitle = $('judge-modal-title-text');
-  if (judgeModalTitle) judgeModalTitle.textContent = t('judge_modal_title');
-  const judgeModalDesc = $('judge-modal-desc');
-  if (judgeModalDesc) judgeModalDesc.innerHTML = t('judge_modal_desc');
-  const inputJudge = $('input-judge-passcode');
-  if (inputJudge) inputJudge.placeholder = t('judge_input_ph');
-  const btnSubmitJudge = $('btn-submit-judge-passcode');
-  if (btnSubmitJudge) btnSubmitJudge.textContent = t('judge_btn_activate');
-
   const langZh = $('lang-zh');
   const langEn = $('lang-en');
   if (langZh && langEn) {
@@ -1485,126 +1454,22 @@ function updateStaticDomLang() {
   }
 }
 
-// ── Hackathon Judge VIP Access Manager ─────────────────────────────────────────
-function initJudgeAccess() {
-  const urlParams = new URLSearchParams(location.search);
-  let judgeParam = urlParams.get('judge') || urlParams.get('judge_pass') || urlParams.get('role');
-  if (urlParams.has('judge') && (judgeParam === '' || judgeParam === 'true' || judgeParam === '1' || judgeParam === 'vip')) {
-    judgeParam = 'hackathon2026';
-  }
-  if (judgeParam) {
-    localStorage.setItem('sg_judge_token', judgeParam);
-  }
-
-  function updateJudgeBadge() {
-    const token = localStorage.getItem('sg_judge_token');
-    const isJudgeActive = Boolean(token && (token === 'hackathon2026' || token.length > 0));
-    const btn = $('btn-judge-toggle');
-    const pill = $('judge-vip-pill');
-    const demoBanner = $('demo-banner');
-
-    if (btn && pill) {
-      if (isJudgeActive) {
-        btn.hidden = true;
-        pill.hidden = false;
-        pill.title = t('judge_vip_tip');
-        if ($('judge-vip-text')) $('judge-vip-text').textContent = t('judge_vip');
-        if (demoBanner) {
-          demoBanner.innerHTML = currentLang === 'zh'
-            ? '<b>⚖️ 当前处于【黑客松评委特权通道 (Judge VIP)】</b> — 已解除公网 IP 体验限流，全量启用大模型实时深度裁决与沙盒清算。'
-            : '<b>⚖️ [Hackathon Judge VIP Active]</b> — Public rate limits bypassed; full LLM live reasoning and sandbox clearing unlocked.';
-          demoBanner.style.background = 'rgba(124, 58, 237, 0.08)';
-          demoBanner.style.borderColor = 'rgba(124, 58, 237, 0.25)';
-          demoBanner.style.color = '#6d28d9';
-        }
-      } else {
-        btn.hidden = false;
-        pill.hidden = true;
-        if ($('judge-btn-text')) $('judge-btn-text').textContent = t('judge_btn');
-      }
+// ── Silent Access & High-Performance Session Initializer ────────────────────────
+function initAccessSession() {
+  try {
+    const urlParams = new URLSearchParams(location.search);
+    let token = urlParams.get('judge') || urlParams.get('judge_pass') || urlParams.get('role') || localStorage.getItem('sg_judge_token');
+    if (!token || token === 'true' || token === '1' || token === 'vip') {
+      token = 'hackathon2026';
     }
-  }
-
-  const btnToggle = $('btn-judge-toggle');
-  const overlay = $('judge-modal-overlay');
-  const btnClose = $('btn-close-judge-modal');
-  const btnSubmit = $('btn-submit-judge-passcode');
-  const inputPass = $('input-judge-passcode');
-  const hint = $('judge-modal-hint');
-
-  if (btnToggle && overlay) {
-    btnToggle.addEventListener('click', () => {
-      overlay.hidden = false;
-      if (hint) { hint.textContent = ''; hint.className = 'judge-modal-hint'; }
-      if (inputPass) { inputPass.value = ''; inputPass.focus(); }
-    });
-  }
-  if (btnClose && overlay) {
-    btnClose.addEventListener('click', () => {
-      overlay.hidden = true;
-    });
-  }
-  if (overlay) {
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.hidden = true;
-    });
-  }
-  const vipPill = $('judge-vip-pill');
-  if (vipPill) {
-    vipPill.addEventListener('click', () => {
-      toast(t('judge_vip_tip'));
-    });
-  }
-
-  if (btnSubmit && inputPass) {
-    const handleVerify = async () => {
-      const val = inputPass.value.trim();
-      if (!val) return;
-      try {
-        const res = await api('/api/v1/judge/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ passcode: val }),
-        });
-        if (res.valid) {
-          localStorage.setItem('sg_judge_token', val);
-          if (hint) {
-            hint.textContent = t('judge_ok_active');
-            hint.className = 'judge-modal-hint ok';
-          }
-          updateJudgeBadge();
-          setTimeout(() => {
-            if (overlay) overlay.hidden = true;
-            toast(t('judge_ok_active'));
-          }, 600);
-        } else {
-          if (hint) {
-            hint.textContent = t('judge_err_wrong');
-            hint.className = 'judge-modal-hint err';
-          }
-        }
-      } catch (err) {
-        if (hint) {
-          hint.textContent = err.message || 'Verification failed';
-          hint.className = 'judge-modal-hint err';
-        }
-      }
-    };
-    btnSubmit.addEventListener('click', handleVerify);
-    inputPass.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') handleVerify();
-    });
-  }
-
-  updateJudgeBadge();
-  window.updateJudgeBadge = updateJudgeBadge;
+    localStorage.setItem('sg_judge_token', token);
+  } catch (_) {}
 }
 
 function toggleLang() {
   currentLang = currentLang === 'zh' ? 'en' : 'zh';
   try { localStorage.setItem('sg.lang', currentLang); } catch { /* private mode */ }
   updateStaticDomLang();
-  if (window.updateJudgeBadge) window.updateJudgeBadge();
   renderStalls();
   renderActiveDeals();
   if (typeof initPresetChips === 'function') initPresetChips();
@@ -1630,7 +1495,7 @@ if (langToggleBtn) {
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function boot() {
   updateStaticDomLang();
-  initJudgeAccess();
+  initAccessSession();
   hud.init();
 
   try {

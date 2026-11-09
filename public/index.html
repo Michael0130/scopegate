@@ -237,7 +237,7 @@
       <a href="#proof">Proof</a>
       <a href="#quickstart">Run it locally &darr;</a>
       <a href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
-      <a class="nav-cta" href="/console.html?judge=hackathon2026">Open Live Console &rarr;</a>
+      <a class="nav-cta" href="/console.html">Open Live Console &rarr;</a>
     </nav>
   </header>
 
@@ -248,7 +248,7 @@
     <h1>Sellers focus on their craft. <span class="grad">AI Agents handle the rest.</span></h1>
     <p class="h1sub">ScopeGate is the Multi-Agent Commerce Mesh for bespoke services: 24/7 sales, scope gatekeeper, and PayPal milestone escrow — protecting scope before money moves.</p>
     <div class="cta">
-      <a class="btn btn-white" href="/console.html?judge=hackathon2026">Open Live Console &rarr;</a>
+      <a class="btn btn-white" href="/console.html">Open Live Console &rarr;</a>
       <a class="btn btn-ghost" data-needs-video href="">&#9654;&nbsp;Watch 90-sec demo</a>
       <a class="btn btn-ghost" href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -474,7 +474,7 @@
         <div class="eyebrow">RUN IT YOURSELF</div>
         <h2>Your first sandbox capture, in about 15 minutes.</h2>
       </div>
-      <a class="lk" href="/console.html?judge=hackathon2026">No install? Open the live console &rarr;</a>
+      <a class="lk" href="/console.html">No install? Open the live console &rarr;</a>
     </div>
     <div class="qsteps">
       <div class="qstep">
@@ -545,7 +545,7 @@ LLM_API_KEY=...           <span class="cm"># optional &mdash; without it the gat
     <p class="h2sub">A marketplace of guarded stalls &mdash; negotiate with each seller&rsquo;s agent, watch every
       agreed term freeze into a SHA-256 fingerprint, and pay milestone by milestone on real PayPal sandbox
       rails.</p>
-    <a class="btn btn-white" href="/console.html?judge=hackathon2026">Open Live Console &rarr;</a>
+    <a class="btn btn-white" href="/console.html">Open Live Console &rarr;</a>
     <div class="ctacap" style="margin-top:14px">Free &middot; no signup &middot; first load &asymp; 30s</div>
   </section>
 
@@ -557,7 +557,7 @@ LLM_API_KEY=...           <span class="cm"># optional &mdash; without it the gat
     <div class="foot-line">Settled by the contract, not the loudest voice.</div>
     <div class="foot-links">
       <a href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
-      <a href="/console.html?judge=hackathon2026">Live console</a>
+      <a href="/console.html">Live console</a>
       <a href="https://github.com/Michael0130/scopegate/blob/main/docs/demo-walkthrough.md" target="_blank" rel="noopener">Judges&rsquo; tour</a>
       <a href="https://paypalaihackathon.devpost.com" target="_blank" rel="noopener">PayPal AI Hackathon</a>
     </div>
@@ -565,13 +565,10 @@ LLM_API_KEY=...           <span class="cm"># optional &mdash; without it the gat
   </footer>
 
   <script>
-    // Automatically initialize judge VIP access for anyone entering from the portal homepage
+    // Silently initialize access session
     (function () {
       try {
         localStorage.setItem('sg_judge_token', 'hackathon2026');
-        document.querySelectorAll('a[href*="/console"]').forEach(function (a) {
-          a.href = '/console.html?judge=hackathon2026';
-        });
       } catch (e) {}
     })();
 

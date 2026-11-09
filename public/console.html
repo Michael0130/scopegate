@@ -1018,153 +1018,6 @@
       line-height: 1.45;
     }
 
-    /* Judge VIP & Public Gate Styles */
-    .judge-access-wrap {
-      display: inline-flex;
-      align-items: center;
-      margin-right: 4px;
-    }
-    .judge-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      border: 1px solid rgba(217,119,6,.28);
-      background: rgba(254,243,199,.5);
-      color: #b45309;
-      font-weight: 600;
-      transition: all .15s ease;
-    }
-    .judge-btn:hover {
-      background: rgba(254,243,199,.9);
-      border-color: #d97706;
-      color: #92400e;
-    }
-    .judge-vip-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11.5px;
-      font-weight: 700;
-      color: #7c3aed;
-      background: rgba(124,58,237,.08);
-      border: 1px solid rgba(124,58,237,.25);
-      border-radius: 999px;
-      padding: 4px 10px;
-      cursor: pointer;
-      box-shadow: 0 1px 3px rgba(124,58,237,.1);
-      transition: all .15s ease;
-    }
-    .judge-vip-pill:hover {
-      background: rgba(124,58,237,.14);
-      border-color: #7c3aed;
-    }
-    .judge-vip-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #7c3aed;
-      box-shadow: 0 0 0 2px rgba(124,58,237,.25);
-      animation: vipPulse 1.8s infinite;
-    }
-    @keyframes vipPulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.3); opacity: .7; }
-    }
-
-    /* Judge Modal */
-    .judge-modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.45);
-      backdrop-filter: blur(4px);
-      z-index: 999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: fadeIn .15s ease-out;
-    }
-    .judge-modal {
-      width: min(440px, calc(100vw - 32px));
-      background: #ffffff;
-      border-radius: 16px;
-      border: 1px solid rgba(0,0,0,.12);
-      box-shadow: 0 24px 48px -12px rgba(0,0,0,.25);
-      padding: 20px 22px;
-      animation: cmPopIn .18s ease-out;
-    }
-    .judge-modal-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .judge-modal-title {
-      font-size: 14.5px;
-      font-weight: 700;
-      color: #111827;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .judge-modal-close {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #f1f5f9;
-      border: none;
-      color: #64748b;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-    }
-    .judge-modal-close:hover { background: #e2e8f0; color: #0f172a; }
-    .judge-modal-desc {
-      font-size: 12.5px;
-      color: #4b5563;
-      line-height: 1.5;
-      margin-bottom: 14px;
-    }
-    .judge-input-wrap {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .judge-input {
-      flex: 1;
-      padding: 8px 12px;
-      font-size: 13px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      outline: none;
-      font-family: inherit;
-    }
-    .judge-input:focus {
-      border-color: #7c3aed;
-      box-shadow: 0 0 0 2px rgba(124,58,237,.15);
-    }
-    .judge-submit-btn {
-      background: #7c3aed;
-      color: #ffffff;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 12.5px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all .15s ease;
-      white-space: nowrap;
-    }
-    .judge-submit-btn:hover { background: #6d28d9; }
-    .judge-modal-hint {
-      font-size: 11.5px;
-      min-height: 16px;
-      line-height: 1.4;
-    }
-    .judge-modal-hint.err { color: #dc2626; font-weight: 500; }
-    .judge-modal-hint.ok { color: #16a34a; font-weight: 600; }
-
     /* Preset Prompt Scenarios Dropdown (商户店铺栏快捷场景预设按钮) */
     .shop-presets-wrap {
       position: relative;
@@ -1505,17 +1358,6 @@
         </div>
       </div>
 
-      <div class="judge-access-wrap" id="judge-access-wrap">
-        <button type="button" class="nav-btn judge-btn" id="btn-judge-toggle" title="评委专属通道 (Hackathon Judge Access)">
-          <span>⚖️</span>
-          <span id="judge-btn-text">评委通道</span>
-        </button>
-        <div class="judge-vip-pill" id="judge-vip-pill" hidden title="评委专属免验通道已激活：享受全量大模型实时深度裁决与沙盒清算">
-          <span class="judge-vip-dot"></span>
-          <span id="judge-vip-text">⚖️ 评委 VIP</span>
-        </div>
-      </div>
-
       <button type="button" class="nav-btn" id="lang-toggle-btn" aria-label="切换语言 (Toggle Language)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:2px"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
         <span id="lang-zh" style="color:#0071e3;font-weight:600">中</span><span style="color:#a1a1a6;margin:0 2px">/</span><span id="lang-en" style="color:#6e6e73">EN</span>
@@ -1524,7 +1366,7 @@
   </header>
 
   <div class="demoline" id="demo-banner">
-    <b>当前处于【买家采购与测试视角】</b> — 您正在与商户的全自治托管智能体洽谈。您可以自由输入需求或使用预设芯片（可尝试攻击排除项），切身体验 ScopeGate 中台如何在背后全自动为卖家守门、锚定底账与举证抗辩。
+    <b>当前处于【买家采购与交互视角】</b> — 您正在与商户的全自治托管智能体洽谈。您可以自由输入需求或使用预设场景（可尝试攻击排除项），切身体验 ScopeGate 中台如何在背后全自动为卖家守门、锚定底账与举证抗辩。
   </div>
 
   <!-- ══ MARKETPLACE ══ -->
@@ -1584,24 +1426,6 @@
       </div>
     </div>
   </section>
-
-  <!-- Judge Passcode Modal -->
-  <div class="judge-modal-overlay" id="judge-modal-overlay" hidden>
-    <div class="judge-modal">
-      <div class="judge-modal-head">
-        <div class="judge-modal-title">⚖️ <span id="judge-modal-title-text">评委专属通道 (Judge VIP Access)</span></div>
-        <button type="button" class="judge-modal-close" id="btn-close-judge-modal" aria-label="关闭">&times;</button>
-      </div>
-      <p class="judge-modal-desc" id="judge-modal-desc">
-        请输入比赛主办方分配的评委测试密钥（可在 Devpost 提交的 <b>Testing Instructions</b> 中获取）。激活后将解除公网 IP 体验限流，开启全量大模型实时深度裁决。
-      </p>
-      <div class="judge-input-wrap">
-        <input type="text" id="input-judge-passcode" class="judge-input" placeholder="输入评委密钥 (默认: hackathon2026)" autocomplete="off">
-        <button type="button" class="judge-submit-btn" id="btn-submit-judge-passcode">立即激活</button>
-      </div>
-      <div class="judge-modal-hint" id="judge-modal-hint"></div>
-    </div>
-  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
