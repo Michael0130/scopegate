@@ -1341,8 +1341,50 @@ function updateChatRowsLang() {
   });
 }
 
+function getOrCreateDeviceId() {
+  let devId = '';
+  try {
+    devId = localStorage.getItem('sg_device_id') || '';
+    if (!devId) {
+      devId = 'dev_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      localStorage.setItem('sg_device_id', devId);
+    }
+  } catch (_) {
+    devId = 'dev_anon_' + Math.random().toString(36).slice(2, 10);
+  }
+  return devId;
+}
+
+function updateQuotaUI(quota) {
+  if (!quota) return;
+  state.quota = quota;
+  const dot = $('quota-dot');
+  const text = $('quota-text');
+  if (!text) return;
+
+  const rem = typeof quota.remaining === 'number' ? quota.remaining : 20;
+  const limit = typeof quota.limit === 'number' ? quota.limit : 20;
+
+  if (dot) {
+    dot.className = 'quota-dot' + (rem <= 0 ? ' depleted' : (rem <= 5 ? ' warn' : ''));
+  }
+
+  if (rem <= 0) {
+    text.textContent = currentLang === 'zh'
+      ? `公网沙盒配额已达上限 (${limit}/${limit}次) · 已自动平滑切换至确定性规则裁判引擎`
+      : `Sandbox quota reached (${limit}/${limit}) · Operating on deterministic rule engine`;
+    text.style.color = '#dc2626';
+  } else {
+    text.textContent = currentLang === 'zh'
+      ? `公网沙盒体验配额：剩余 ${rem} / ${limit} 次 (大模型实时深度裁决)`
+      : `Sandbox Demo Quota: ${rem} / ${limit} remaining (Live LLM)`;
+    text.style.color = '#86868b';
+  }
+}
+
 async function api(path, opts = {}) {
   const headers = { ...(opts.headers || {}) };
+  headers['x-client-device-id'] = getOrCreateDeviceId();
   const urlParams = new URLSearchParams(location.search);
   const judgeQuery = urlParams.get('judge') || urlParams.get('judge_pass') || urlParams.get('role');
   const judgeToken = localStorage.getItem('sg_judge_token') || (urlParams.has('judge') || judgeQuery ? 'hackathon2026' : null);
@@ -1470,6 +1512,7 @@ function toggleLang() {
   currentLang = currentLang === 'zh' ? 'en' : 'zh';
   try { localStorage.setItem('sg.lang', currentLang); } catch { /* private mode */ }
   updateStaticDomLang();
+  if (state.quota) updateQuotaUI(state.quota);
   renderStalls();
   renderActiveDeals();
   if (typeof initPresetChips === 'function') initPresetChips();
@@ -1497,6 +1540,8 @@ async function boot() {
   updateStaticDomLang();
   initAccessSession();
   hud.init();
+
+  api('/api/v1/quota').then(updateQuotaUI).catch(() => {});
 
   try {
     const data = await api('/api/v1/sellers');
@@ -2175,6 +2220,9 @@ async function shopSend() {
       }),
     });
     thinking.remove();
+    if (decision.quota) {
+      updateQuotaUI(decision.quota);
+    }
 
     if (decision.session_id && !decision.session_id.startsWith('req_reject_')) {
       if (decision.decision !== 'REJECT' || !state.shopSessions[s.id]) {
@@ -2408,6 +2456,9 @@ async function shopSend() {
     renderActiveDeals();
   } catch (err) {
     thinking.remove();
+    if (decision.quota) {
+      updateQuotaUI(decision.quota);
+    }
     bubble(thread, 'agent', `<span class="dot no"></span><b>${t('gate_err')}</b> <span class="sub">${esc(err.message)}</span>`, { agentKey: 'concierge', seller: s, lang: turnLang });
   } finally {
     $('shop-send').disabled = false;

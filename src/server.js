@@ -243,30 +243,35 @@ app.get('/api/v1/sellers', (_req, res) => {
   });
 });
 
-// ── Judge VIP Access & Public Rate Limiter ────────────────────────────────────
-const JUDGE_PASSCODE = process.env.JUDGE_PASSCODE || 'hackathon2026';
-const PUBLIC_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
-const MAX_PUBLIC_REQUESTS_PER_WINDOW = 100; // was 10
-const publicIpRequests = new Map();
+// ── Public Sandbox Quota Management (统一 20 次大模型体验配额) ────────────────
+const MAX_SANDBOX_QUOTA = 20;
+const QUOTA_WINDOW_MS = 60 * 60 * 1000; // 1 hour sliding window
+const sandboxQuotaUsage = new Map();
 
 setInterval(() => {
   const now = Date.now();
-  for (const [ip, list] of publicIpRequests.entries()) {
-    const fresh = list.filter((t) => now - t < PUBLIC_RATE_LIMIT_WINDOW_MS);
-    if (fresh.length === 0) publicIpRequests.delete(ip);
-    else publicIpRequests.set(ip, fresh);
+  for (const [key, list] of sandboxQuotaUsage.entries()) {
+    const fresh = list.filter((t) => now - t < QUOTA_WINDOW_MS);
+    if (fresh.length === 0) sandboxQuotaUsage.delete(key);
+    else sandboxQuotaUsage.set(key, fresh);
   }
 }, 10 * 60 * 1000);
 
-// Endpoint to verify judge passcode
-app.post('/api/v1/judge/verify', (req, res) => {
-  const passcode = req.body?.passcode || req.headers['x-judge-token'];
-  const valid = Boolean(passcode && (passcode === JUDGE_PASSCODE || passcode === 'hackathon2026' || passcode === 'vip'));
-  res.json({
-    valid,
-    token: valid ? passcode : null,
-    message: valid ? 'Judge VIP access granted' : 'Invalid passcode',
-  });
+// Endpoint to inspect current quota remaining
+app.get('/api/v1/quota', (req, res) => {
+  const clientDeviceId = req.headers['x-client-device-id'] || req.query.device_id || '';
+  const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
+  const isLocal = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === 'localhost' || clientIp.includes('127.0.0.1');
+  if (isLocal) {
+    return res.json({ limit: MAX_SANDBOX_QUOTA, remaining: MAX_SANDBOX_QUOTA, is_local: true });
+  }
+  const quotaKey = clientDeviceId ? `dev_${clientDeviceId}` : `ip_${clientIp}`;
+  const now = Date.now();
+  const timestamps = (sandboxQuotaUsage.get(quotaKey) || []).filter((t) => now - t < QUOTA_WINDOW_MS);
+  const remaining = Math.max(0, MAX_SANDBOX_QUOTA - timestamps.length);
+  res.setHeader('X-Quota-Limit', String(MAX_SANDBOX_QUOTA));
+  res.setHeader('X-Quota-Remaining', String(remaining));
+  res.json({ limit: MAX_SANDBOX_QUOTA, remaining, window_min: 60 });
 });
 
 // Natural-language buyer request -> ACCEPT | COUNTER | REJECT (schemas/decision.schema.json).
@@ -278,36 +283,29 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
     return res.status(400).json({ error: 'bad_request', message: 'buyer_message (string) is required' });
   }
 
-  const referer = req.headers['referer'] || '';
-  const refererHasJudge = referer.includes('judge=') || referer.includes('judge_pass=') || referer.includes('role=judge');
-  const judgeToken = req.headers['x-judge-token'] || req.query.judge || req.query.judge_pass || req.body?.judge_token;
-  const isJudge = Boolean(
-    (judgeToken && (judgeToken === JUDGE_PASSCODE || judgeToken === 'hackathon2026' || judgeToken === 'vip' || judgeToken === 'true')) ||
-    refererHasJudge
-  );
-  req.isJudge = isJudge;
+  const clientDeviceId = req.headers['x-client-device-id'] || req.body?.device_id || '';
+  const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
+  const isLocal = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === 'localhost' || clientIp.includes('127.0.0.1');
 
   let skipLlm = false;
-  let publicQuotaExceeded = false;
+  let remaining = MAX_SANDBOX_QUOTA;
 
-  if (isJudge) {
-    res.setHeader('X-ScopeGate-Access', 'judge-vip');
-  } else {
-    // Check client IP for public visitors (localhost & 127.0.0.1 exempted for test suite)
-    const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
-    const isLocal = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === 'localhost' || clientIp.includes('127.0.0.1');
-    if (!isLocal) {
-      const now = Date.now();
-      const timestamps = (publicIpRequests.get(clientIp) || []).filter((t) => now - t < PUBLIC_RATE_LIMIT_WINDOW_MS);
-      if (timestamps.length >= MAX_PUBLIC_REQUESTS_PER_WINDOW) {
-        skipLlm = true;
-        publicQuotaExceeded = true;
-      } else {
-        timestamps.push(now);
-        publicIpRequests.set(clientIp, timestamps);
-      }
+  if (!isLocal) {
+    const quotaKey = clientDeviceId ? `dev_${clientDeviceId}` : `ip_${clientIp}`;
+    const now = Date.now();
+    const timestamps = (sandboxQuotaUsage.get(quotaKey) || []).filter((t) => now - t < QUOTA_WINDOW_MS);
+    if (timestamps.length >= MAX_SANDBOX_QUOTA) {
+      skipLlm = true;
+      remaining = 0;
+    } else {
+      timestamps.push(now);
+      sandboxQuotaUsage.set(quotaKey, timestamps);
+      remaining = Math.max(0, MAX_SANDBOX_QUOTA - timestamps.length);
     }
   }
+
+  res.setHeader('X-Quota-Limit', String(MAX_SANDBOX_QUOTA));
+  res.setHeader('X-Quota-Remaining', String(remaining));
 
   const seller = getSeller(req.body?.seller);
   const sessionId = typeof req.body.session_id === 'string' && req.body.session_id
@@ -346,12 +344,14 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
     );
     decision.seller_id = seller.id;
 
-    if (publicQuotaExceeded && decision.gate_meta) {
+    decision.quota = { limit: MAX_SANDBOX_QUOTA, remaining, window_min: 60 };
+
+    if (skipLlm && decision.gate_meta) {
       const isZh = req.body?.lang === 'zh' || /[\u4e00-\u9fa5]/.test(buyerMessage);
       decision.gate_meta.public_quota_exceeded = true;
       decision.gate_meta.quota_notice = isZh
-        ? '公网免费体验额度已达上限 (10次/10分钟)，网关已自动切换为确定性规则引擎兜底。评委请使用专用通道或在右上角输入评委密钥解锁全量大模型。'
-        : 'Public trial quota reached. Fallback to deterministic rules. Judges please use VIP access to unlock.';
+        ? '公网沙盒体验配额已达上限（20次/小时）。为保障服务稳定性，系统已自动平滑切换至确定性规则裁判引擎，契约哈希与分期清算功能依然完备。'
+        : 'Public sandbox demo quota reached (20 requests/hr). Automatically transitioned to deterministic rule engine. Contract hashing and milestone settlements remain fully operational.';
     }
 
     // Conversational Inquiry (greetings, identity, billing/dispute/delivery Q&A without active scope)
