@@ -203,11 +203,13 @@ app.use('/api/webhooks', express.raw({ type: '*/*', limit: '1mb' }));
 app.use(express.json({ limit: '256kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Pretty URL for the live console (landing links here).
+// Pretty URL for the live console (landing links here) - defaults to Judge VIP console.
 app.get('/console', (req, res) => {
+  const hasJudge = req.url.includes('judge=') || req.url.includes('judge_pass=');
   const qIdx = req.url.indexOf('?');
   const query = qIdx !== -1 ? req.url.slice(qIdx) : '';
-  res.redirect('/console.html' + query);
+  const target = hasJudge ? query : (query ? query + '&judge=hackathon2026' : '?judge=hackathon2026');
+  res.redirect('/console.html' + target);
 });
 
 // Machine-readable API contract (console topbar link + APIMatic SDK import URL).
