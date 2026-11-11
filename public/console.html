@@ -36,29 +36,6 @@
     .nav-btn:active { transform: scale(0.98); }
     .nav-btn.active { background: #f0f4fc; border-color: #0071e3; color: #0071e3; font-weight: 600; }
     .nav-btn.open { background: #eef4fe; border-color: #0071e3; color: #0071e3; box-shadow: 0 0 0 3px rgba(0,113,227,.15); }
-    .nav-keynote-btn {
-      text-decoration: none;
-      background: linear-gradient(135deg, rgba(0, 113, 227, 0.08) 0%, rgba(0, 242, 254, 0.12) 100%);
-      border-color: rgba(0, 113, 227, 0.35);
-      color: #0071e3;
-      font-weight: 600;
-      box-shadow: 0 1px 4px rgba(0, 113, 227, 0.1);
-    }
-    .nav-keynote-btn:hover {
-      background: linear-gradient(135deg, rgba(0, 113, 227, 0.15) 0%, rgba(0, 242, 254, 0.22) 100%);
-      border-color: #0071e3;
-      box-shadow: 0 2px 8px rgba(0, 113, 227, 0.2);
-      transform: translateY(-1px);
-    }
-    .keynote-sparkle {
-      display: inline-block;
-      font-size: 13px;
-      animation: sparkleRotate 3s ease-in-out infinite alternate;
-    }
-    @keyframes sparkleRotate {
-      0% { transform: scale(1) rotate(0deg); }
-      100% { transform: scale(1.18) rotate(15deg); }
-    }
     .nav-btn[disabled], .nav-btn.disabled {
       opacity: .45;
       background: #f5f5f7 !important;
@@ -1612,11 +1589,6 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
         <span id="nav-market-text">Marketplace</span>
       </button>
-
-      <a href="/intro.html" class="nav-btn nav-keynote-btn" id="nav-keynote-btn" title="View Architectural Pitch Deck (PPT)">
-        <span class="keynote-sparkle">✨</span>
-        <span id="nav-keynote-text">Vision Tour (PPT)</span>
-      </a>
 
       <div class="nav-hud-wrap has-disabled-tip" id="nav-hud-wrap" title="Select a merchant to inspect skills">
         <button type="button" class="nav-btn disabled" id="nav-hud-btn" disabled aria-haspopup="true" aria-expanded="false">

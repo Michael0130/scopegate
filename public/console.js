@@ -1791,9 +1791,6 @@ function updateStaticDomLang() {
   const navMarket = $('nav-market-text');
   if (navMarket) navMarket.textContent = t('nav_market');
 
-  const navKeynote = $('nav-keynote-text');
-  if (navKeynote) navKeynote.textContent = t('nav_keynote');
-
   const navDeals = $('nav-deals-text');
   if (navDeals) navDeals.textContent = t('nav_deals');
 
@@ -2069,7 +2066,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ── Nav Orders Dropdown (展开我的订单列表) ──────────────────────────────────
-function renderNavOrders(entries) {
+function renderNavOrders() {
   const dropdown = $('nav-orders-dropdown');
   const list = $('nav-orders-list');
   const heading = $('nav-orders-heading');
@@ -2079,8 +2076,8 @@ function renderNavOrders(entries) {
 
   if (heading) heading.textContent = t('nav_orders_heading');
 
-  const allEntries = (entries ?? Object.entries(state.shopSessions)
-    .map(([sellerId, sid]) => ({ seller: sellerById(sellerId), session: state.sessions.get(sid) })))
+  const allEntries = Object.entries(state.shopSessions)
+    .map(([sellerId, sid]) => ({ seller: sellerById(sellerId), session: state.sessions.get(sid) }))
     .filter((e) => e.seller && e.session && e.session.decision && e.session.decision.decision !== 'REJECT' && e.session.decision.decision !== 'INQUIRY' && Number(e.session.decision.quoted_price) > 0);
 
   const activeEntries = allEntries.filter((e) => e.session.status === 'CONFIRMED');
@@ -2519,7 +2516,7 @@ function renderActiveDeals() {
   const activeEntries = allEntries.filter((e) => e.session.status === 'CONFIRMED');
 
   // Sync nav orders dropdown and badge
-  renderNavOrders(activeEntries);
+  renderNavOrders();
 
   const bar = $('active-deals-bar');
   const list = $('active-deals-list');

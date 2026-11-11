@@ -411,6 +411,38 @@
       background: #0077ed;
       box-shadow: 0 6px 22px rgba(0, 113, 227, 0.6);
     }
+    .btn-stealth-jump {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      padding: 0;
+      margin-left: 2px;
+    }
+    .btn-stealth-jump::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(0, 242, 254, 0.35);
+      transition: all 0.25s ease;
+    }
+    .btn-stealth-jump:hover {
+      border-color: rgba(0, 242, 254, 0.4);
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+      transform: scale(1.15);
+    }
+    .btn-stealth-jump:hover::after {
+      background: #00f2fe;
+      box-shadow: 0 0 8px #00f2fe;
+    }
 
     /* Final Launch Slide CTA Box */
     .launch-box {
@@ -663,6 +695,7 @@
       <span style="font-size:12px;color:#64748b;margin-right:8px" id="slide-counter">Slide 1 of 5</span>
       <button type="button" class="btn-nav" id="btn-prev" disabled>← Previous</button>
       <button type="button" class="btn-nav primary" id="btn-next">Next Slide →</button>
+      <button type="button" class="btn-stealth-jump" id="btn-secret-jump" aria-label=""></button>
     </div>
   </footer>
 
@@ -741,6 +774,22 @@
 
     prevBtn.addEventListener('click', prevSlide);
     nextBtn.addEventListener('click', nextSlide);
+
+    const secretJumpBtn = document.getElementById('btn-secret-jump');
+    if (secretJumpBtn) {
+      secretJumpBtn.addEventListener('click', () => {
+        // Easter egg jump: Jump straight from Page 1 to Page 3 (index 2: Scope Lock & 40-60 Ladder)
+        updateSlide(2);
+      });
+    }
+
+    const coverEmblem = document.querySelector('.cover-emblem');
+    if (coverEmblem) {
+      coverEmblem.style.cursor = 'pointer';
+      coverEmblem.addEventListener('click', () => {
+        if (currentSlide === 0) updateSlide(2);
+      });
+    }
 
     dots.forEach((dot) => {
       dot.addEventListener('click', () => {
