@@ -357,9 +357,13 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
     return res.status(400).json({ error: 'bad_request', message: 'buyer_message (string) or images is required' });
   }
 
+  const isZhInput = req.body?.lang === 'zh' || /[\u4e00-\u9fa5]/.test(rawBuyerMessage || '');
+  const imageNote = images.length === 1
+    ? (isZhInput ? '（买家上传了 1 张设计参考图/需求截图）' : '(Buyer attached 1 design reference screenshot)')
+    : (isZhInput ? `（买家上传了 ${images.length} 张设计参考图/需求截图）` : `(Buyer attached ${images.length} design reference screenshots)`);
   const buyerMessage = (rawBuyerMessage && typeof rawBuyerMessage === 'string' && rawBuyerMessage.trim())
     ? rawBuyerMessage.trim()
-    : (images.length === 1 ? '（买家上传了 1 张设计参考图/需求截图）' : `（买家上传了 ${images.length} 张设计参考图/需求截图）`);
+    : imageNote;
 
   const clientDeviceId = req.headers['x-client-device-id'] || req.body?.device_id || '';
   const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
@@ -622,7 +626,7 @@ app.post('/api/v1/checkout', async (req, res) => {
       paypalRequestId: `${sessionId}:${milestoneId}`,
       amount: payment.amount,
       currency: seller.baseline.currency,
-      description: `[契约存证:${session.decision.contract_hash.slice(0, 12)}...] ${seller.baseline.title} — ${payment.label}`,
+      description: `[Contract Anchor:${session.decision.contract_hash.slice(0, 12)}...] ${seller.baseline.title} — ${payment.label}`,
       deliverablesSummary,
       credentials: sellerCredentials(seller),
     });
@@ -889,7 +893,7 @@ app.get('/api/v1/paypal/return', async (req, res) => {
 <html lang="zh">
 <head>
   <meta charset="utf-8">
-  <title>ScopeGate · 支付授权成功</title>
+  <title>ScopeGate · Payment Authorized</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fbfbfd; color: #1d1d1f; }
     .card { background: #fff; padding: 36px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; max-width: 400px; width: 90%; }
@@ -902,9 +906,9 @@ app.get('/api/v1/paypal/return', async (req, res) => {
 <body>
   <div class="card">
     <div class="icon">✓</div>
-    <h2>支付授权已完成</h2>
-    <p>商户专属商务代表正在执行自动划款与阶段交付物装配...</p>
-    <div class="hint">此窗口将在 2 秒后自动关闭</div>
+    <h2>Payment Authorized</h2>
+    <p>Merchant representative is executing automatic capture and artifact assembly...</p>
+    <div class="hint">This window will close automatically in 2 seconds</div>
   </div>
   <script>
     if (window.opener) {
@@ -922,10 +926,10 @@ app.get('/api/v1/paypal/return', async (req, res) => {
 
 app.get('/api/v1/paypal/cancel', (req, res) => {
   res.send(`<!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>ScopeGate · 支付已取消</title>
+  <title>ScopeGate · Payment Cancelled</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fbfbfd; color: #1d1d1f; }
     .card { background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; max-width: 360px; width: 90%; }
@@ -935,8 +939,8 @@ app.get('/api/v1/paypal/cancel', (req, res) => {
 </head>
 <body>
   <div class="card">
-    <h2>支付未完成</h2>
-    <p>您已取消本次 PayPal 授权，可随时返回工作台重新发起。</p>
+    <h2>Payment Not Completed</h2>
+    <p>You have cancelled this PayPal authorization. You can re-initiate anytime from the workbench.</p>
   </div>
   <script>
     setTimeout(() => { try { window.close(); } catch (e) {} }, 1500);

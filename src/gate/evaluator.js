@@ -576,12 +576,19 @@ function finalize(decision, riskFlags, surcharges, reasoning, baseline, mode, la
       .trim();
 
     if (!cleanReasoning) {
+      const isZh = /[\u4e00-\u9fa5]/.test(reasoning || '');
       if (baseline.service_id === 'srv_brand_ui_kit') {
-        cleanReasoning = '您好！我是 Bella 的专属品牌设计顾问。我们专注于高端品牌视觉识别体系、系统化 UI 组件资产与全套数字化设计资产交付。请问您计划打造一个什么样的品牌项目？方便聊聊您的核心视觉偏好或设计诉求吗？';
+        cleanReasoning = isZh
+          ? '您好！我是 Bella 的专属品牌设计顾问。我们专注于高端品牌视觉识别体系、系统化 UI 组件资产与全套数字化设计资产交付。请问您计划打造一个什么样的品牌项目？方便聊聊您的核心视觉偏好或设计诉求吗？'
+          : 'Hello! I am Bella\'s Brand Design Consultant. We specialize in bespoke brand identities, design token architectures, and production-ready digital assets. What kind of project are you building? Tell me about your core visual goals.';
       } else if (baseline.service_id === 'srv_payment_api_integration') {
-        cleanReasoning = '您好！我是 CJ 的专属支付架构顾问。我们专注于企业级支付网关与第三方支付通道闭环集成、高可用异步对账系统与全链路联调验证。请问您计划集成哪些支付通道或接口体系？方便聊聊您的系统架构与业务诉求吗？';
+        cleanReasoning = isZh
+          ? '您好！我是 CJ 的专属支付架构顾问。我们专注于企业级支付网关与第三方支付通道闭环集成、高可用异步对账系统与全链路联调验证。请问您计划集成哪些支付通道或接口体系？方便聊聊您的系统架构与业务诉求吗？'
+          : 'Hello! I am CJ\'s Payment Systems Architect. We specialize in enterprise payment gateway orchestration, async reconciliation, and end-to-end sandbox wiring. Which payment rails or APIs are you planning to integrate?';
       } else {
-        cleanReasoning = '您好！我是 Alex 的专属商务总管。我们专注于高品质数字化 Web 应用与定制落地页开发，包含响应式界面架构、现代化视觉交互规范与自动化生产部署。请问您计划打造一个什么样的项目或产品？方便聊聊您的核心诉求吗？';
+        cleanReasoning = isZh
+          ? '您好！我是 Alex 的专属商务总管。我们专注于高品质数字化 Web 应用与定制落地页开发，包含响应式界面架构、现代化视觉交互规范与自动化生产部署。请问您计划打造一个什么样的项目或产品？方便聊聊您的核心诉求吗？'
+          : 'Hello! I am Alex\'s Master Concierge Agent. We specialize in high-performance bespoke web applications and custom landing pages with sub-second performance. What kind of project or product are you planning to build?';
       }
     }
   }

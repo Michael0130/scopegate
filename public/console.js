@@ -681,7 +681,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: 'Alex 专有落地页定制技能包。包含硅谷 AI-Copilot SaaS 官网与 Web3 前台案例，三端极致响应式适配与 Tailwind 暗黑模式。',
       bio_en: 'Alex bespoke landing page skill package with AI-Copilot showcase cases and Tailwind dark mode.',
       rulesPath: 'skills/alex/nextjs-landing-page/rules.md',
-      tools: [{ name: 'verify_page_sections', desc: '核验需求区块数量是否符合3段式基线' }]
+      tools: [{ name: 'verify_page_sections', desc: 'Verify section count against 3-section baseline' }]
     },
     {
       id: 'alex-craftsman-profile',
@@ -697,7 +697,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: 'Alex 专属知识库，内置纯原生 Node.js BM25 倒排索引检索工具。包含技术工程标准、为什么不做原生APP及两阶段付款保障。',
       bio_en: 'Alex dedicated knowledge base with zero-dependency BM25 indexer tool for cases and policies.',
       rulesPath: 'skills/alex/craftsman-profile/rules.md',
-      tools: [{ name: 'search_merchant_knowledge', desc: '基于 BM25 倒排索引毫秒级召回案例与政策' }]
+      tools: [{ name: 'search_merchant_knowledge', desc: 'BM25 inverted index retrieval for cases and policies' }]
     },
     {
       id: 'alex-code-handover',
@@ -713,7 +713,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: '尾款 60% 结清后，提供 100% 完整商业所有权与 GitHub 干净仓库交付。',
       bio_en: 'Full commercial rights and clean GitHub repo transfer upon final settlement.',
       rulesPath: 'skills/alex/code-handover/rules.md',
-      tools: [{ name: 'check_repo_ownership', desc: '核验交付仓库归属权' }]
+      tools: [{ name: 'check_repo_ownership', desc: 'Audit clean GitHub repository ownership transfer' }]
     },
     {
       id: 'alex-performance-tuning',
@@ -729,7 +729,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: 'Web Vitals 核心指标优化规范。包含 Next.js Image 自动转 WebP/AVIF 与本地字体子集化。',
       bio_en: 'Core Web Vitals optimization guidelines with automated image WebP compression.',
       rulesPath: 'skills/alex/performance-tuning/rules.md',
-      tools: [{ name: 'audit_web_vitals', desc: '核验核心 Web Vitals 跑分基准' }]
+      tools: [{ name: 'audit_web_vitals', desc: 'Audit Core Web Vitals benchmark scores' }]
     },
     {
       id: 'alex-tailwind-theming',
@@ -745,7 +745,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: 'Tailwind CSS 原子化样式系统，支持三端自适应与丝滑暗黑模式 (Dark Mode) 深度定制。',
       bio_en: 'Tailwind CSS design token system with seamless dark mode switching.',
       rulesPath: 'skills/alex/tailwind-theming/rules.md',
-      tools: [{ name: 'validate_theme_tokens', desc: '核验样式语义化与暗黑模式类名' }]
+      tools: [{ name: 'validate_theme_tokens', desc: 'Validate semantic theme tokens & dark-mode styling' }]
     }
   ],
   bella: [
@@ -763,7 +763,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: 'Bella 品牌设计全案技能。包含 Lumina 智能家居全案案例，输出主标、副标、自适应深浅底色盘与品牌排版手册。',
       bio_en: 'Bella visual identity suite with Lumina smart home cases and SVG/PDF master files.',
       rulesPath: 'skills/bella/brand-visual-identity/rules.md',
-      tools: [{ name: 'generate_palette_tokens', desc: '提取品牌主色与辅助色板' }]
+      tools: [{ name: 'generate_palette_tokens', desc: 'Extract brand primary and accent color palettes' }]
     },
     {
       id: 'bella-figma-design-system',
@@ -779,7 +779,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: '输出生产级 Figma 组件库与 Design Tokens，研发团队无缝对接。',
       bio_en: 'Production-grade Figma component libraries with exportable tokens.',
       rulesPath: 'skills/bella/figma-design-system/rules.md',
-      tools: [{ name: 'inspect_figma_tokens', desc: '核验 Figma 组件 Auto-layout 与 Token 规范' }]
+      tools: [{ name: 'inspect_figma_tokens', desc: 'Audit Figma Auto-layout and Token standards' }]
     },
     {
       id: 'bella-studio-profile',
@@ -795,7 +795,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: 'Bella 工作室知识库，内置纯原生 BM25 倒排索引检索工具。包含设计案例与常见设计交付问答。',
       bio_en: 'Bella design studio knowledge base with BM25 indexer tool.',
       rulesPath: 'skills/bella/studio-profile/rules.md',
-      tools: [{ name: 'search_merchant_knowledge', desc: '基于 BM25 倒排索引检索设计案例与规范' }]
+      tools: [{ name: 'search_merchant_knowledge', desc: 'BM25 inverted index retrieval for design cases & specs' }]
     },
     {
       id: 'bella-iconography-assets',
@@ -811,7 +811,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: '矢量图标与视觉素材渲染技能。对齐像素边缘，提供 SVG 源码、PNG@2x 及透明通道 3D 渲染图。',
       bio_en: 'Vector iconography & 3D asset rendering with consistent 24x24 grid alignment.',
       rulesPath: 'skills/bella/iconography-assets/rules.md',
-      tools: [{ name: 'optimize_svg_assets', desc: '优化与清洗 SVG 路径代码' }]
+      tools: [{ name: 'optimize_svg_assets', desc: 'Optimize and clean vector SVG path code' }]
     },
     {
       id: 'bella-pitch-deck-styling',
@@ -827,7 +827,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: '商业计划书路演视觉定制。包含 Figma 交互原型、PDF 矢量高清文档及 PPTX 可编辑模板。',
       bio_en: 'Investor pitch deck design with Figma interactive prototype and PDF exports.',
       rulesPath: 'skills/bella/pitch-deck-styling/rules.md',
-      tools: [{ name: 'format_pitch_deck', desc: '排版格式校验与色调对齐' }]
+      tools: [{ name: 'format_pitch_deck', desc: 'Validate presentation layout and brand color alignment' }]
     }
   ],
   cj: [
@@ -845,7 +845,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: '企业级支付渠道打通与高可用 Webhook 消费管道，99.99% 可用性。',
       bio_en: 'Enterprise payment integration and high-availability webhook pipelines.',
       rulesPath: 'skills/cj/payment-api-wiring/rules.md',
-      tools: [{ name: 'verify_paypal_webhook', desc: '校验 Webhook 签名与防重放' }]
+      tools: [{ name: 'verify_paypal_webhook', desc: 'Verify Webhook signature and replay defense' }]
     },
     {
       id: 'cj-reconciliation-ledger',
@@ -861,7 +861,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: '日终自动化平账算法，提供直观账单差异排查与补偿脚本。',
       bio_en: 'Daily automated reconciliation algorithms and ledger balance inspection.',
       rulesPath: 'skills/cj/reconciliation-ledger/rules.md',
-      tools: [{ name: 'run_reconciliation_audit', desc: '双边资金流水自动化平账比对' }]
+      tools: [{ name: 'run_reconciliation_audit', desc: 'Automated bilateral ledger balance reconciliation' }]
     },
     {
       id: 'cj-engineer-profile',
@@ -877,7 +877,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: 'CJ 资深支付架构经历与接口集成问答，内置 BM25 倒排索引检索工具。',
       bio_en: 'Enterprise integration engineer background and FAQ with BM25 indexer.',
       rulesPath: 'skills/cj/engineer-profile/rules.md',
-      tools: [{ name: 'search_merchant_knowledge', desc: '基于 BM25 倒排索引检索接口架构与案例' }]
+      tools: [{ name: 'search_merchant_knowledge', desc: 'BM25 inverted index retrieval for API architectures & cases' }]
     },
     {
       id: 'cj-webhook-idempotency',
@@ -893,7 +893,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: 'PayPal Webhook 事件幂等性消费架构、消息去重与指数退避重试管道。',
       bio_en: 'PayPal Webhook idempotency engine with duplicate suppression and exponential retry.',
       rulesPath: 'skills/cj/webhook-idempotency/rules.md',
-      tools: [{ name: 'check_idempotency_key', desc: '原子检查与锁定事件唯一键' }]
+      tools: [{ name: 'check_idempotency_key', desc: 'Atomic check and lock for event idempotency key' }]
     },
     {
       id: 'cj-dispute-automation',
@@ -909,7 +909,7 @@ const SELLER_SKILLS_MANIFEST = {
       bio_zh: 'PayPal 争议事件实时捕获、自动调取履约底账与生成法定抗辩证据包管线。',
       bio_en: 'Real-time PayPal dispute capture, fulfillment ledger retrieval and defense dossier filing.',
       rulesPath: 'skills/cj/dispute-automation/rules.md',
-      tools: [{ name: 'fetch_dispute_status', desc: '查询争议状态与直连出证' }]
+      tools: [{ name: 'fetch_dispute_status', desc: 'Query live dispute status and compile defense dossier' }]
     }
   ]
 };
@@ -930,8 +930,8 @@ const PLATFORM_BASE_SKILLS = [
     bio_en: 'Platform core referee skill. Inspects scope, defends prompt injections, enforces exclusions.',
     rulesPath: 'skills/scope-referee/rules.md',
     tools: [
-      { name: 'check_exclusions', desc: '逐字核验是否触碰商户硬性排除黑名单' },
-      { name: 'check_prompt_injection', desc: '9类提示词注入与越狱启发式检测' }
+      { name: 'check_exclusions', desc: 'Verbatim check against seller exclusion blacklist' },
+      { name: 'check_prompt_injection', desc: 'Heuristic check across 9 prompt injection categories' }
     ]
   },
   {
@@ -949,8 +949,8 @@ const PLATFORM_BASE_SKILLS = [
     bio_en: 'Deterministic 40/60 pricing engine, locks 64-char SHA-256 contract hash into PayPal custom_id.',
     rulesPath: 'skills/paypal-settlement/rules.md',
     tools: [
-      { name: 'compute_quote', desc: '单向棘轮计算加价规则后的总报价' },
-      { name: 'plan_milestones', desc: '确定性计算40%定金与60%尾款阶梯' }
+      { name: 'compute_quote', desc: 'One-way ratchet computation for quote calculation' },
+      { name: 'plan_milestones', desc: 'Deterministic 40% deposit and 60% balance schedule' }
     ]
   },
   {
@@ -968,8 +968,8 @@ const PLATFORM_BASE_SKILLS = [
     bio_en: 'Archives deliverable SHA-256 hashes, gated vault download audit, instant PayPal seller protection dossier.',
     rulesPath: 'skills/evidence-vault/rules.md',
     tools: [
-      { name: 'verify_delivery_hash', desc: '交付物物理哈希比对校验' },
-      { name: 'export_dossier', desc: '争议突发时秒级导出官方采信证据包' }
+      { name: 'verify_delivery_hash', desc: 'Cryptographic hash verification of deliverable artifact' },
+      { name: 'export_dossier', desc: 'Instant export of official legal dispute dossier' }
     ]
   }
 ];
@@ -1512,7 +1512,7 @@ function renderImagePreviews() {
   bar.innerHTML = pendingImages.map((img, idx) => `
     <div class="shop-img-preview-item" title="${esc(img.name)}">
       <img src="${esc(img.dataUrl)}" alt="${esc(img.name)}" />
-      <button type="button" class="btn-remove-img" data-remove-img="${idx}" title="移除图片">&times;</button>
+      <button type="button" class="btn-remove-img" data-remove-img="${idx}" title="${currentLang === 'zh' ? '移除图片' : 'Remove image'}">&times;</button>
     </div>
   `).join('');
 
@@ -2670,7 +2670,7 @@ async function shopSend() {
 
     const dispatch = decision.dispatch || {};
     const targetAgent = dispatch.target_agent || 'core_agent';
-    const routerNote = dispatch.router_note || (dispatch.intent ? `识别意图: ${dispatch.intent}` : '');
+    const routerNote = dispatch.router_note || (dispatch.intent ? (turnLang === 'zh' ? `识别意图: ${dispatch.intent}` : `Identified intent: ${dispatch.intent}`) : '');
 
     if (!state.chatThreads) state.chatThreads = {};
     if (!state.chatThreads[s.id]) state.chatThreads[s.id] = [];
@@ -2758,7 +2758,7 @@ async function shopSend() {
         .map((l) => `<div style="font-size:12.5px;padding:2px 0">&middot; ${esc(l)}</div>`).join('');
       const dossierLink = decision.session_id
         ? `<div style="margin-top:8px"><a class="link" href="/api/v1/sessions/${encodeURIComponent(decision.session_id)}/dossier/pdf" target="_blank" rel="noopener" style="font-weight:600;color:#0071e3">📄 ${t('open_dossier_link')}</a></div>
-           <div style="font-size:11.5px;color:#64748b;margin-top:5px;line-height:1.45">ℹ️ <b>官方举证说明</b>：此抗辩信为商户基于 PayPal 卖家保障政策自动生成的正式法定抗辩书，作为向 PayPal 官方争议庭提交的仲裁证据。</div>`
+           <div style="font-size:11.5px;color:#64748b;margin-top:5px;line-height:1.45">ℹ️ <b>${isZh ? '官方举证说明' : 'Official Proof Notice'}</b>: ${isZh ? '此抗辩信为商户基于 PayPal 卖家保障政策自动生成的正式法定抗辩书，作为向 PayPal 官方争议庭提交的仲裁证据。' : 'This defense letter is an official legal rebuttal generated under PayPal Seller Protection, ready for arbitration in PayPal Resolution Center.'}</div>`
         : '';
       bubble(thread, 'agent',
         `<span class="dot warn"></span><b>${t('evidence_desk_title')}</b><span class="sub mono" style="font-size:10.5px"> · ${t('evidence_desk_sub')}</span>
@@ -3794,7 +3794,7 @@ function renderAgentKbContent(s, agentKey, isZh) {
             <div class="kb-case-item">
               <div class="kb-case-head">
                 <span class="kb-case-client">${esc(c.client)}</span>
-                <span class="kb-case-tag">${esc(c.duration || '已验收')}</span>
+                <span class="kb-case-tag">${esc(c.duration || (isZh ? '已验收' : 'Delivered'))}</span>
               </div>
               <div style="font-size:11.5px;color:#1e293b;font-weight:600;margin-bottom:2px">${esc(c.scope)}</div>
               <div class="kb-case-desc">${esc(c.highlight)}</div>
@@ -4165,7 +4165,7 @@ function renderShopDeal() {
           <a class="link" href="/receipt-preview.html?order_id=${esc(p.order_id)}&session=${esc(session.session_id)}" target="_blank" style="color:#0071e3;font-weight:600">🧾 ${isZh ? '官方底账收据 ↗' : 'Official Receipt ↗'}</a>
         </div>
         <div style="margin-top:6px;padding:6px 10px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:6px;font-size:11px;color:#1e40af;line-height:1.45">
-          ℹ️ <b>官方存证说明</b>：此凭据是系统直接调用 <b>PayPal 官方 API</b> (<code>/v2/checkout/orders/${esc(p.order_id)}</code>) 读取底层真实清算数据后生成的<b>【PayPal 官方底账与清算凭据单 (Official Ledger Receipt)】</b>。
+          ℹ️ <b>${isZh ? '官方存证说明' : 'Official Proof Notice'}</b>: ${isZh ? `此凭据是系统直接调用 <b>PayPal 官方 API</b> (<code>/v2/checkout/orders/${esc(p.order_id)}</code>) 读取底层真实清算数据后生成的<b>【PayPal 官方底账与清算凭据单 (Official Ledger Receipt)】</b>。` : `This receipt was generated by querying the live <b>PayPal Official API</b> (<code>/v2/checkout/orders/${esc(p.order_id)}</code>) directly to retrieve real settled ledger data: <b>【Official Ledger & Settlement Receipt】</b>.`}
         </div>` : '';
 
       return `
@@ -4194,10 +4194,10 @@ function renderShopDeal() {
             <b style="color:#b91c1c;font-size:11.5px">${t('dispute_open_title')}${session.dispute.simulated ? t('dispute_open_sim') : ''}</b>
             <span style="font-weight:400;color:#7f1d1d;font-size:11px">(${esc(disputeLabel(session.dispute.reason))} &middot; <b>${money(session.dispute.amount)}</b>)</span>
             <span style="color:#fca5a5;margin:0 1px">|</span>
-            <span style="font-size:11px;color:#991b1b">🛡️ 官方抗辩已组装</span>
+            <span style="font-size:11px;color:#991b1b">🛡️ ${isZh ? '官方抗辩已组装' : 'Official Defense Ready'}</span>
           </div>
-          <a class="shop-top-dispute-btn" href="/api/v1/sessions/${encodeURIComponent(session.session_id)}/dossier/pdf" target="_blank" rel="noopener" title="下载卖家提供给 PayPal 官方的法定证据抗辩信 (PDF)">
-            📄 ${isZh ? '官方抗辩信 PDF ↗' : 'PDF ↗'}
+          <a class="shop-top-dispute-btn" href="/api/v1/sessions/${encodeURIComponent(session.session_id)}/dossier/pdf" target="_blank" rel="noopener" title="${isZh ? '下载卖家提供给 PayPal 官方的法定证据抗辩信 (PDF)' : 'Download official defense letter submitted to PayPal (PDF)'}">
+            📄 ${isZh ? '官方抗辩信 PDF ↗' : 'Defense PDF ↗'}
           </a>
         </div>
       `;
@@ -4609,7 +4609,7 @@ function memoConfirmationCardHTML(co, sObj) {
         <span class="memo-val" style="color:#34c759">${ok ? t('memo_readback_match') : esc(co.anchor_verified ?? 'unread')}</span>
       </div>
 
-      <!-- 具体合同条款内容结构化回显 -->
+      <!-- Structured contract terms display -->
       <div class="memo-terms-box">
         <div class="memo-terms-title">
           <span>📜</span>
@@ -4633,7 +4633,7 @@ function memoConfirmationCardHTML(co, sObj) {
       <div class="memo-tip">
         ${t('memo_tip')}
         <div style="margin-top:6px;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:11.5px;color:#166534;line-height:1.45">
-          📜 <b>官方存证</b>：这幅图是系统直接调用 <b>PayPal 官方 API</b> (<code>/v2/checkout/orders/${esc(co.order_id)}</code>) 读取底层真实清算数据后生成的<b>【PayPal 官方底账与清算凭据单 (Official Ledger Receipt)】</b>。
+          📜 <b>${isZh ? '官方存证' : 'Official Proof'}</b>: ${isZh ? `这幅图是系统直接调用 <b>PayPal 官方 API</b> (<code>/v2/checkout/orders/${esc(co.order_id)}</code>) 读取底层真实清算数据后生成的<b>【PayPal 官方底账与清算凭据单 (Official Ledger Receipt)】</b>。` : `This receipt was generated by querying the live <b>PayPal Official API</b> (<code>/v2/checkout/orders/${esc(co.order_id)}</code>) directly to retrieve real settled ledger data: <b>【Official Ledger & Settlement Receipt】</b>.`}
         </div>
         <div style="margin-top:8px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
           ${co.approve_url ? `<a class="link open-pp" href="${esc(co.approve_url)}" target="_blank" style="font-weight:600">→ ${t('order_created_link', { url: '#' }).replace(/<[^>]+>/g, '')}</a>` : ''}
@@ -4684,19 +4684,19 @@ async function runAutonomousSellerAgent() {
           const cid = `${s.decision.contract_hash}:${p.milestone_id}`;
 
           hud.setAgents({
-            finance: { status: 'WORKING', task: `从 PayPal 成功划款 ${money(p.amount)}，锁定 Capture ID: ${captureId}` },
-            legal: { status: 'CONCURRENT', task: `同步入账事实至底层凭单: custom_id=${cid}` }
+            finance: { status: 'WORKING', task: isZh ? `从 PayPal 成功划款 ${money(p.amount)}，锁定 Capture ID: ${captureId}` : `Captured ${money(p.amount)} on PayPal, locked Capture ID: ${captureId}` },
+            legal: { status: 'CONCURRENT', task: isZh ? `同步入账事实至底层凭单: custom_id=${cid}` : `Anchored transaction into ledger memo: custom_id=${cid}` }
           });
           hud.recordAgentTrace('finance', {
-            speech: `买家 PayPal 授权已确认，自动 Capture 划款 ${money(p.amount)} 成功！交易号: ${captureId}`,
+            speech: isZh ? `买家 PayPal 授权已确认，自动 Capture 划款 ${money(p.amount)} 成功！交易号: ${captureId}` : `Buyer PayPal authorization confirmed. Captured ${money(p.amount)} successfully! Transaction: ${captureId}`,
             tools: [{ name: `paypal.captureOrder("${p.order_id}")`, status: 'SUCCESS', result: `capture_id: ${captureId}` }]
           });
           hud.recordAgentTrace('legal', {
-            speech: `入账事实与凭证链物理锁定完成: custom_id=${cid}。`,
+            speech: isZh ? `入账事实与凭证链物理锁定完成: custom_id=${cid}。` : `Anchored ledger proof chain: custom_id=${cid}.`,
             tools: [{ name: 'ledger.recordCapture(captureId)', status: 'SUCCESS', result: `custom_id=${cid}` }]
           });
-          hud.log('Finance Agent', `买家授权已确认，自动 Capture 划款 ${money(p.amount)} 成功！(ID: ${captureId})`, 'success');
-          hud.log('Legal Agent', `底账凭据链物理绑定完成: custom_id=${cid}`, 'info');
+          hud.log('Finance Agent', isZh ? `买家授权已确认，自动 Capture 划款 ${money(p.amount)} 成功！(ID: ${captureId})` : `Buyer authorization confirmed. Captured ${money(p.amount)}! (ID: ${captureId})`, 'success');
+          hud.log('Legal Agent', isZh ? `底账凭据链物理绑定完成: custom_id=${cid}` : `Ledger proof chain anchored: custom_id=${cid}`, 'info');
 
           // Stream settled receipt confirming the anchor
           const receiptSuffixHtml = `
@@ -4748,17 +4748,17 @@ async function runAutonomousSellerAgent() {
           });
 
           hud.setAgents({
-            delivery: { status: 'WORKING', task: `成果派发入库，交付物哈希: ${(d.artifact_sha256 || '').slice(0, 16)}...` },
-            finance: { status: 'STANDBY', task: '待命中' }
+            delivery: { status: 'WORKING', task: isZh ? `成果派发入库，交付物哈希: ${(d.artifact_sha256 || '').slice(0, 16)}...` : `Artifact vaulted, hash: ${(d.artifact_sha256 || '').slice(0, 16)}...` },
+            finance: { status: 'STANDBY', task: isZh ? '待命中' : 'Standby' }
           });
           hud.recordAgentTrace('delivery', {
-            speech: `阶段交付物打包入库 Vault，生成不可篡改 SHA-256 文件指纹: ${(d.artifact_sha256 || '').slice(0, 16)}...`,
+            speech: isZh ? `阶段交付物打包入库 Vault，生成不可篡改 SHA-256 文件指纹: ${(d.artifact_sha256 || '').slice(0, 16)}...` : `Packaged deliverable into Vault with SHA-256 fingerprint: ${(d.artifact_sha256 || '').slice(0, 16)}...`,
             tools: [
               { name: `vault.archiveArtifact({ milestone: "${p.milestone_id}" })`, status: 'SUCCESS', result: `SHA-256: ${(d.artifact_sha256 || '').slice(0, 32)}...` },
-              { name: 'vault.generateDownloadLink()', status: 'SUCCESS', result: '限时受保护直链生成' }
+              { name: 'vault.generateDownloadLink()', status: 'SUCCESS', result: isZh ? '限时受保护直链生成' : 'Secure temporary link generated' }
             ]
           });
-          hud.log('Fulfillment Agent', `阶段交付物自动打包入库 Vault，SHA-256: ${(d.artifact_sha256 || '').slice(0, 16)}...`, 'success');
+          hud.log('Fulfillment Agent', isZh ? `阶段交付物自动打包入库 Vault，SHA-256: ${(d.artifact_sha256 || '').slice(0, 16)}...` : `Deliverable vaulted, SHA-256: ${(d.artifact_sha256 || '').slice(0, 16)}...`, 'success');
 
           await streamAgentBubble(thread, {
             agentKey: 'delivery',
@@ -4794,14 +4794,14 @@ async function runAutonomousSellerAgent() {
       hud.recordAgentTrace('legal', {
         speech: isZh ? '收到买方 INR 拒付申请。依据 PayPal Seller Protection 无形商品抗辩指引，秒级调取客观底账并组装法定抗辩书。' : 'Received INR dispute. Assembled Seller Protection proof dossier.',
         tools: [
-          { name: 'dossier.extractLedgerSnapshot(session_id)', status: 'SUCCESS', result: '调取不可篡改 PayPal 交易底账与 custom_id' },
-          { name: 'paypal.disputes.submitDefense(dossier_id)', status: 'SUCCESS', result: '法定抗辩卷宗组装完毕' }
+          { name: 'dossier.extractLedgerSnapshot(session_id)', status: 'SUCCESS', result: isZh ? '调取不可篡改 PayPal 交易底账与 custom_id' : 'Extracted immutable PayPal ledger snapshot & custom_id' },
+          { name: 'paypal.disputes.submitDefense(dossier_id)', status: 'SUCCESS', result: isZh ? '法定抗辩卷宗组装完毕' : 'Legal defense dossier assembled' }
         ]
       });
       hud.recordAgentTrace('delivery', {
         speech: isZh ? '调取买方交付物下载 IP、UA 访问凭据与 SHA-256 文件指纹。' : 'Extracted fulfillment access logs and SHA-256 hashes.',
         tools: [
-          { name: 'audit.exportAccessLogs(session_id)', status: 'SUCCESS', result: '导出交付物下载日志与 IP/UA 记录' }
+          { name: 'audit.exportAccessLogs(session_id)', status: 'SUCCESS', result: isZh ? '导出交付物下载日志与 IP/UA 记录' : 'Exported download access logs & IP/UA records' }
         ]
       });
       hud.log('Legal Defense Agent', isZh ? '⚠️ 收到 INR 拒付申请，已从底账调取 SHA-256 交付物访问日志与 custom_id 凭据' : '⚠️ INR Dispute detected. Extracting access logs & custom_id anchors', 'alert');
@@ -4834,7 +4834,7 @@ async function runAutonomousSellerAgent() {
         `<span class="dot ok"></span><b>${t('agent_evidence_desk')}</b><span class="sub mono" style="font-size:10.5px"> &middot; ${t('agent_evidence_desk_sub')}</span>
          <div style="margin-top:6px">${factsHtml}</div>
          <div style="margin-top:8px"><a class="link" href="/api/v1/sessions/${encodeURIComponent(s.session_id)}/dossier/pdf" target="_blank" rel="noopener" style="font-weight:600;color:#0071e3">📄 ${t('open_dossier_link')}</a></div>
-         <div style="font-size:11.5px;color:#64748b;margin-top:5px;line-height:1.45">ℹ️ <b>官方举证说明</b>：此抗辩信为商户基于 PayPal 卖家保障政策自动生成的正式法定抗辩书，已包含资金底账流水、custom_id 契约哈希、交付物 SHA-256 及买家访问日志，作为提交给 PayPal 官方争议庭的仲裁证据。</div>`,
+         <div style="font-size:11.5px;color:#64748b;margin-top:5px;line-height:1.45">ℹ️ <b>${isZh ? '官方举证说明' : 'Official Proof Notice'}</b>: ${isZh ? '此抗辩信为商户基于 PayPal 卖家保障政策自动生成的正式法定抗辩书，已包含资金底账流水、custom_id 契约哈希、交付物 SHA-256 及买家访问日志，作为提交给 PayPal 官方争议庭的仲裁证据。' : 'This defense letter is an official legal rebuttal generated under PayPal Seller Protection, complete with captured ledger entries, custom_id contract hash, artifact SHA-256, and access audit logs for PayPal Resolution Center.'}</div>`,
         { agentKey: 'legal', seller: sellerObj, routerNote: isZh ? '法务合规智能体生成官方证据抗辩信' : 'Legal Agent compiled official defense letter' });
 
       try {
