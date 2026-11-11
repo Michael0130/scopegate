@@ -1,0 +1,22 @@
+{
+  "id": "alex-nextjs-landing-page",
+  "name": "Next.js Landing Page Craft",
+  "name_zh": "Next.js 响应式落地页定制开发技能",
+  "version": "1.0.0",
+  "seller_id": "alex",
+  "description": "Bespoke high-performance Next.js 14 Web applications, responsive landing pages, sub-second Edge runtime, and Tailwind CSS dark mode.",
+  "triggers": ["nextjs", "react", "landing", "page", "website", "tailwind", "web", "前端", "落地页", "官网", "页面", "响应式"],
+  "tools": [
+    {
+      "name": "verify_page_sections",
+      "description": "Inspect requested page section count against Alex's 3-section baseline.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "section_count": { "type": "integer" }
+        },
+        "required": ["section_count"]
+      }
+    }
+  ]
+}

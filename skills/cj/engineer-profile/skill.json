@@ -1,0 +1,23 @@
+{
+  "id": "cj-engineer-profile",
+  "name": "CJ Engineer Profile & BM25 Indexer",
+  "name_zh": "CJ 架构师履历与倒排索引检索技能",
+  "version": "1.0.0",
+  "seller_id": "cj",
+  "description": "CJ's enterprise integration engineering experience, architecture standards, policies, and BM25 search indexer tool.",
+  "triggers": ["cj", "engineer", "integrations", "architecture", "cases", "faq", "架构", "集成", "工程师", "案例", "介绍", "为什么"],
+  "tools": [
+    {
+      "name": "search_cj_knowledge",
+      "description": "Search CJ's API engineering cases, architecture standards and policy FAQ via BM25 indexer.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string" },
+          "top_k": { "type": "integer" }
+        },
+        "required": ["query"]
+      }
+    }
+  ]
+}

@@ -19,4 +19,8 @@ scripts/keep-warm.sh
 .claude/
 .cursor/
 .aider*
+graphify-out/
+# Local runtime cache
+.sessions.json
+.deliveries.json
 scripts/local-dns.cjs

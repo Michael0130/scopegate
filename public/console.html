@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ScopeGate — 买方采购门户</title>
-  <meta name="description" content="ScopeGate 智能体商务采购门户：在交易前守住合同边界，在 PayPal 账本锚定履约凭证。" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <title>ScopeGate — Buyer Commerce Portal</title>
+  <meta name="description" content="ScopeGate Multi-Agent Commerce Gateway: Contract-boundary referee for agentic commerce and dispute-proof settlement on PayPal." />
+  <link rel="icon" href="/favicon.svg?v=scopegate-2" type="image/svg+xml" />
+  <link rel="shortcut icon" href="/favicon.svg?v=scopegate-2" type="image/svg+xml" />
   <style>
     :root { color-scheme: light; }
     * { box-sizing: border-box; }
@@ -14,7 +15,7 @@
       margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", sans-serif;
       background: #f5f5f7; color: #1d1d1f; font-size: 14px; line-height: 1.5;
     }
-    #sg .mono { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; }
+    #sg .mono { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; word-break: break-all; }
     #sg .sub { color: #6e6e73; }
     /* Element-level reset (NOT #sg button): an ID here would out-rank every class
        rule below and strip the pill/chip/pay styling off every button. */
@@ -158,13 +159,89 @@
       border-radius: 999px; padding: 2px 8.5px; display: inline-flex; align-items: center; gap: 4px;
     }
 
-    .bubble { max-width: 100%; padding: 10px 14px; border-radius: 15px; font-size: 13.5px; line-height: 1.55; }
+    .bubble { max-width: 100%; padding: 10px 14px; border-radius: 15px; font-size: 13.5px; line-height: 1.55; box-sizing: border-box; overflow-wrap: anywhere; word-break: break-all; }
     .bubble.me { background: #0071e3; color: #fff; border-top-right-radius: 4px; box-shadow: 0 1px 3px rgba(0,113,227,.25); }
     .bubble.agent { background: #fff; border: 1px solid rgba(0,0,0,.08); border-top-left-radius: 4px; color: #1d1d1f; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
     .bubble.agent.thinking { color: #86868b; background: #fbfbfd; font-style: italic; }
     .sys { align-self: center; font-size: 11.5px; color: #a1a1a6; text-align: center; }
-    .shop-chat-card { display: flex; flex-direction: column; min-height: 520px; }
-    .inputrow { display: flex; gap: 8px; margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(0,0,0,.06); flex-shrink: 0; }
+    #view-shop.stage {
+      padding: 10px 22px 14px;
+    }
+    #view-shop .grid.g2 {
+      grid-template-columns: 1.05fr 0.95fr;
+      align-items: stretch;
+      height: calc(100vh - 215px);
+      min-height: 520px;
+      max-height: 800px;
+    }
+    .shop-chat-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      box-sizing: border-box;
+      padding: 14px 16px 12px;
+    }
+    .shop-deal-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    }
+    .chat {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 6px 4px 10px;
+      scroll-behavior: smooth;
+    }
+    .chat::-webkit-scrollbar,
+    .shop-deal-card::-webkit-scrollbar {
+      width: 6px;
+    }
+    .chat::-webkit-scrollbar-track,
+    .shop-deal-card::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .chat::-webkit-scrollbar-thumb,
+    .shop-deal-card::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,.15);
+      border-radius: 999px;
+    }
+    .chat::-webkit-scrollbar-thumb:hover,
+    .shop-deal-card::-webkit-scrollbar-thumb:hover {
+      background: rgba(0,0,0,.28);
+    }
+    @media (max-width: 940px) {
+      #view-shop .grid.g2 { height: auto; max-height: none; }
+      .shop-chat-card { height: auto; min-height: 520px; }
+      .shop-chat-card .chat { max-height: 60vh; min-height: 380px; }
+      .shop-deal-card { height: auto; }
+    }
+    .inputrow { display: flex; gap: 8px; margin-top: 0; padding-top: 10px; border-top: 1px solid rgba(0,0,0,.06); flex-shrink: 0; align-items: center; }
+    .btn-attach-img { background: #f5f5f7; border: 1px solid rgba(0,0,0,.12); border-radius: 980px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #6e6e73; transition: all .15s ease; flex-shrink: 0; padding: 0; }
+    .btn-attach-img:hover { background: #e8e8ed; color: #1d1d1f; border-color: rgba(0,0,0,.22); }
+    .shop-img-preview-bar { display: flex; gap: 10px; flex-wrap: wrap; padding: 8px 10px; background: #f5f5f7; border: 1px dashed rgba(0,0,0,.15); border-radius: 12px; margin-top: 10px; align-items: center; }
+    .shop-img-preview-item { position: relative; width: 52px; height: 52px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 3px rgba(0,0,0,.06); background: #fff; flex-shrink: 0; }
+    .shop-img-preview-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .shop-img-preview-item .btn-remove-img { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,.68); color: #fff; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 11px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+    .shop-img-preview-item .btn-remove-img:hover { background: #ff3b30; }
+    .bubble-imgs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+    .bubble-img-thumb { max-width: 220px; max-height: 160px; border-radius: 8px; cursor: zoom-in; object-fit: cover; border: 1px solid rgba(0,0,0,.1); box-shadow: 0 2px 6px rgba(0,0,0,.08); transition: transform .15s ease, box-shadow .15s ease; display: block; }
+    .bubble-img-thumb:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+    .shop-chat-card.drag-over { border: 2px dashed #0071e3 !important; background: rgba(0,113,227,.02) !important; }
+    .img-lightbox { position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,.85); display: flex; align-items: center; justify-content: center; cursor: zoom-out; backdrop-filter: blur(4px); }
+    .img-lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,.5); object-fit: contain; }
+    .img-lightbox-close { position: absolute; top: 20px; right: 24px; background: rgba(255,255,255,.2); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+    .img-lightbox-close:hover { background: rgba(255,255,255,.35); }
     .input { flex: 1; border: 1px solid rgba(0,0,0,.12); border-radius: 980px; padding: 8px 15px; font: inherit; font-size: 13.5px; background: #fff; color: #1d1d1f; }
     .send { background: #1d1d1f; color: #fff; border-radius: 980px; padding: 8px 18px; font-size: 13px; font-weight: 500; }
     .send:hover { background: #000; }
@@ -220,14 +297,78 @@
     }
     .stall:hover .stall-enter-btn { background: #0071e3; transform: scale(1.02); }
     .back { display: inline-flex; align-items: center; gap: 6px; color: #0071e3; font-size: 13px; margin-bottom: 14px; cursor: pointer; }
-    .store { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-    .store b { font-size: 17px; letter-spacing: -.2px; display: inline-flex; align-items: center; gap: 6px; }
+    .store { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: nowrap; margin-bottom: 12px; min-height: 32px; }
+    .store b { font-size: 16.5px; letter-spacing: -.2px; display: inline-flex; align-items: center; gap: 6px; line-height: 1.25; }
     .store b span { color: #0071e3; }
+    .shop-top-dispute {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-shrink: 0;
+    }
+    .shop-top-dispute[hidden] {
+      display: none !important;
+    }
+    .shop-top-dispute-inner {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 28px;
+      background: #fff5f5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: 980px;
+      padding: 0 4px 0 10px;
+      font-size: 11.5px;
+      color: #991b1b;
+      box-shadow: 0 1px 2px rgba(239, 68, 68, 0.06);
+      white-space: nowrap;
+      box-sizing: border-box;
+      line-height: 1;
+    }
+    .shop-top-dispute-btn {
+      background: #dc2626;
+      color: #fff !important;
+      font-size: 11px;
+      font-weight: 500;
+      height: 22px;
+      padding: 0 9px;
+      border-radius: 980px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      white-space: nowrap;
+      transition: all .15s ease;
+      box-shadow: 0 1px 2px rgba(220,38,38,0.2);
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .shop-top-dispute-btn:hover {
+      background: #b91c1c;
+      transform: translateY(-0.5px);
+    }
+    @media (max-width: 940px) {
+      .store {
+        flex-wrap: wrap;
+      }
+      .shop-top-dispute {
+        width: 100%;
+        max-width: 100%;
+        margin-top: 6px;
+      }
+      .shop-top-dispute-inner {
+        width: 100%;
+      }
+    }
     .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 3px 0; }
     .kv b { font-weight: 400; color: #6e6e73; }
     .hash { display: inline-flex; align-items: center; gap: 6px; font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: #1d1d1f; background: #f5f5f7; border: 1px solid rgba(0,0,0,.06); border-radius: 8px; padding: 5px 10px; word-break: break-all; }
-    .pay { display: flex; width: 100%; justify-content: center; align-items: center; gap: 8px; margin-top: 12px; background: #ffc439; color: #003087; font-weight: 600; font-size: 13.5px; font-style: italic; border-radius: 980px; padding: 10px 16px; text-decoration: none; }
+    .pay { display: flex; width: 100%; justify-content: center; align-items: center; gap: 8px; margin-top: 12px; background: #ffc439; color: #003087; font-weight: 600; font-size: 13.5px; font-style: italic; border-radius: 980px; padding: 10px 16px; text-decoration: none; border: none; cursor: pointer; transition: all .15s ease; box-sizing: border-box; }
     .pay:hover { filter: brightness(1.05); }
+    .pay.loading { background: #f0f0f2; color: #6e6e73; cursor: wait; opacity: 0.85; font-style: normal; }
+    .pay.open-pp { background: #0070ba; color: #ffffff; font-style: normal; }
+    .pay.open-pp:hover { background: #005ea6; color: #ffffff; }
     .li { display: flex; gap: 7px; font-size: 13px; padding: 2.5px 0; }
     .li em { font-style: normal; color: #34c759; } .li.no { color: #6e6e73; } .li.no em { color: #ff3b30; }
 
@@ -461,11 +602,84 @@
     .remarkrow .link { font-size: 11px; }
     .ms-json { margin-top: 7px; background: #fafafa; border: 1px solid rgba(0,0,0,.08); border-radius: 8px; padding: 8px 10px; font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-size: 10.5px; color: #6e6e73; white-space: pre; overflow-x: auto; }
     .ms-json .hl { background: #fff3c4; border-radius: 4px; padding: 1px 4px; color: #1d1d1f; }
+
+    /* ── Sandbox Buyer Credentials Banner (Deal Desk) ── */
+    .sb-buyer-banner {
+      background: linear-gradient(135deg, rgba(0, 113, 227, 0.05), rgba(52, 199, 89, 0.05));
+      border: 1px solid rgba(0, 113, 227, 0.25);
+      border-radius: 10px;
+      padding: 9px 12px;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .sb-buyer-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 7px;
+      color: #0071e3;
+      font-weight: 600;
+      font-size: 11.5px;
+    }
+    .sb-buyer-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      border-radius: 7px;
+      padding: 7px 10px;
+    }
+    .sb-buyer-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .sb-buyer-k {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 500;
+      min-width: 32px;
+    }
+    .sb-buyer-v {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      color: #0f172a;
+      background: rgba(0, 0, 0, 0.03);
+      padding: 2px 6px;
+      border-radius: 4px;
+      word-break: break-all;
+      flex: 1;
+    }
+    .btn-copy-chip {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all .15s ease;
+      white-space: nowrap;
+    }
+    .btn-copy-chip:hover {
+      background: #0071e3;
+      border-color: #0071e3;
+      color: #fff;
+    }
+    .sb-buyer-tip {
+      margin-top: 6px;
+      font-size: 10.5px;
+      color: #64748b;
+      line-height: 1.4;
+    }
     
     /* ── Streaming Cursor & Memo Confirmation Card ── */
     @keyframes streamBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
     .stream-cursor { display: inline-block; animation: streamBlink .7s infinite; color: #0071e3; margin-left: 2px; font-weight: 600; font-family: ui-monospace, monospace; }
-    .stream-content { display: inline; }
+    .stream-content { display: inline; overflow-wrap: anywhere; word-break: break-all; }
     .memo-card {
       background: #fbfbfd;
       border: 1px solid #d2d2d7;
@@ -511,6 +725,57 @@
       padding-top: 6px;
       border-top: 1px dashed rgba(0,0,0,.1);
       line-height: 1.45;
+    }
+    .memo-terms-box {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 10px 12px;
+      margin: 10px 0 8px 0;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: left;
+    }
+    .memo-terms-title {
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 6px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .memo-terms-row {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 6px;
+    }
+    .memo-terms-row:last-child {
+      margin-bottom: 0;
+    }
+    .memo-terms-row b {
+      color: #475569;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .memo-terms-row span {
+      color: #1e293b;
+      font-size: 11.5px;
+    }
+    .memo-deliverable-item {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      margin: 1px 0;
+    }
+    .memo-deliverable-item::before {
+      content: '✓';
+      color: #10b981;
+      font-weight: bold;
+      font-size: 11px;
     }
 
     @media (prefers-reduced-motion: reduce) { #sg * { animation: none !important; transition: none !important; } }
@@ -563,8 +828,8 @@
       display: none !important;
     }
     .nav-hud-dropdown {
-      position: absolute; top: calc(100% + 8px); right: -140px;
-      width: 840px; max-width: min(880px, calc(100vw - 24px)); height: 570px; max-height: calc(100vh - 84px);
+      position: absolute; top: calc(100% + 8px); right: -60px;
+      width: 680px; max-width: min(720px, calc(100vw - 24px)); height: 520px; max-height: calc(100vh - 84px);
       background: #ffffff; border: 1px solid rgba(0,0,0,.09); border-radius: 18px;
       box-shadow: 0 32px 72px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.05);
       z-index: 60; transform-origin: top right;
@@ -584,6 +849,14 @@
       font-size: 10.5px; font-weight: 700; font-family: ui-monospace, monospace;
       color: #059669; background: #ecfdf5; border: 1px solid rgba(5, 150, 105, 0.25);
       border-radius: 999px; padding: 2.5px 8.5px; display: inline-flex; align-items: center; gap: 5px;
+      transition: all .2s ease;
+    }
+    .hud-mesh-live-badge.uninvoked {
+      color: #64748b; background: #f1f5f9; border-color: rgba(148, 163, 184, 0.4);
+    }
+    .hud-mesh-live-badge.active {
+      color: #047857; background: #ecfdf5; border-color: rgba(16, 185, 129, 0.45);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
     }
     .hud-close {
       width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,.05);
@@ -592,9 +865,9 @@
     }
     .hud-close:hover { background: rgba(0,0,0,.1); color: #1d1d1f; }
 
-    /* Dual Column Layout */
+    /* Single Column Layout */
     .nav-hud-body {
-      flex: 1; display: grid; grid-template-columns: 290px 1fr;
+      flex: 1; display: flex; flex-direction: column;
       min-height: 0; overflow: hidden; background: #ffffff; padding: 0;
     }
     /* Left Rail */
@@ -609,6 +882,11 @@
     }
     .hud-rail-list {
       display: flex; flex-direction: column; gap: 5px; padding: 8px;
+    }
+    .hud-rail-divider {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+      color: #64748b; padding: 10px 8px 4px 8px; display: flex; align-items: center; gap: 6px;
+      user-select: none; border-top: 1px dashed rgba(0,0,0,.08); margin-top: 4px;
     }
     .hud-rail-item {
       display: flex; flex-direction: column; gap: 3.5px; padding: 9px 12px;
@@ -651,8 +929,10 @@
     .hud-status-badge {
       font-family: ui-monospace, "SF Mono", monospace; font-size: 9.5px; font-weight: 700;
       letter-spacing: .4px; padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
-      flex-shrink: 0;
+      flex-shrink: 0; transition: all .18s ease;
     }
+    .status-uninvoked { background: #f1f5f9; color: #64748b; border: 1px solid rgba(148, 163, 184, 0.4); }
+    .status-invoked { background: #ecfdf5; color: #047857; border: 1px solid rgba(16, 185, 129, 0.45); font-weight: 700; box-shadow: 0 0 6px rgba(16, 185, 129, 0.15); }
     .status-working { background: #ecfdf5; color: #059669; border: 1px solid rgba(5, 150, 105, 0.3); }
     .status-active { background: #ecfdf5; color: #059669; border: 1px solid rgba(5, 150, 105, 0.3); }
     .status-standby { background: #f1f5f9; color: #64748b; border: 1px solid rgba(100, 116, 139, 0.2); }
@@ -712,7 +992,7 @@
     .hud-stage-logs {
       flex: 1; min-height: 240px; max-height: none; background: #090d16;
       border: 1px solid rgba(255,255,255,.09); border-radius: 9px;
-      padding: 10px 12px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 10.5px;
+      padding: 12px 14px 28px 14px; box-sizing: border-box; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 10.5px;
       overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
       box-shadow: inset 0 2px 6px rgba(0,0,0,.35);
     }
@@ -720,6 +1000,9 @@
     .hud-stage-logs::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 999px; }
     .hud-drawer-log-row {
       display: flex; gap: 8px; line-height: 1.45; color: #cbd5e1;
+    }
+    .hud-drawer-log-row:last-child {
+      margin-bottom: 14px;
     }
     .hud-drawer-log-time {
       color: #64748b; flex-shrink: 0; font-size: 10px; font-weight: 500;
@@ -731,6 +1014,71 @@
     .hud-drawer-log-text.alert { color: #fca5a5; }
     .hud-drawer-log-text.concurrent { color: #d8b4fe; }
     .hud-drawer-log-text.info { color: #93c5fd; }
+
+    /* HUD Live Invocation Monitor Styles */
+    .hm-dashboard {
+      display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
+    }
+    .hm-stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px;
+    }
+    .hm-stat-card {
+      background: #f8fafc; border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 8px; padding: 7px 10px; display: flex; flex-direction: column; gap: 2px;
+    }
+    .hm-stat-title {
+      font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .hm-stat-val {
+      font-size: 15px; font-weight: 800; font-family: ui-monospace, monospace; color: #0f172a;
+    }
+    .hm-stat-val.active { color: #047857; }
+    .hm-matrix-title {
+      font-size: 10.5px; font-weight: 700; color: #475569; display: flex; justify-content: space-between; align-items: center; margin-top: 2px;
+    }
+    .hm-matrix-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 5.5px;
+    }
+    .hm-matrix-chip {
+      background: #f8fafc; border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 7px; padding: 4.5px 8px; font-size: 11px; color: #1e293b;
+      display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+      transition: all .15s ease; font-family: inherit; width: 100%;
+    }
+    .hm-matrix-chip:hover {
+      background: #eef2f6; border-color: rgba(0, 113, 227, 0.35); transform: translateY(-1px);
+    }
+    .hm-matrix-chip.invoked {
+      background: #f0fdf4; border-color: rgba(16, 185, 129, 0.4); font-weight: 600;
+    }
+    .hm-chip-count {
+      font-size: 9.5px; font-family: ui-monospace, monospace; padding: 1.5px 6px; border-radius: 999px;
+    }
+    .hm-chip-count.zero { background: #e2e8f0; color: #64748b; }
+    .hm-chip-count.invoked { background: #dcfce7; color: #15803d; font-weight: 700; }
+
+    .hm-standby-box {
+      background: #f8fafc; border: 1px dashed rgba(148, 163, 184, 0.55);
+      border-radius: 10px; padding: 22px 18px; text-align: center; margin-top: 8px;
+    }
+    .hm-standby-icon { font-size: 26px; margin-bottom: 6px; line-height: 1; }
+    .hm-standby-title { font-size: 13.5px; font-weight: 700; color: #1e293b; margin-bottom: 5px; }
+    .hm-standby-desc { font-size: 11.5px; color: #64748b; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+
+    .hm-skill-statbar {
+      display: flex; align-items: center; gap: 10px; background: #f8fafc;
+      border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 8px; padding: 6px 12px;
+      font-size: 11px; color: #475569; margin-top: 3px; flex-wrap: wrap;
+    }
+    .hm-skill-stat-item {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .hm-skill-stat-item b {
+      font-family: ui-monospace, monospace; color: #0f172a;
+    }
+    .hm-skill-stat-item.active b {
+      color: #047857;
+    }
 
     @media (max-width: 960px) {
       .nav-hud-dropdown {
@@ -745,20 +1093,8 @@
         height: 85vh !important;
       }
       .nav-hud-body {
-        grid-template-columns: 1fr !important;
-        grid-template-rows: auto 1fr !important;
-      }
-      .hud-rail {
-        border-right: none !important;
-        border-bottom: 1px solid rgba(0,0,0,.08) !important;
-        max-height: 140px !important;
-      }
-      .hud-rail-list {
-        flex-direction: row !important;
-        overflow-x: auto !important;
-      }
-      .hud-rail-item {
-        min-width: 170px !important;
+        display: flex !important;
+        flex-direction: column !important;
       }
     }
 
@@ -1246,100 +1582,35 @@
   <header class="ap-nav">
     <a class="ap-brand" href="/">
       <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true"><use href="#sgc-mark"/></svg>
-      ScopeGate <small id="brand-sub">智能体商务网关</small>
+      ScopeGate <small id="brand-sub">Agentic Commerce Gateway</small>
     </a>
     <div class="ap-right">
       <button type="button" class="nav-btn active" id="nav-market-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-        <span id="nav-market-text">服务市集</span>
+        <span id="nav-market-text">Marketplace</span>
       </button>
 
-      <div class="nav-hud-wrap has-disabled-tip" id="nav-hud-wrap" title="点进具体商家后才能查看">
+      <div class="nav-hud-wrap has-disabled-tip" id="nav-hud-wrap" title="Select a merchant to inspect skills">
         <button type="button" class="nav-btn disabled" id="nav-hud-btn" disabled aria-haspopup="true" aria-expanded="false">
           <span class="hud-pulse-dot"></span>
-          <span id="nav-hud-text">智能体网格透视</span>
+          <span id="nav-hud-text">Skill Invocations</span>
           <span class="hud-pill-tag">HUD</span>
         </button>
-        <div class="nav-hud-tooltip" id="nav-hud-tooltip" role="tooltip">点进具体商家后才能查看</div>
+        <div class="nav-hud-tooltip" id="nav-hud-tooltip" role="tooltip">Select a merchant to inspect skills</div>
         <div class="nav-hud-dropdown" id="nav-hud-dropdown" hidden>
           <div class="nav-hud-header">
             <div class="hud-title-wrap">
               <span class="hud-pulse-dot"></span>
-              <div class="hud-title" id="hud-heading-title">商户自治智能体网格</div>
+              <div class="hud-title" id="hud-heading-title">Skill Invocations HUD</div>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
-              <span class="hud-mesh-live-badge">● MESH ONLINE</span>
-              <button type="button" class="hud-close" id="hud-close-btn" aria-label="关闭透视面板" title="关闭">&times;</button>
+              <span class="hud-mesh-live-badge uninvoked" id="hud-live-badge">⚪ No Skill Invoked Yet</span>
+              <button type="button" class="hud-close" id="hud-close-btn" aria-label="Close" title="Close">&times;</button>
             </div>
           </div>
 
           <div class="nav-hud-body">
-            <!-- Left Rail: 6 Agents Navigation List -->
-            <aside class="hud-rail" aria-label="智能体导航">
-              <div class="hud-rail-list" id="hud-rail-list">
-                <!-- 1. Supervisor -->
-                <button type="button" class="hud-rail-item active" id="agent-card-supervisor" data-agent="supervisor" aria-selected="true">
-                  <div class="hud-rail-row">
-                    <span class="hud-rail-name">🎯 Master Dispatcher</span>
-                    <span class="hud-status-badge status-ready" id="sup-status-badge" data-status="READY">就绪</span>
-                  </div>
-                  <div class="hud-rail-role">中枢意图调度 · 路由协同</div>
-                  <div class="hud-rail-task" id="sup-intent-tag">意图: 等待买家输入</div>
-                </button>
-
-                <!-- 2. Concierge -->
-                <button type="button" class="hud-rail-item" id="agent-card-concierge" data-agent="concierge">
-                  <div class="hud-rail-row">
-                    <span class="hud-rail-name" id="name-concierge">💼 商务总管</span>
-                    <span class="hud-status-badge status-standby" id="status-concierge" data-status="STANDBY">前台待命</span>
-                  </div>
-                  <div class="hud-rail-role">concierge · 前台唯一接待与协同统筹</div>
-                  <div class="hud-rail-task" id="task-concierge">🟢 前台实时聆听客户 (Listening)</div>
-                </button>
-
-                <!-- 3. Gatekeeper -->
-                <button type="button" class="hud-rail-item" id="agent-card-gatekeeper" data-agent="gatekeeper">
-                  <div class="hud-rail-row">
-                    <span class="hud-rail-name" id="name-gatekeeper">🛡️ 技术守门人</span>
-                    <span class="hud-status-badge status-awaiting" id="status-gatekeeper" data-status="AWAITING">待总管唤起</span>
-                  </div>
-                  <div class="hud-rail-role">gatekeeper · 交付基准核验/9类防注入</div>
-                  <div class="hud-rail-task" id="task-gatekeeper">⚪ 等待总管唤起审查 (Awaiting)</div>
-                </button>
-
-                <!-- 4. Finance -->
-                <button type="button" class="hud-rail-item" id="agent-card-finance" data-agent="finance">
-                  <div class="hud-rail-row">
-                    <span class="hud-rail-name" id="name-finance">💳 财务清算</span>
-                    <span class="hud-status-badge status-awaiting" id="status-finance" data-status="AWAITING">待总管唤起</span>
-                  </div>
-                  <div class="hud-rail-role">finance · 40/60确定性算价/PayPal锁账</div>
-                  <div class="hud-rail-task" id="task-finance">⚪ 等待总管唤起算价 (Awaiting)</div>
-                </button>
-
-                <!-- 5. Delivery -->
-                <button type="button" class="hud-rail-item" id="agent-card-delivery" data-agent="delivery">
-                  <div class="hud-rail-row">
-                    <span class="hud-rail-name" id="name-delivery">📦 履约交付</span>
-                    <span class="hud-status-badge status-awaiting" id="status-delivery" data-status="AWAITING">待总管唤起</span>
-                  </div>
-                  <div class="hud-rail-role">delivery · 存证/Vault 网关/行为审计</div>
-                  <div class="hud-rail-task" id="task-delivery">⚪ 等待总管协同履约 (Awaiting)</div>
-                </button>
-
-                <!-- 6. Legal -->
-                <button type="button" class="hud-rail-item" id="agent-card-legal" data-agent="legal">
-                  <div class="hud-rail-row">
-                    <span class="hud-rail-name" id="name-legal">⚖️ 法务举证</span>
-                    <span class="hud-status-badge status-awaiting" id="status-legal" data-status="AWAITING">待总管唤起</span>
-                  </div>
-                  <div class="hud-rail-role">legal · 卖家保护规则/法定抗辩</div>
-                  <div class="hud-rail-task" id="task-legal">⚪ 等待总管协调查账 (Awaiting)</div>
-                </button>
-              </div>
-            </aside>
-
-            <!-- Right Stage: Focused Agent Inspector -->
+            <!-- Focused Agent & Skill Invocation Inspector -->
             <main class="hud-stage" id="hud-stage" aria-live="polite">
               <!-- Dynamically populated by hud.renderStage() -->
             </main>
@@ -1350,49 +1621,44 @@
       <div class="nav-orders-wrap">
         <button type="button" class="nav-btn" id="nav-deals-btn" aria-haspopup="true" aria-expanded="false">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-          <span id="nav-deals-text">我的订单</span>
+          <span id="nav-deals-text">Active Deals</span>
           <span class="nav-badge" id="my-deals-count" style="display:none">0</span>
         </button>
         <div class="nav-orders-dropdown" id="nav-orders-dropdown" hidden>
           <div class="nav-orders-header">
-            <span id="nav-orders-heading">我的定制订单</span>
-            <span class="sub mono" id="nav-orders-total" style="font-size:11.5px">共 0 笔</span>
+            <span id="nav-orders-heading">Your Active Deals</span>
+            <span class="sub mono" id="nav-orders-total" style="font-size:11.5px">0 total</span>
           </div>
           <div class="nav-orders-list" id="nav-orders-list"></div>
         </div>
       </div>
-
-      <button type="button" class="nav-btn" id="lang-toggle-btn" aria-label="切换语言 (Toggle Language)">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:2px"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-        <span id="lang-zh" style="color:#0071e3;font-weight:600">中</span><span style="color:#a1a1a6;margin:0 2px">/</span><span id="lang-en" style="color:#6e6e73">EN</span>
-      </button>
     </div>
   </header>
 
   <div class="demoline" id="demo-banner">
-    <b>当前处于【买家采购与交互视角】</b> — 您正在与商户的全自治托管智能体洽谈。您可以自由输入需求或使用预设场景（可尝试攻击排除项），切身体验 ScopeGate 中台如何在背后全自动为卖家守门、锚定底账与举证抗辩。
+    <b>Buyer Experience Perspective</b> — You are negotiating with the merchant's autonomous agent mesh. Feel free to input custom requests or select quick scenario presets to witness ScopeGate enforce contract boundaries, anchor PayPal ledgers, and compile instant legal defense.
   </div>
 
   <!-- ══ MARKETPLACE ══ -->
-  <section class="stage" id="view-market" aria-label="服务市集">
+  <section class="stage" id="view-market" aria-label="Marketplace">
     <div class="hero">
-      <h1 id="hero-h1">下一代智能体商务网络 · 刚性契约与全链路底账守护</h1>
-      <p id="hero-p">专业卖家专注做好核心服务，销售、法务、财务、清算与争议抗辩全交由 ScopeGate 智能体集群守护。在资金流转前冻结不可篡改的契约哈希，在 PayPal 官方账本完成存证与分期清算。</p>
+      <h1 id="hero-h1">Agentic Commerce Network · Rigid Contracts & On-Ledger Settlement</h1>
+      <p id="hero-p">Sellers focus 100% on their core craft. Sales, legal boundaries, escrow finance, and dispute defense are executed by the ScopeGate Multi-Agent Mesh on PayPal rails.</p>
     </div>
 
     <div class="grid g3" id="stalls"></div>
   </section>
 
   <!-- ══ SHOP ══ -->
-  <section class="stage" id="view-shop" aria-label="商户店铺" hidden>
+  <section class="stage" id="view-shop" aria-label="Merchant Storefront" hidden>
     <div class="store">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <b id="shop-title">商户店铺</b>
-        <!-- Preset Prompt Scenarios Dropdown (快捷场景预设按钮) -->
+        <b id="shop-title">Merchant Storefront</b>
+        <!-- Preset Prompt Scenarios Dropdown (Preset Scenarios) -->
         <div class="shop-presets-wrap" id="shop-presets-wrap">
-          <button type="button" class="shop-presets-toggle" id="btn-toggle-presets" aria-expanded="false" title="展开/收起快捷预设场景">
+          <button type="button" class="shop-presets-toggle" id="btn-toggle-presets" aria-expanded="false" title="Toggle scenario presets">
             <span>💡</span>
-            <span id="shop-presets-label">快捷场景预设</span>
+            <span id="shop-presets-label">Preset Scenarios</span>
             <span class="sp-arrow" id="sp-toggle-arrow">▼</span>
           </button>
           <div class="shop-presets-drawer" id="shop-presets-drawer" hidden>
@@ -1400,34 +1666,41 @@
           </div>
         </div>
       </div>
+      <!-- Parallel to presets and above the right-hand Deal Desk card: -->
+      <div id="shop-top-dispute" class="shop-top-dispute" hidden></div>
     </div>
     <div class="grid g2">
       <div class="card sec shop-chat-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
-          <div class="h" id="shop-agent-head" style="margin-bottom:0">与商户专属商务智能体沟通 <span class="sub" style="font-weight:400;text-transform:none;letter-spacing:0">&middot; 多智能体商务中台守护</span></div>
-          <button type="button" class="btn ghost" id="btn-reset-chat" style="font-size:11.5px;padding:3.5px 11px;border-radius:980px;cursor:pointer;line-height:1.2" title="重置对话">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span id="btn-reset-chat-text">重置对话</span>
+          <div class="h" id="shop-agent-head" style="margin-bottom:0">Consult with Merchant Agent <span class="sub" style="font-weight:400;text-transform:none;letter-spacing:0">&middot; Multi-Agent Mesh Guarded</span></div>
+          <button type="button" class="btn ghost" id="btn-reset-chat" style="font-size:11.5px;padding:3.5px 11px;border-radius:980px;cursor:pointer;line-height:1.2" title="Reset Chat">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span id="btn-reset-chat-text">Reset Chat</span>
           </button>
         </div>
         <div class="chat" id="shop-thread" aria-live="polite">
-          <div class="sys" id="shop-thread-sys">该智能体严格按照商户公示的服务基准提供报价 —— 任何越界要求与提示注入均会被拦截，达成一致后由 ScopeGate 冻结契约。</div>
+          <div class="sys" id="shop-thread-sys">This agent strictly quotes against published merchant service baselines — out-of-scope requests and prompt injections will be rejected, and agreed terms will be anchored to an immutable contract hash.</div>
         </div>
-        <div class="inputrow">
-          <input type="text" class="input" id="shop-input" placeholder="请描述您的定制需求（如：需要做3段式Next.js落地页，支持暗黑模式）…" aria-label="向商户智能体发送消息" />
-          <button type="button" class="send" id="shop-send">发送</button>
+        <div class="shop-img-preview-bar" id="shop-img-preview-bar" hidden></div>
+        <div class="inputrow" id="shop-inputrow">
+          <input type="file" id="shop-img-file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden />
+          <button type="button" class="btn-attach-img" id="btn-attach-img" title="Upload design mockups or screenshots (drag & drop or paste supported)" aria-label="Upload Images">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+              <circle cx="9" cy="9" r="2"/>
+              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+            </svg>
+          </button>
+          <input type="text" class="input" id="shop-input" placeholder="Describe your bespoke requirements (e.g., 3-section responsive landing page with dark mode)…" aria-label="Message to merchant agent" />
+          <button type="button" class="send" id="shop-send">Send</button>
         </div>
         <div class="shop-quota-bar" id="shop-quota-bar">
           <span class="quota-dot" id="quota-dot"></span>
-          <span id="quota-text">公网沙盒体验配额：剩余 20 / 20 次 (大模型实时深度裁决)</span>
+          <span id="quota-text">Public Sandbox Quota: 20 / 20 remaining (Real-time LLM Adjudication)</span>
         </div>
       </div>
-      <div class="card">
-        <div class="sec" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-          <div class="h" id="deal-workbench-title" style="margin:0">契约与分期履约工作台</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="hash" id="deal-hash" hidden></span>
-            <button type="button" class="btn danger-ghost" id="btn-cancel-deal" style="display:none" title="取消当前订单并重置洽谈">取消订单</button>
-          </div>
+      <div class="card shop-deal-card">
+        <div class="sec">
+          <div class="h" id="deal-workbench-title" style="margin:0">Contract & Fulfillment Desk</div>
         </div>
         <div class="sec" id="deal-body" aria-live="polite"></div>
         <div class="sec" id="deal-files" aria-live="polite" hidden></div>
@@ -1436,6 +1709,10 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="img-lightbox" id="img-lightbox" hidden>
+    <button type="button" class="img-lightbox-close" id="img-lightbox-close" aria-label="Close">&times;</button>
+    <img id="img-lightbox-target" src="" alt="Preview image" />
+  </div>
 </div>
 <script type="module" src="/console.js"></script>
 </body>

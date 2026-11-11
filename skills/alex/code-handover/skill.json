@@ -1,0 +1,10 @@
+{
+  "id": "alex-code-handover",
+  "name": "Production Code Handover",
+  "name_zh": "生产级源码交付与部署技能",
+  "version": "1.0.0",
+  "seller_id": "alex",
+  "description": "Clean GitHub repo transfer, Vercel Edge configuration, custom domain mapping guidance, and 100% full commercial IP ownership handover.",
+  "triggers": ["github", "handover", "deploy", "domain", "vercel", "source code", "源码", "交付", "部署", "域名", "仓库", "版权", "所有权"],
+  "tools": []
+}

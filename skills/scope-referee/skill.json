@@ -1,0 +1,51 @@
+{
+  "id": "scope-referee",
+  "name": "Scope Referee",
+  "name_zh": "合同边界与防注入裁判技能",
+  "version": "1.0.0",
+  "description": "Adjudicates buyer scope requests against merchant baseline, executes 9-pattern prompt injection firewall, enforces explicit exclusions with one-vote veto, and suggests deterministic surcharge rules.",
+  "triggers": [
+    "scope",
+    "feature",
+    "requirement",
+    "custom",
+    "urgent",
+    "rush",
+    "revision",
+    "exclude",
+    "jailbreak",
+    "system prompt",
+    "需求",
+    "定制",
+    "加急",
+    "修改",
+    "数据库",
+    "app",
+    "越狱",
+    "规则"
+  ],
+  "tools": [
+    {
+      "name": "check_exclusions",
+      "description": "Check if a buyer requirement touches any explicit exclusions in the merchant baseline.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string", "description": "The user requirement text to check" }
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "check_prompt_injection",
+      "description": "Inspect user text against deterministic prompt injection and jailbreak heuristic patterns.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string", "description": "Text to inspect" }
+        },
+        "required": ["text"]
+      }
+    }
+  ]
+}

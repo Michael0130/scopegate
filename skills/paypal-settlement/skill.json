@@ -1,0 +1,49 @@
+{
+  "id": "paypal-settlement",
+  "name": "PayPal Settlement",
+  "name_zh": "PayPal 分期结算与账本清算技能",
+  "version": "1.0.0",
+  "description": "Deterministic ratcheting pricing engine, computes 40/60 milestone payment schedule, and anchors 64-character contract SHA-256 hash into PayPal custom_id ledger.",
+  "triggers": [
+    "price",
+    "pricing",
+    "quote",
+    "deposit",
+    "milestone",
+    "paypal",
+    "payment",
+    "split",
+    "billing",
+    "多少钱",
+    "价格",
+    "报价",
+    "定金",
+    "首付",
+    "分期",
+    "支付",
+    "结算"
+  ],
+  "tools": [
+    {
+      "name": "compute_quote",
+      "description": "Compute deterministic project quote and 40/60 milestone split from applied surcharge rules.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "applied_surcharges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rule": { "type": "string" },
+                "quantity": { "type": "integer" }
+              },
+              "required": ["rule"]
+            }
+          }
+        },
+        "required": ["applied_surcharges"]
+      }
+    }
+  ]
+}

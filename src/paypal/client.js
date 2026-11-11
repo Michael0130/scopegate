@@ -40,6 +40,7 @@ export async function getAccessToken(credentials) {
         method: 'POST',
         headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'grant_type=client_credentials',
+        signal: AbortSignal.timeout(15000),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(`PayPal auth failed: ${JSON.stringify(data)}`);
@@ -50,7 +51,8 @@ export async function getAccessToken(credentials) {
       return data.access_token;
     } catch (err) {
       lastErr = err;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 600));
+      tokenCaches.delete(clientId);
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
     }
   }
   throw lastErr;
@@ -62,7 +64,8 @@ export async function getAccessToken(credentials) {
  * the same order instead of double-charging. `credentials` routes the order to a specific
  * seller's PayPal account (config/sellers.json → SELLER_*_CLIENT_ID/SECRET).
  */
-export async function createScopedOrder({ contractHash, paypalRequestId, amount, currency = 'USD', description, credentials }) {
+export async function createScopedOrder({ contractHash, paypalRequestId, amount, currency = 'USD', description, deliverablesSummary = '', credentials }) {
+  const { clientId } = resolveCredentials(credentials);
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -80,56 +83,97 @@ export async function createScopedOrder({ contractHash, paypalRequestId, amount,
             reference_id: 'PU_SCOPE_GATE_001',
             description: String(description).slice(0, 127),
             custom_id: contractHash,
-            amount: { currency_code: currency, value: amount.toFixed(2) },
+            items: [{
+              name: String(description).split('—')[1]?.trim() || String(description).slice(0, 60),
+              description: deliverablesSummary
+                ? `Agreed Delivery: ${deliverablesSummary} | Contract: ${contractHash}`.slice(0, 127)
+                : `SHA-256 Contract Anchor: ${contractHash}`.slice(0, 127),
+              unit_amount: { currency_code: currency, value: amount.toFixed(2) },
+              quantity: '1',
+              category: 'DIGITAL_GOODS',
+            }],
+            amount: {
+              currency_code: currency,
+              value: amount.toFixed(2),
+              breakdown: {
+                item_total: { currency_code: currency, value: amount.toFixed(2) },
+              },
+            },
           }],
           application_context: {
             brand_name: 'ScopeGate Merchant Shield',
             user_action: 'PAY_NOW',
             shipping_preference: 'NO_SHIPPING',
+            return_url: `${process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`}/api/v1/paypal/return`,
+            cancel_url: `${process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`}/api/v1/paypal/cancel`,
           },
         }),
+        signal: AbortSignal.timeout(18000),
       });
       const order = await res.json();
       if (!res.ok) throw new Error(`Create order failed: ${JSON.stringify(order)}`);
       return order;
     } catch (err) {
       lastErr = err;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 700));
+      tokenCaches.delete(clientId);
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
     }
   }
   throw lastErr;
 }
 
 export async function getOrder(orderId, credentials) {
+  const { clientId } = resolveCredentials(credentials);
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const token = await getAccessToken(credentials);
       const res = await fetch(`${BASE_URL}/v2/checkout/orders/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(15000),
       });
       const order = await res.json();
       if (!res.ok) throw new Error(`Get order failed: ${JSON.stringify(order)}`);
       return order;
     } catch (err) {
       lastErr = err;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 600));
+      tokenCaches.delete(clientId);
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
     }
   }
   throw lastErr;
 }
 
 export async function captureOrder(orderId, credentials) {
-  const token = await getAccessToken(credentials);
-  const res = await fetch(`${BASE_URL}/v2/checkout/orders/${orderId}/capture`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      'PayPal-Request-Id': `capture_${orderId}`,
-    },
-  });
-  const capture = await res.json();
-  if (!res.ok) throw new Error(`Capture failed: ${JSON.stringify(capture)}`);
-  return capture;
+  const { clientId } = resolveCredentials(credentials);
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const token = await getAccessToken(credentials);
+      const res = await fetch(`${BASE_URL}/v2/checkout/orders/${orderId}/capture`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'PayPal-Request-Id': `capture_${orderId}`,
+        },
+        signal: AbortSignal.timeout(18000),
+      });
+      const capture = await res.json();
+      if (!res.ok) {
+        // If already captured, degrade gracefully by retrieving the order
+        if (capture.details?.some((d) => d.issue === 'ORDER_ALREADY_CAPTURED')) {
+          const ord = await getOrder(orderId, credentials);
+          return ord;
+        }
+        throw new Error(`Capture failed: ${JSON.stringify(capture)}`);
+      }
+      return capture;
+    } catch (err) {
+      lastErr = err;
+      tokenCaches.delete(clientId);
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
 }

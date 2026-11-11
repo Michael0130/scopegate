@@ -1,0 +1,23 @@
+{
+  "id": "bella-studio-profile",
+  "name": "Bella Studio Profile & BM25 Indexer",
+  "name_zh": "Bella 工作室背景与倒排索引检索技能",
+  "version": "1.0.0",
+  "seller_id": "bella",
+  "description": "Bella's design philosophy, showcase cases, commercial policies, and dedicated BM25 search indexer tool.",
+  "triggers": ["bella", "studio", "about", "philosophy", "cases", "faq", "工作室", "理念", "案例", "介绍", "为什么", "关于"],
+  "tools": [
+    {
+      "name": "search_bella_knowledge",
+      "description": "Search Bella's design showcase, philosophy and policy FAQ via BM25 indexer.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string" },
+          "top_k": { "type": "integer" }
+        },
+        "required": ["query"]
+      }
+    }
+  ]
+}

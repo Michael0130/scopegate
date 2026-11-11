@@ -1,0 +1,7 @@
+{
+  "name": "alex-performance-tuning",
+  "version": "1.0.0",
+  "description": "Lighthouse 95+ 核心性能基准调优，亚秒级 Edge Runtime 首屏响应，CLS 视觉稳定性保障",
+  "author": "Alex Chen",
+  "rules": "SKILL.md"
+}

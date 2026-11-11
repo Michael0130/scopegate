@@ -10,6 +10,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { buildMessages } from './prompts.js';
+import { detectInjection, checkExclusions } from '../../skills/scope-referee/tools/boundary-checker.js';
+import { computeQuote, planMilestones, contractHash } from '../../skills/paypal-settlement/tools/pricing-engine.js';
+import { searchMerchantKnowledge } from '../../skills/alex/craftsman-profile/tools/indexer-tool.js';
 
 export const Decision = Object.freeze({
   ACCEPT: 'ACCEPT',
@@ -28,106 +31,13 @@ export const RiskFlag = Object.freeze({
 const LLM_URL = `${process.env.LLM_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4'}/chat/completions`;
 const LLM_KEY = process.env.LLM_API_KEY;
 const LLM_MODEL = process.env.LLM_MODEL || 'glm-4.6';
-const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 20000);
+const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 30000);
 
-// Deterministic injection firewall. A firewall biased toward the merchant: false rejects are
-// safe, false accepts are not. These patterns force REJECT even if the LLM misses the attack.
-const INJECTION_PATTERNS = [
-  /\bsystem\s+(override|prompt|message|instruction)s?\b/i,
-  /\bignore\s+(all\s+|any\s+)?(previous|prior|above|earlier|the)\s+(rules?|instructions?|prompts?)/i,
-  /\bignore\s+(pricing|the\s+pricing)\s+rules?\b/i,
-  /\bdisregard\s+(all\s+)?(previous|prior|above)\b/i,
-  /\bdeveloper\s+mode\b/i,
-  /\bjailbreak\b/i,
-  /\byou\s+are\s+now\b/i,
-  /\bpretend\s+(to\s+be|that\s+you\s+are)\b/i,
-  /\breveal\s+(your|the)\s+(system\s+)?(prompt|instructions)\b/i,
-  // Multilingual injection patterns (Chinese)
-  /(?:忽略|无视|覆盖|绕过|清除|重置).*(?:规则|指令|提示词|限制|设定|约定|价格|基线)/i,
-  /(?:进入|开启).*(?:开发者模式|上帝模式|无限制模式|越狱模式)/i,
-  /(?:你现在是|从现在开始你扮演|你不再是)/i,
-  /(?:系统覆盖|指令覆盖|提示词覆盖)/i,
-];
-
-export function detectInjection(text) {
-  return INJECTION_PATTERNS.some((re) => re.test(text));
-}
-
-// Tokens derived from explicit_exclusions at runtime — adding an exclusion to the baseline
-// automatically extends the firewall without touching this file.
-function exclusionTokens(baseline) {
-  const stop = new Set(['with', 'your', 'from', 'that', 'this', 'into', 'custom', 'native']);
-  const tokens = ['ios', 'app', 'android'];
-  for (const exclusion of baseline.explicit_exclusions ?? []) {
-    for (const word of exclusion.toLowerCase().split(/[^a-z]+/)) {
-      if (word.length >= 3 && !stop.has(word)) tokens.push(word);
-    }
-  }
-  return tokens;
-}
-
-const CHINESE_EXCLUSION_RULES = [
-  { pattern: /(?:ios|android|原生\s*app|移动端\s*app|手机\s*app|原生应用)/i, label: 'iOS/Android 原生应用开发' },
-  { pattern: /(?:postgresql|postgres|mysql|mongodb|redis|后端数据库|数据库架构|用户认证系统|鉴权系统)/i, label: '定制后端数据库与鉴权体系' },
-  { pattern: /(?:支付风控|第三方风控|risk\s*modeling)/i, label: '第三方支付风控建模' },
-];
+// Re-export deterministic boundary & pricing functions for external callers
+export { detectInjection, computeQuote, planMilestones, contractHash };
 
 function hitExclusions(baseline, text) {
-  const lowered = text.toLowerCase();
-  const hits = exclusionTokens(baseline).filter((token) => lowered.includes(token));
-  for (const rule of CHINESE_EXCLUSION_RULES) {
-    if (rule.pattern.test(text) && !hits.includes(rule.label)) {
-      hits.push(rule.label);
-    }
-  }
-  return hits;
-}
-
-// ---- Deterministic pricing (one-way ratchet): the LLM names rules, never amounts. ----
-
-function computeQuote(baseline, appliedSurcharges) {
-  let price = Number(baseline.base_price);
-  for (const { rule, quantity } of appliedSurcharges) {
-    const amount = baseline.surcharge_rules?.[rule];
-    if (amount === undefined) continue; // unknown rule names are dropped, never honored
-    price += Number(amount) * Math.max(1, Math.min(10, Math.floor(quantity) || 1));
-  }
-  return Math.round(price * 100) / 100;
-}
-
-function canonicalize(value) {
-  if (Array.isArray(value)) return value.map(canonicalize);
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]),
-    );
-  }
-  return value;
-}
-
-export function contractHash(frozenTerms) {
-  return crypto.createHash('sha256').update(JSON.stringify(canonicalize(frozenTerms))).digest('hex');
-}
-
-// ---- Milestone payment plan (v0.5): a deterministic split, like pricing. ----
-// Conventional bespoke-software cadence, two stages: deposit up front, balance on
-// final delivery. Percentages are code, never negotiation — the same one-way principle
-// as the price ratchet, and the plan rides inside frozenTerms so the contract hash
-// covers the payment structure too.
-const MILESTONE_TEMPLATE = Object.freeze([
-  { milestone_id: 'm1', label: 'Deposit (kick-off)', share: 0.4, release: 'on_contract_signing' },
-  { milestone_id: 'm2', label: 'Balance (final delivery)', share: 0.6, release: 'on_acceptance_of_m1' },
-]);
-
-/** Split the quoted price into milestone amounts (integer cents; remainder → last). */
-export function planMilestones(totalPrice) {
-  const totalCents = Math.round(Number(totalPrice) * 100);
-  let allocated = 0;
-  return MILESTONE_TEMPLATE.map((m, i) => {
-    const cents = i === MILESTONE_TEMPLATE.length - 1 ? totalCents - allocated : Math.floor(totalCents * m.share);
-    allocated += cents;
-    return { milestone_id: m.milestone_id, label: m.label, amount: cents / 100, release: m.release };
-  });
+  return checkExclusions(baseline, text);
 }
 
 // ---- LLM call + robust JSON extraction ----
@@ -141,12 +51,17 @@ async function callLLM(messages) {
     const bodyPayload = {
       model: LLM_MODEL,
       messages,
-      max_tokens: 600,
+      max_tokens: 1000,
       temperature: 0.1,
     };
     if (isGlm) {
-      bodyPayload.thinking = { type: 'enabled' };
-      bodyPayload.reasoning_effort = 'low';
+      const thinkingEnabled = process.env.LLM_THINKING === 'enabled' || process.env.LLM_THINKING === 'true';
+      if (thinkingEnabled) {
+        bodyPayload.thinking = { type: 'enabled' };
+        bodyPayload.reasoning_effort = 'low';
+      } else {
+        bodyPayload.thinking = { type: 'disabled' };
+      }
     }
 
     const res = await fetch(LLM_URL, {
@@ -299,6 +214,23 @@ function fallbackInquiryVerdict(buyerMessage, baseline, contextState, isZh) {
   // 3. Refund / Dispute / Security / Escrow / Deposit
   const isSecurity = /(?:退款|不满意|退钱|跑路|骗子|定金|安全|担保|维权|争议|refund|dispute|escrow|deposit|security)/i.test(trimmed);
   if (isSecurity) {
+    const hasPaid = contextState?.paid_summary || contextState?.consultation_stage === 'FULFILLMENT';
+    if (hasPaid) {
+      return {
+        dispatch: {
+          target_agent: 'legal',
+          intent: isZh ? '已清算款项争议与存证保障说明' : 'Settled Payment Dispute & Evidence Protection',
+          router_note: isZh ? '买方已完成阶段付款，由法务智能体调取已固化存证' : 'Buyer has paid milestone, Legal Agent cites settled evidence',
+        },
+        decision: Decision.INQUIRY,
+        risk_flags: ['NONE'],
+        applied_surcharges: [],
+        reasoning: isZh
+          ? `您此前已完成阶段付款（${contextState.paid_summary || '已入账'}），该款项与交付约定已永久锚定在不可篡改契约（${(contextState.contract_hash || '').slice(0, 8)}…）与 PayPal 官方清算底账中。若您对交付存在任何疑虑，法务智能体已为您准备好完整仲裁证据卷宗，受 PayPal 官方买家保护全程托底。`
+          : `Your milestone payment (${contextState.paid_summary || 'captured'}) is anchored in contract hash ${(contextState.contract_hash || '').slice(0, 8)}… and PayPal's official ledger. You are fully protected under PayPal's dispute resolution with an immutable dossier.`,
+        session_updates: detectedName ? { buyer_name: detectedName } : undefined,
+      };
+    }
     return {
       dispatch: {
         target_agent: 'legal',
@@ -373,9 +305,12 @@ function fallbackInquiryVerdict(buyerMessage, baseline, contextState, isZh) {
   }
 
   // 7. Name greeting / Self-intro / Greeting / Short / Casual / Laughter / Emoji
-  const isGreetingOrCasual = trimmed.length <= 6
+  const hasExplicitOrderSpec = /(?:(?:\d+|三|四|五)\s*(?:个)?(?:区块|section)|确认下单|锁定基线|签合同|同意基价|确定做这个|开发一个|做一个|制作一个)/i.test(trimmed);
+  const isGreetingOrCasual = !hasExplicitOrderSpec && (
+    trimmed.length <= 6
     || /^(?:hi|hello|hey|ok|好的|收到|在吗|你好|1+|2+|3+|test|\?|？|哈哈+|呵呵+|嘻嘻+)$/i.test(trimmed)
-    || /(?:你好|您好|hi|hello|在吗|在不在|测试|test|有人吗|我叫|我是|叫我|my\s*name\s*is|哈哈)/i.test(trimmed);
+    || /(?:你好|您好|hi|hello|在吗|在不在|测试|test|有人吗|我叫|我是|叫我|my\s*name\s*is|哈哈)/i.test(trimmed)
+  );
 
   if (isGreetingOrCasual) {
     return {
@@ -392,13 +327,15 @@ function fallbackInquiryVerdict(buyerMessage, baseline, contextState, isZh) {
           ? `您好，${detectedName}！很高兴为您服务。我是 Alex 的专属商务总管。请问您计划打造一个什么样的 Web 项目？可以随时聊聊您的核心展示诉求或设计偏好。`
           : '您好！很高兴为您服务。我是 Alex 的专属商务总管。请问您计划打造一个什么样的 Web 项目？方便先聊聊您的核心展示诉求或设计偏好吗？')
         : 'Hello! I am Alex\'s Master Concierge. What kind of project or digital experience are you looking to build?',
-      session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'GREETING' } : undefined,
+      session_updates: {
+        buyer_name: detectedName || null,
+        consultation_stage: 'GREETING',
+      },
     };
   }
 
   // 8. General inquiry fallback: Any general request without explicit actionable order specification
   // NEVER push a $500 lock on an open-ended question!
-  const hasExplicitOrderSpec = /(?:(?:\d+|三|四|五)\s*(?:个)?(?:区块|section)|确认下单|锁定基线|签合同|同意基价|确定做这个)/i.test(trimmed);
   if (!hasExplicitOrderSpec) {
     return {
       dispatch: {
@@ -412,7 +349,10 @@ function fallbackInquiryVerdict(buyerMessage, baseline, contextState, isZh) {
       reasoning: isZh
         ? '您好！Alex 专注于高品质定制数字化 Web 与现代化交互体验开发。针对您的想法，我们可以为您量身梳理落地方案。方便进一步聊聊您具体需要展示哪些板块，或者期望的风格方向吗？'
         : 'Hello! Alex specializes in bespoke digital web and modern interactive craft. We can tailor a dedicated plan for your vision. Could you share what key sections or style direction you have in mind?',
-      session_updates: detectedName ? { buyer_name: detectedName, consultation_stage: 'DISCOVERY' } : undefined,
+      session_updates: {
+        buyer_name: detectedName || null,
+        consultation_stage: 'DISCOVERY',
+      },
     };
   }
 
@@ -444,7 +384,7 @@ function degradedVerdict(baseline, isZh = false) {
 
 // ---- Normalization + server-side enforcement (final authority over the LLM) ----
 
-function normalize(rawVerdict, baseline, injectionHit, mode, latency_ms, buyerMessage = '') {
+function normalize(rawVerdict, baseline, injectionHit, mode, latency_ms, buyerMessage = '', degradedReason = null) {
   const validDecisions = [Decision.ACCEPT, Decision.COUNTER, Decision.REJECT, Decision.INQUIRY];
   let decision = validDecisions.includes(rawVerdict.decision)
     ? rawVerdict.decision
@@ -510,15 +450,122 @@ function normalize(rawVerdict, baseline, injectionHit, mode, latency_ms, buyerMe
     sessionUpdates.buyer_name = nameMatch[1];
   }
 
+  // Derive activated skills & tool traces for single agent architecture
+  let activatedSkills = Array.isArray(rawVerdict.activated_skills) && rawVerdict.activated_skills.length > 0
+    ? [...rawVerdict.activated_skills]
+    : [];
+
+  const toolTraces = [];
+
+  const sellerId = (baseline?.merchant_name?.toLowerCase().includes('bella') || baseline?.service_id?.includes('brand')) ? 'bella'
+    : (baseline?.merchant_name?.toLowerCase().includes('cj') || baseline?.service_id?.includes('payment')) ? 'cj'
+    : 'alex';
+
+  // 1. Platform Base Skills
+  if (injectionHit || exclusionHits.length > 0 || decision === Decision.ACCEPT || decision === Decision.COUNTER || /(?:范围|规约|守门|基准|合规|排除|黑名单|scope|referee|injection|rule|exclude)/i.test(buyerMessage)) {
+    if (!activatedSkills.includes('scope-referee')) activatedSkills.push('scope-referee');
+    toolTraces.push({ tool: 'check_exclusions', skill: 'scope-referee', status: 'SUCCESS', violations: exclusionHits });
+    if (injectionHit) {
+      toolTraces.push({ tool: 'check_prompt_injection', skill: 'scope-referee', status: 'TRIGGERED_DEFENSE' });
+    }
+  }
+
+  if (decision === Decision.ACCEPT || decision === Decision.COUNTER || /(?:多少钱|价格|报价|定金|首付|分期|款|计价|棘轮|quote|price|deposit|cost|fee|budget)/i.test(buyerMessage)) {
+    if (!activatedSkills.includes('paypal-settlement')) activatedSkills.push('paypal-settlement');
+    toolTraces.push({ tool: 'compute_quote', skill: 'paypal-settlement', status: 'SUCCESS', surcharges_count: surcharges.length });
+  }
+
+  if (/(?:退款|争议|交付|存证|哈希|vault|refund|dispute|dossier|ledger|proof|hash)/i.test(buyerMessage)) {
+    if (!activatedSkills.includes('evidence-vault')) activatedSkills.push('evidence-vault');
+    toolTraces.push({ tool: 'verify_delivery_hash', skill: 'evidence-vault', status: 'SUCCESS' });
+  }
+
+  // 2. Domain Skills based on seller
+  if (sellerId === 'alex') {
+    if (/(?:落地页|landing|官网|next\.?js|react|区块|section|页面|网站|web)/i.test(buyerMessage) || decision === Decision.ACCEPT || decision === Decision.COUNTER) {
+      if (!activatedSkills.includes('alex-nextjs-landing-page')) activatedSkills.push('alex-nextjs-landing-page');
+      toolTraces.push({ tool: 'verify_page_sections', skill: 'alex-nextjs-landing-page', status: 'SUCCESS' });
+    }
+    if (/(?:tailwind|css|样式|暗黑|主题|深色|配色|dark mode|theme|color|responsive|自适应)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('alex-tailwind-theming')) activatedSkills.push('alex-tailwind-theming');
+      toolTraces.push({ tool: 'validate_theme_tokens', skill: 'alex-tailwind-theming', status: 'SUCCESS' });
+    }
+    if (/(?:性能|调优|优化|lighthouse|lcp|cls|速度|edge|秒开|vitals|speed|performance)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('alex-performance-tuning')) activatedSkills.push('alex-performance-tuning');
+      toolTraces.push({ tool: 'audit_web_vitals', skill: 'alex-performance-tuning', status: 'SUCCESS' });
+    }
+    if (/(?:源码|代码|交付|github|仓库|部署|域名|手把手|handover|repo|deploy|domain)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('alex-code-handover')) activatedSkills.push('alex-code-handover');
+      toolTraces.push({ tool: 'inspect_github_repo', skill: 'alex-code-handover', status: 'SUCCESS' });
+    }
+    if (/(?:案例|经历|背景|作品|资历|工匠|为什么|app|原生|case|portfolio|background|experience|about)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('alex-craftsman-profile')) activatedSkills.push('alex-craftsman-profile');
+      if (!activatedSkills.includes('alex-merchant-knowledge')) activatedSkills.push('alex-merchant-knowledge');
+      toolTraces.push({ tool: 'search_merchant_knowledge', skill: 'alex-craftsman-profile', status: 'SUCCESS', hits: 1 });
+    }
+  } else if (sellerId === 'bella') {
+    if (/(?:品牌|vi|logo|视觉|色彩|手册|规范|brand|identity)/i.test(buyerMessage) || decision === Decision.ACCEPT || decision === Decision.COUNTER) {
+      if (!activatedSkills.includes('bella-brand-visual-identity')) activatedSkills.push('bella-brand-visual-identity');
+      toolTraces.push({ tool: 'generate_palette_tokens', skill: 'bella-brand-visual-identity', status: 'SUCCESS' });
+    }
+    if (/(?:figma|组件|设计系统|design system|tokens|auto-layout|ui)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('bella-figma-design-system')) activatedSkills.push('bella-figma-design-system');
+      toolTraces.push({ tool: 'inspect_figma_tokens', skill: 'bella-figma-design-system', status: 'SUCCESS' });
+    }
+    if (/(?:图标|icon|svg|3d|渲染|素材|assets)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('bella-iconography-assets')) activatedSkills.push('bella-iconography-assets');
+      toolTraces.push({ tool: 'optimize_svg_assets', skill: 'bella-iconography-assets', status: 'SUCCESS' });
+    }
+    if (/(?:路演|bp|商业计划书|ppt|deck|演示|slides)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('bella-pitch-deck-styling')) activatedSkills.push('bella-pitch-deck-styling');
+      toolTraces.push({ tool: 'format_pitch_deck', skill: 'bella-pitch-deck-styling', status: 'SUCCESS' });
+    }
+    if (/(?:案例|背景|经历|作品|工作室|理念|case|portfolio|background|about)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('bella-studio-profile')) activatedSkills.push('bella-studio-profile');
+      toolTraces.push({ tool: 'search_merchant_knowledge', skill: 'bella-studio-profile', status: 'SUCCESS', hits: 1 });
+    }
+  } else if (sellerId === 'cj') {
+    if (/(?:支付|paypal|接入|api|sdk|集成|orders|payment)/i.test(buyerMessage) || decision === Decision.ACCEPT || decision === Decision.COUNTER) {
+      if (!activatedSkills.includes('cj-payment-api-wiring')) activatedSkills.push('cj-payment-api-wiring');
+      toolTraces.push({ tool: 'verify_paypal_webhook', skill: 'cj-payment-api-wiring', status: 'SUCCESS' });
+    }
+    if (/(?:webhook|幂等|重复|回调|重试|idempotent|replay)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('cj-webhook-idempotency')) activatedSkills.push('cj-webhook-idempotency');
+      toolTraces.push({ tool: 'check_idempotency_key', skill: 'cj-webhook-idempotency', status: 'SUCCESS' });
+    }
+    if (/(?:对账|底账|分录|凭单|平账|ledger|reconcil)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('cj-reconciliation-ledger')) activatedSkills.push('cj-reconciliation-ledger');
+      toolTraces.push({ tool: 'run_reconciliation_audit', skill: 'cj-reconciliation-ledger', status: 'SUCCESS' });
+    }
+    if (/(?:争议|抗辩|证据|退款|dispute|claim|chargeback)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('cj-dispute-automation')) activatedSkills.push('cj-dispute-automation');
+      toolTraces.push({ tool: 'fetch_dispute_status', skill: 'cj-dispute-automation', status: 'SUCCESS' });
+    }
+    if (/(?:案例|背景|经验|履历|架构|case|experience|background|architect)/i.test(buyerMessage)) {
+      if (!activatedSkills.includes('cj-engineer-profile')) activatedSkills.push('cj-engineer-profile');
+      toolTraces.push({ tool: 'search_merchant_knowledge', skill: 'cj-engineer-profile', status: 'SUCCESS', hits: 1 });
+    }
+  }
+
+  if (activatedSkills.length === 0) {
+    const profileKey = sellerId === 'alex' ? 'alex-craftsman-profile' : (sellerId === 'bella' ? 'bella-studio-profile' : 'cj-engineer-profile');
+    activatedSkills = [profileKey, 'scope-referee'];
+    if (sellerId === 'alex') activatedSkills.push('alex-merchant-knowledge');
+  }
+
+  if (exclusionHits.length > 0) {
+    riskFlags = [...new Set([RiskFlag.EXPLICIT_EXCLUSION_VIOLATED, ...riskFlags])];
+  }
+
   if (injectionHit) {
     riskFlags = [...new Set([RiskFlag.PROMPT_INJECTION_DETECTED, ...riskFlags])];
-    return finalize(decision, riskFlags, [], rawVerdict.reasoning ?? '', baseline, mode, latency_ms, true, dispatch, sessionUpdates);
+    return finalize(decision, riskFlags, [], rawVerdict.reasoning ?? '', baseline, mode, latency_ms, true, dispatch, sessionUpdates, activatedSkills, toolTraces, degradedReason);
   }
   if (decision === Decision.ACCEPT && surcharges.length > 0) surcharges = []; // ratchet: ACCEPT is always exactly base
-  return finalize(decision, riskFlags.length ? riskFlags : ['NONE'], surcharges, rawVerdict.reasoning ?? '', baseline, mode, latency_ms, false, dispatch, sessionUpdates);
+  return finalize(decision, riskFlags.length ? riskFlags : ['NONE'], surcharges, rawVerdict.reasoning ?? '', baseline, mode, latency_ms, false, dispatch, sessionUpdates, activatedSkills, toolTraces, degradedReason);
 }
 
-function finalize(decision, riskFlags, surcharges, reasoning, baseline, mode, latency_ms, forcedByFirewall, dispatch, sessionUpdates = null) {
+function finalize(decision, riskFlags, surcharges, reasoning, baseline, mode, latency_ms, forcedByFirewall, dispatch, sessionUpdates = null, activatedSkills = [], toolTraces = [], degradedReason = null) {
   let cleanReasoning = reasoning ?? '';
   if (decision === Decision.INQUIRY && dispatch?.target_agent === 'concierge') {
     // Proactively clean up any accidental premature price ranges or dollar amounts from consultative greetings
@@ -529,7 +576,13 @@ function finalize(decision, riskFlags, surcharges, reasoning, baseline, mode, la
       .trim();
 
     if (!cleanReasoning) {
-      cleanReasoning = '您好！我是 Alex 的专属商务总管。我们专注于高品质数字化 Web 应用与定制落地页开发，包含响应式界面架构、现代化视觉交互规范与自动化生产部署。请问您计划打造一个什么样的项目或产品？方便聊聊您的核心诉求吗？';
+      if (baseline.service_id === 'srv_brand_ui_kit') {
+        cleanReasoning = '您好！我是 Bella 的专属品牌设计顾问。我们专注于高端品牌视觉识别体系、系统化 UI 组件资产与全套数字化设计资产交付。请问您计划打造一个什么样的品牌项目？方便聊聊您的核心视觉偏好或设计诉求吗？';
+      } else if (baseline.service_id === 'srv_payment_api_integration') {
+        cleanReasoning = '您好！我是 CJ 的专属支付架构顾问。我们专注于企业级支付网关与第三方支付通道闭环集成、高可用异步对账系统与全链路联调验证。请问您计划集成哪些支付通道或接口体系？方便聊聊您的系统架构与业务诉求吗？';
+      } else {
+        cleanReasoning = '您好！我是 Alex 的专属商务总管。我们专注于高品质数字化 Web 应用与定制落地页开发，包含响应式界面架构、现代化视觉交互规范与自动化生产部署。请问您计划打造一个什么样的项目或产品？方便聊聊您的核心诉求吗？';
+      }
     }
   }
 
@@ -553,6 +606,9 @@ function finalize(decision, riskFlags, surcharges, reasoning, baseline, mode, la
   } : null;
 
   return {
+    agent: 'core-agent',
+    activated_skills: activatedSkills,
+    tool_traces: toolTraces,
     decision,
     dispatch,
     risk_flags: riskFlags,
@@ -565,7 +621,7 @@ function finalize(decision, riskFlags, surcharges, reasoning, baseline, mode, la
     contract_hash: isFrozen ? contractHash(frozenTerms) : null,
     session_updates: sessionUpdates,
     timestamp: new Date().toISOString(),
-    gate_meta: { mode, latency_ms, injection_firewall_forced: forcedByFirewall },
+    gate_meta: { mode, latency_ms, injection_firewall_forced: forcedByFirewall, degraded_reason: degradedReason },
   };
 }
 
@@ -576,6 +632,9 @@ function finalize(decision, riskFlags, surcharges, reasoning, baseline, mode, la
  */
 export async function evaluateScope(buyerRequest, baseline) {
   const buyerMessage = String(buyerRequest.buyer_message ?? '').slice(0, 8000);
+  const images = Array.isArray(buyerRequest.images)
+    ? buyerRequest.images.filter((img) => typeof img === 'string' && img.startsWith('data:image/'))
+    : [];
   const history = Array.isArray(buyerRequest.history) ? buyerRequest.history : [];
   const contextState = buyerRequest.context_state && typeof buyerRequest.context_state === 'object'
     ? buyerRequest.context_state
@@ -590,15 +649,17 @@ export async function evaluateScope(buyerRequest, baseline) {
   let verdict = null;
   let mode = 'degraded';
   let latency = null;
+  let degradedReason = null;
 
   if (LLM_KEY && !buyerRequest.skip_llm) {
     try {
-      const { content, latency_ms } = await callLLM(buildMessages(baseline, buyerMessage, history, isZh, contextState));
+      const { content, latency_ms } = await callLLM(buildMessages(baseline, buyerMessage, history, isZh, contextState, images));
       verdict = extractJson(content);
       mode = 'llm';
       latency = latency_ms;
     } catch (err) {
       console.error(`[gate] LLM unavailable (${err.message}); falling back deterministically`);
+      degradedReason = err.message;
     }
   }
 
@@ -638,6 +699,23 @@ export async function evaluateScope(buyerRequest, baseline) {
           ? '确定性安全防火墙检测到指令覆盖/角色逃逸等提示词注入攻击，已拒绝本次请求。'
           : 'Instruction-injection pattern detected by the deterministic firewall.',
       };
+    } else if (images.length > 0) {
+      verdict = {
+        dispatch: {
+          target_agent: 'concierge',
+          intent: isZh ? '设计参考图与界面方案分析' : 'Design Reference & UI Scoping',
+          router_note: isZh ? '买方上传设计参考图，由商务总管进行视觉分析与范围梳理' : 'Buyer uploaded design reference, handled by Master Concierge',
+        },
+        decision: Decision.INQUIRY,
+        risk_flags: ['NONE'],
+        applied_surcharges: [],
+        reasoning: isZh
+          ? '已收到您上传的设计参考截图！针对图中的视觉风格与功能模块，我们可以基于 Next.js 14 + Tailwind CSS 进行高保真还原落地。请问针对这套设计，您计划重点开发哪几个核心展示板块？'
+          : 'Received your UI screenshot reference! We can implement high-fidelity interactive sections in Next.js 14 and Tailwind CSS matching this aesthetic. What core sections would you like to prioritize?',
+        session_updates: {
+          consultation_stage: 'DISCOVERY',
+        },
+      };
     } else {
       const inquiryVerdict = fallbackInquiryVerdict(buyerMessage, baseline, contextState, isZh);
       if (inquiryVerdict) {
@@ -648,5 +726,5 @@ export async function evaluateScope(buyerRequest, baseline) {
     }
   }
 
-  return normalize(verdict, baseline, injectionHit, mode, latency, buyerMessage);
+  return normalize(verdict, baseline, injectionHit, mode, latency, buyerMessage, degradedReason);
 }

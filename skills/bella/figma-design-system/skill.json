@@ -1,0 +1,10 @@
+{
+  "id": "bella-figma-design-system",
+  "name": "Figma Modular Design System",
+  "name_zh": "Figma 模块化 UI 组件库设计技能",
+  "version": "1.0.0",
+  "seller_id": "bella",
+  "description": "Production-grade Figma component libraries, responsive Auto-Layout grids, atomic Design Tokens, and seamless dev handover guides.",
+  "triggers": ["figma", "ui", "component", "design system", "tokens", "kit", "组件库", "设计系统", "原型", "规范"],
+  "tools": []
+}

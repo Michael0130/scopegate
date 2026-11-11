@@ -11,8 +11,38 @@
 // every subsequent download — no way to claim "the file we received differs".
 
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 
+const DELIVERIES_FILE = path.join(process.cwd(), '.deliveries.json');
 const deliveries = new Map(); // `${session_id}:${milestone_id}` -> { payer_email, artifact_sha256, delivery_dispatched_at, accesses[] }
+
+function loadDeliveriesFromDisk() {
+  try {
+    if (fs.existsSync(DELIVERIES_FILE)) {
+      const raw = fs.readFileSync(DELIVERIES_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) {
+        for (const [k, v] of data) {
+          deliveries.set(k, v);
+        }
+      }
+    }
+  } catch {
+    // Non-blocking load
+  }
+}
+
+function persistDeliveriesToDisk() {
+  try {
+    const data = [...deliveries.entries()].slice(-200);
+    fs.writeFileSync(DELIVERIES_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch {
+    // Non-blocking persist
+  }
+}
+
+loadDeliveriesFromDisk();
 
 const key = (sessionId, milestoneId) => `${sessionId}:${milestoneId}`;
 
@@ -45,6 +75,7 @@ export function recordDispatch(sessionId, milestoneId, { payerEmail, artifactSha
     accesses: [],
   };
   deliveries.set(key(sessionId, milestoneId), record);
+  persistDeliveriesToDisk();
   return record;
 }
 
@@ -53,6 +84,7 @@ export function recordAccess(sessionId, milestoneId, { clientIp, userAgent, acce
   if (!record) return null;
   const access = { accessed_at: accessedAt, client_ip: clientIp, user_agent: userAgent };
   record.accesses.push(access);
+  persistDeliveriesToDisk();
   return access;
 }
 

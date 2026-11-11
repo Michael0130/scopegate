@@ -1,0 +1,40 @@
+{
+  "id": "alex-merchant-knowledge",
+  "name": "Alex Merchant Knowledge",
+  "name_zh": "Alex 商户专有业务与案例知识库",
+  "version": "1.0.0",
+  "description": "Comprehensive knowledge base of Alex's engineering background, showcase portfolio cases, technical standards (Next.js 14, Tailwind, Lighthouse 95+), and business policies. Built with BM25 indexed retrieval.",
+  "triggers": [
+    "alex",
+    "case",
+    "portfolio",
+    "experience",
+    "background",
+    "showcase",
+    "standard",
+    "tech stack",
+    "who are you",
+    "案例",
+    "背景",
+    "做过什么",
+    "作品",
+    "经验",
+    "优势",
+    "标准",
+    "技术栈"
+  ],
+  "tools": [
+    {
+      "name": "search_merchant_knowledge",
+      "description": "Perform BM25 indexed search against Alex's rich merchant knowledge docs (cases, technical standards, FAQ, experience).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Keywords or question to search" },
+          "top_k": { "type": "integer", "description": "Number of snippets to retrieve (default 2)" }
+        },
+        "required": ["query"]
+      }
+    }
+  ]
+}

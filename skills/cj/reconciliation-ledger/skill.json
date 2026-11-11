@@ -1,0 +1,10 @@
+{
+  "id": "cj-reconciliation-ledger",
+  "name": "Reconciliation Ledger Dashboard",
+  "name_zh": "自动化对账引擎与清算看板技能",
+  "version": "1.0.0",
+  "seller_id": "cj",
+  "description": "Automated end-of-day financial reconciliation, ledger settlement dashboards, mismatch exception alarms, and audit trails.",
+  "triggers": ["reconciliation", "ledger", "dashboard", "audit", "settlement", "对账", "看板", "结算", "平账", "流水"],
+  "tools": []
+}

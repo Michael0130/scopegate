@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ScopeGate · Connecting to PayPal Sandbox Checkout...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #fbfbfd;
+      color: #1d1d1f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 30px 24px;
+      text-align: center;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 20px;
+      padding: 36px 30px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0,0,0,.06);
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 20px;
+      border: 3.5px solid rgba(0, 112, 186, 0.15);
+      border-top-color: #0070ba;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h2 { font-size: 19px; font-weight: 700; margin-bottom: 10px; color: #1d1d1f; }
+    p { font-size: 13.5px; color: #6e6e73; line-height: 1.55; margin-bottom: 20px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+    .btn-direct {
+      display: inline-block;
+      background: #0070ba;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: background .15s;
+    }
+    .btn-direct:hover { background: #003087; }
+    .hint { font-size: 11px; color: #a1a1a6; margin-top: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="spinner" id="spinner"></div>
+  <div class="badge">🔐 Anchoring Contract Hash (SHA-256)</div>
+  <h2 id="title">Connecting to PayPal Sandbox Secure Checkout...</h2>
+  <p id="desc">ScopeGate is anchoring the immutable contract fingerprint into the official PayPal ledger. Redirecting to payment approval...</p>
+  <div id="action-area" style="display:none">
+    <a class="btn-direct" id="direct-link" href="#" target="_self">Continue to PayPal Approval ↗</a>
+  </div>
+  <div class="hint">If redirection does not start automatically, click the button above. Funds are secured by official PayPal milestone ledgers.</div>
+</div>
+
+<script>
+  // Listen for navigation target from parent window
+  window.addEventListener('message', (e) => {
+    if (e.data?.type === 'NAVIGATE_PAYPAL' && e.data?.url) {
+      navigateTo(e.data.url);
+    }
+  });
+
+  // Check URL params
+  const target = new URLSearchParams(location.search).get('target');
+  if (target) {
+    navigateTo(target);
+  }
+
+  function navigateTo(url) {
+    const directLink = document.getElementById('direct-link');
+    if (directLink) directLink.href = url;
+    document.getElementById('action-area').style.display = 'block';
+    // Navigate smoothly
+    setTimeout(() => {
+      window.location.href = url;
+    }, 400);
+  }
+</script>
+
+</body>
+</html>

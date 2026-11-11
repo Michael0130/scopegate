@@ -1,0 +1,53 @@
+{
+  "id": "evidence-vault",
+  "name": "Evidence & Vault",
+  "name_zh": "履约存证与争议抗辩卷宗技能",
+  "version": "1.0.0",
+  "description": "Fulfillment vault security, SHA-256 artifact hashing, download IP/UA access logging, and instant automated dispute dossier generation aligned with PayPal Seller Protection for Intangible Goods.",
+  "triggers": [
+    "delivery",
+    "download",
+    "vault",
+    "code",
+    "github",
+    "handover",
+    "dispute",
+    "refund",
+    "chargeback",
+    "evidence",
+    "dossier",
+    "交付",
+    "源码",
+    "下载",
+    "仓库",
+    "争议",
+    "退款",
+    "抗辩",
+    "证据",
+    "卷宗"
+  ],
+  "tools": [
+    {
+      "name": "verify_delivery_hash",
+      "description": "Verify the SHA-256 integrity hash of a deliverable artifact before release.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "artifact_content": { "type": "string" }
+        },
+        "required": ["artifact_content"]
+      }
+    },
+    {
+      "name": "create_evidence_dossier",
+      "description": "Assemble a legally compelling evidence dossier for PayPal Seller Protection.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "milestone_id": { "type": "string" }
+        },
+        "required": ["milestone_id"]
+      }
+    }
+  ]
+}

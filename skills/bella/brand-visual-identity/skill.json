@@ -1,0 +1,10 @@
+{
+  "id": "bella-brand-visual-identity",
+  "name": "Brand Visual Identity Suite",
+  "name_zh": "品牌视觉识别与 Logo 系统技能",
+  "version": "1.0.0",
+  "seller_id": "bella",
+  "description": "Bespoke brand visual identity & modular logo suites — distinct aesthetic identity, color palette systems, and scalable digital branding assets.",
+  "triggers": ["brand", "logo", "identity", "visual", "color", "palette", "typography", "品牌", "标识", "色彩", "设计", "视觉", "风格"],
+  "tools": []
+}

@@ -1,0 +1,7 @@
+{
+  "name": "cj-dispute-automation",
+  "version": "1.0.0",
+  "description": "PayPal 争议事件实时捕获、自动调取履约底账与生成法定抗辩证据包管线",
+  "author": "CJ Zhao",
+  "rules": "SKILL.md"
+}

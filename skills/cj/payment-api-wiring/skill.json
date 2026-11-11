@@ -1,0 +1,10 @@
+{
+  "id": "cj-payment-api-wiring",
+  "name": "Payment Gateway & Webhook Wiring",
+  "name_zh": "支付网关与 Webhook 管道接入技能",
+  "version": "1.0.0",
+  "seller_id": "cj",
+  "description": "Enterprise payment orchestration, seamless checkout wiring, robust webhook signature verification, and replay attack prevention.",
+  "triggers": ["payment", "api", "checkout", "webhook", "stripe", "paypal", "wiring", "gateway", "支付", "接口", "对账", "网关", "回调"],
+  "tools": []
+}

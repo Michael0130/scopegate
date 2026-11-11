@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import fs, { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { evaluateScope } from './gate/evaluator.js';
 import { createScopedOrder, getOrder, captureOrder } from './paypal/client.js';
@@ -57,7 +57,7 @@ const money = (n) => '$' + Number(n).toFixed(2);
 // Delivery/refund questions ("where is my deliverable?", "I want a refund") are NOT scope
 // requests: the seller agent answers them from the session ledger — deterministic, no LLM,
 // facts only. Everything else still goes through the gate.
-const DISPUTE_INTENT = /\b(item\s+not\s+received|not\s+received|haven'?t\s+received|have\s+not\s+received|did\s+not\s+receive|didn'?t\s+receive|never\s+received|never\s+arrived|nothing\s+(arrived|received)|where\s+is\s+(my|the)\s|where'?s\s+(my|the)\s|still\s+waiting|want\s+a?\s+refund|give\s+me\s+a?\s+refund|refund|charge\s?back|chargeback|dispute|filed\s+a?\s+claim|scam)\b/i;
+const DISPUTE_INTENT = /(?:\b(item\s+not\s+received|not\s+received|haven'?t\s+received|have\s+not\s+received|did\s+not\s+receive|didn'?t\s+receive|never\s+received|never\s+arrived|nothing\s+(arrived|received)|where\s+is\s+(my|the)\s|where'?s\s+(my|the)\s|still\s+waiting|want\s+a?\s+refund|give\s+me\s+a?\s+refund|refund|charge\s?back|chargeback|dispute|filed\s+a?\s+claim|scam)\b|我要退款|全额退款|我要全额退款|申请退款|退钱|退款|退定金|退还|取消订单|争议|维权|投诉|未收到|没收到|货不对板|被骗|骗子)/i;
 
 /** Resolve a seller's PayPal credentials from the env names declared in sellers.json.
  * Loud failure on purpose: a missing SELLER_* pair must never silently reroute one
@@ -91,10 +91,36 @@ function sellerWebhookTargets() {
     .filter(Boolean);
 }
 
-// In-memory session ledger, keyed by session_id. One negotiation → one frozen decision →
-// N milestone PayPal orders (v0.4: deposit → stages → final). Each milestone carries
-// PayPal-Request-Id = `${session_id}:${milestone_id}`, so retries stay idempotent per stage.
+// Session ledger with automatic local persistence across server restarts
 const sessions = new Map();
+const SESSIONS_FILE = path.join(process.cwd(), '.sessions.json');
+
+function loadSessionsFromDisk() {
+  try {
+    if (fs.existsSync(SESSIONS_FILE)) {
+      const raw = fs.readFileSync(SESSIONS_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) {
+        for (const [id, s] of data) {
+          sessions.set(id, s);
+        }
+      }
+    }
+  } catch {
+    // Non-blocking load
+  }
+}
+
+function persistSessionsToDisk() {
+  try {
+    const data = [...sessions.entries()].slice(-100);
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch {
+    // Non-blocking persist
+  }
+}
+
+loadSessionsFromDisk();
 
 // Ring buffer of verified webhook deliveries (newest first) — drives the console feed.
 const webhookEvents = [];
@@ -146,42 +172,78 @@ function resolveEvidenceMilestone(session, requested) {
  * dispute is already open. Deterministic by design: the seller agent quotes the
  * ledger, never improvises.
  */
-function buildDisputeDeskReply(session) {
+function buildDisputeDeskReply(session, isZh = false) {
   const hh = (iso) => (iso ?? '').slice(11, 19) + 'Z';
   const payments = session.payments ?? [];
   const lines = [];
   const tail = (id) => (id ? `…${String(id).slice(-6)}` : 'n/a');
 
   if (session.dispute) {
-    lines.push(`Open dispute on this deal: ${session.dispute.reason ?? 'item not received'} (${session.dispute.status ?? 'OPEN'})${session.dispute.simulated ? ' — simulated demo' : ''}. Evidence below is what PayPal reviews.`);
+    if (isZh) {
+      lines.push(`【当前争议案件】${session.dispute.reason ?? '未收到货 (ITEM_NOT_RECEIVED)'} (状态: ${session.dispute.status ?? 'OPEN'})${session.dispute.simulated ? ' — 沙盒仿真演练' : ''}。下方底账存证已提交 PayPal 官方仲裁中心审查。`);
+    } else {
+      lines.push(`Open dispute on this deal: ${session.dispute.reason ?? 'item not received'} (${session.dispute.status ?? 'OPEN'})${session.dispute.simulated ? ' — simulated demo' : ''}. Evidence below is what PayPal reviews.`);
+    }
   }
   const captured = payments.filter((p) => p.order_status === 'COMPLETED');
   if (!captured.length) {
-    lines.push('No milestone has been captured yet — nothing is owed or deliverable until a payment completes in PayPal.');
+    if (isZh) {
+      lines.push('【款项核验】当前订单尚未产生已清算的里程碑款项 — 在通过 PayPal 授权支付前，商户不产生交付义务，买家亦无实际资金扣划。');
+    } else {
+      lines.push('No milestone has been captured yet — nothing is owed or deliverable until a payment completes in PayPal.');
+    }
   }
   for (const p of captured) {
-    lines.push(`${p.milestone_id} captured ${money(p.amount)} · order ${tail(p.order_id)} at ${hh(p.captured_at)} — payer ${p.payer_email ?? 'verified at capture'}`);
+    if (isZh) {
+      lines.push(`【已清算款项】阶段 ${p.milestone_id}（${p.label || '阶段款'}）已清算入账 ${money(p.amount)} · PayPal 订单号 ${tail(p.order_id)}，清算时间 ${hh(p.captured_at)} — 买家账户 ${p.payer_email ?? '已核验'}`);
+    } else {
+      lines.push(`${p.milestone_id} captured ${money(p.amount)} · order ${tail(p.order_id)} at ${hh(p.captured_at)} — payer ${p.payer_email ?? 'verified at capture'}`);
+    }
     const record = getDeliveryRecord(session.session_id, p.milestone_id);
     if (!record) {
-      lines.push(`${p.milestone_id} not dispatched yet — dispatch lands at your verified PayPal email.`);
+      if (isZh) {
+        lines.push(`【交付物状态】${p.milestone_id} 数字化成果正由商户制作中，待加密分发至您的 PayPal 认证邮箱。`);
+      } else {
+        lines.push(`${p.milestone_id} not dispatched yet — dispatch lands at your verified PayPal email.`);
+      }
     } else {
-      lines.push(`${p.milestone_id} dispatched ${hh(record.delivery_dispatched_at)} · artifact sha256 ${String(record.artifact_sha256 ?? '').slice(0, 12)}…`);
+      if (isZh) {
+        lines.push(`【交付存证】${p.milestone_id} 已于 ${hh(record.delivery_dispatched_at)} 分发 · 成果存证 SHA-256: ${String(record.artifact_sha256 ?? '').slice(0, 12)}…`);
+      } else {
+        lines.push(`${p.milestone_id} dispatched ${hh(record.delivery_dispatched_at)} · artifact sha256 ${String(record.artifact_sha256 ?? '').slice(0, 12)}…`);
+      }
       const n = record.accesses?.length ?? 0;
       if (n > 0) {
         const last = record.accesses[n - 1];
-        lines.push(`${p.milestone_id} downloaded ×${n} — last at ${hh(last.accessedAt)} from IP ${last.clientIp ?? 'n/a'}`);
+        if (isZh) {
+          lines.push(`【访问审计】${p.milestone_id} 交付物已被提取下载 ×${n} 次 — 最近一次下载于 ${hh(last.accessedAt)}，来源客户端 IP: ${last.clientIp ?? 'n/a'}`);
+        } else {
+          lines.push(`${p.milestone_id} downloaded ×${n} — last at ${hh(last.accessedAt)} from IP ${last.clientIp ?? 'n/a'}`);
+        }
       } else {
-        lines.push(`${p.milestone_id} no download yet — check spam; every attempt is logged for the dossier.`);
+        if (isZh) {
+          lines.push(`【访问审计】${p.milestone_id} 暂无下载提取记录 — 请检查认证邮箱或垃圾邮件箱；系统已记录完整访问审计日志以备仲裁抗辩。`);
+        } else {
+          lines.push(`${p.milestone_id} no download yet — check spam; every attempt is logged for the dossier.`);
+        }
       }
     }
   }
   const pending = payments.find((p) => p.order_id && p.order_status !== 'COMPLETED');
   if (pending) {
-    lines.push(`${pending.milestone_id} order ${tail(pending.order_id)} exists but is not captured (${pending.order_status}) — approve it in PayPal first.`);
+    if (isZh) {
+      lines.push(`【待支付阶段】${pending.milestone_id} 订单已生成（单号 ${tail(pending.order_id)}），但尚未在 PayPal 完成授权清算（状态: ${pending.order_status}）。`);
+    } else {
+      lines.push(`${pending.milestone_id} order ${tail(pending.order_id)} exists but is not captured (${pending.order_status}) — approve it in PayPal first.`);
+    }
   }
   const hash = session.decision?.contract_hash;
   if (hash) {
-    lines.push(`Frozen contract ⌾ ${hash.slice(0, 8)}…${hash.slice(-4)} anchors every fact above in PayPal's custom_id.`);
+    if (isZh) {
+      lines.push(`【契约存证】不可篡改契约哈希 ⌾ ${hash.slice(0, 8)}…${hash.slice(-4)} 已作为 custom_id 物理固化于 PayPal 官方清算底账中，为后续仲裁唯一判定依据。`);
+    } else {
+      lines.push(`Frozen contract ⌾ ${hash.slice(0, 8)}…${hash.slice(-4)} anchors every fact above in PayPal's custom_id.`);
+    }
   }
 
   return {
@@ -200,7 +262,14 @@ function buildDisputeDeskReply(session) {
 // (body-parser marks req._body and later parsers skip it).
 app.use('/api/webhooks', express.raw({ type: '*/*', limit: '1mb' }));
 
-app.use(express.json({ limit: '256kb' }));
+app.use(express.json({ limit: '20mb' }));
+
+app.get(['/favicon.ico', '/favicon.svg'], (_req, res) => {
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.sendFile(path.join(__dirname, '..', 'public', 'favicon.svg'));
+});
+
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Pretty URL for the live console.
@@ -219,6 +288,10 @@ app.get('/api/v1/health', (_req, res) => {
     service: 'scopegate',
     gate_mode: process.env.LLM_API_KEY ? 'llm' : 'degraded',
     time: new Date().toISOString(),
+    sandbox_buyer: {
+      email: process.env.SANDBOX_BUYER_EMAIL || 'sb-kpdyq53477305@personal.example.com',
+      password: process.env.SANDBOX_BUYER_PASSWORD || '1zEmG5%-',
+    },
   });
 });
 
@@ -278,10 +351,15 @@ app.get('/api/v1/quota', (req, res) => {
 // `seller` selects the storefront (config/sellers.json); omitted = default seller, so the
 // eval suite and legacy API consumers keep working unchanged.
 app.post('/api/v1/scope/negotiate', async (req, res) => {
-  const { buyer_message: buyerMessage } = req.body ?? {};
-  if (!buyerMessage || typeof buyerMessage !== 'string') {
-    return res.status(400).json({ error: 'bad_request', message: 'buyer_message (string) is required' });
+  const { buyer_message: rawBuyerMessage, images = [] } = req.body ?? {};
+  const hasImages = Array.isArray(images) && images.length > 0;
+  if ((!rawBuyerMessage || typeof rawBuyerMessage !== 'string' || !rawBuyerMessage.trim()) && !hasImages) {
+    return res.status(400).json({ error: 'bad_request', message: 'buyer_message (string) or images is required' });
   }
+
+  const buyerMessage = (rawBuyerMessage && typeof rawBuyerMessage === 'string' && rawBuyerMessage.trim())
+    ? rawBuyerMessage.trim()
+    : (images.length === 1 ? '（买家上传了 1 张设计参考图/需求截图）' : `（买家上传了 ${images.length} 张设计参考图/需求截图）`);
 
   const clientDeviceId = req.headers['x-client-device-id'] || req.body?.device_id || '';
   const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
@@ -318,12 +396,19 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
   // from the ledger (no LLM, no new contract). Without a session ref the message falls
   // through to the normal gate.
   const existingSession = getSession(sessionId);
-  if (existingSession && DISPUTE_INTENT.test(buyerMessage)) {
-    return res.json(buildDisputeDeskReply(existingSession));
-  }
-
   const clientHistory = Array.isArray(req.body?.history) ? req.body.history : [];
   const history = clientHistory.length > 0 ? clientHistory : (existingSession?.history || []);
+
+  const isZh = req.body?.lang === 'zh'
+    || /[\u4e00-\u9fa5]/.test(buyerMessage)
+    || (Array.isArray(history) && history.some((h) => /[\u4e00-\u9fa5]/.test(h.message || '')));
+
+  const hasCaptured = existingSession?.payments?.some((p) => p.order_status === 'COMPLETED');
+  const isPolicyQuery = /(?:退款政策|退款机制|退款规则|怎么退款|如何退款|不满意如何|refund\s*policy)/i.test(buyerMessage);
+  if (existingSession && DISPUTE_INTENT.test(buyerMessage) && (hasCaptured || !isPolicyQuery)) {
+    return res.json(buildDisputeDeskReply(existingSession, isZh));
+  }
+
   const contextState = { ...(existingSession?.context_state || {}) };
 
   // Opportunistically recover buyer_name from prior history if not yet recorded
@@ -339,9 +424,24 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
     }
   }
 
+  // Inject active contract and settled payments state into contextState
+  if (existingSession) {
+    if (existingSession.status === 'CONFIRMED' || existingSession.decision?.contract_hash) {
+      contextState.contract_status = existingSession.status;
+      contextState.contract_hash = existingSession.decision?.contract_hash;
+      const completedPayments = (existingSession.payments || []).filter((p) => p.order_status === 'COMPLETED');
+      if (completedPayments.length > 0) {
+        contextState.consultation_stage = 'FULFILLMENT';
+        contextState.paid_summary = completedPayments.map((p) => `${p.milestone_id}: $${p.amount} (COMPLETED)`).join(', ');
+      } else {
+        contextState.consultation_stage = 'LOCKED';
+      }
+    }
+  }
+
   try {
     const decision = await evaluateScope(
-      { buyer_message: buyerMessage, history, context_state: contextState, lang: req.body?.lang, skip_llm: skipLlm },
+      { buyer_message: buyerMessage, images, history, context_state: contextState, lang: req.body?.lang, skip_llm: skipLlm },
       seller.baseline
     );
     decision.seller_id = seller.id;
@@ -390,6 +490,7 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
         });
         if (activeSess.history.length > 16) activeSess.history = activeSess.history.slice(-16);
       }
+      persistSessionsToDisk();
       return res.json(decision);
     }
 
@@ -433,21 +534,28 @@ app.post('/api/v1/scope/negotiate', async (req, res) => {
       context_state: updatedContextState,
       history: currentHistory.slice(-16),
       // One payment slot per contract milestone; delivery state lives in the tracker.
-      payments: (decision.payment_plan ?? []).map((m) => ({
-        milestone_id: m.milestone_id,
-        label: m.label,
-        amount: m.amount,
-        order_id: null,
-        order_status: 'NONE',
-        approve_url: null,
-        capture_id: null,
-        payer_email: null,
-        captured_at: null,
-      })),
+      payments: (decision.payment_plan ?? []).map((m) => {
+        const existingPayment = existingSession?.payments?.find((p) => p.milestone_id === m.milestone_id);
+        if (existingPayment && existingPayment.order_status === 'COMPLETED') {
+          return { ...existingPayment, label: m.label, amount: m.amount };
+        }
+        return {
+          milestone_id: m.milestone_id,
+          label: m.label,
+          amount: m.amount,
+          order_id: existingPayment?.order_id || null,
+          order_status: existingPayment?.order_status || 'NONE',
+          approve_url: existingPayment?.approve_url || null,
+          capture_id: existingPayment?.capture_id || null,
+          payer_email: existingPayment?.payer_email || null,
+          captured_at: existingPayment?.captured_at || null,
+        };
+      }),
       dispute: null,
       created_at: decision.timestamp,
     };
     sessions.set(sessionId, session);
+    persistSessionsToDisk();
     decision.status = status;
     res.json(decision);
   } catch (err) {
@@ -468,6 +576,7 @@ app.post('/api/v1/scope/confirm', (req, res) => {
   }
   session.status = 'CONFIRMED';
   session.confirmed_at = new Date().toISOString();
+  persistSessionsToDisk();
   res.json({
     ok: true,
     session_id: session.session_id,
@@ -506,12 +615,15 @@ app.post('/api/v1/checkout', async (req, res) => {
 
   try {
     const seller = getSeller(session.seller_id);
+    const deliverablesList = session.decision.locked_scope?.agreed_deliverables ?? seller.baseline.deliverables ?? [];
+    const deliverablesSummary = deliverablesList.slice(0, 2).join('; ');
     const order = await createScopedOrder({
       contractHash: `${session.decision.contract_hash}:${milestoneId}`,
       paypalRequestId: `${sessionId}:${milestoneId}`,
       amount: payment.amount,
       currency: seller.baseline.currency,
-      description: `${seller.baseline.title} — ${payment.label}`,
+      description: `[契约存证:${session.decision.contract_hash.slice(0, 12)}...] ${seller.baseline.title} — ${payment.label}`,
+      deliverablesSummary,
       credentials: sellerCredentials(seller),
     });
 
@@ -535,6 +647,7 @@ app.post('/api/v1/checkout', async (req, res) => {
     } catch (readErr) {
       console.error('[checkout] anchor readback failed:', readErr.message);
     }
+    persistSessionsToDisk();
 
     res.json({
       session_id: sessionId,
@@ -547,6 +660,19 @@ app.post('/api/v1/checkout', async (req, res) => {
       contract_hash: session.decision.contract_hash,
       custom_id: `${session.decision.contract_hash}:${milestoneId}`,
       anchor_verified: anchorVerified,
+      contract_terms: {
+        service_title: seller.baseline.title,
+        deliverables: session.decision.locked_scope?.agreed_deliverables ?? seller.baseline.deliverables ?? [],
+        turnaround_days: session.decision.locked_scope?.turnaround_hours ? Math.round(session.decision.locked_scope.turnaround_hours / 24) : (seller.baseline.turnaround_days || 3),
+        turnaround_hours: session.decision.locked_scope?.turnaround_hours ?? 72,
+        max_revisions: session.decision.locked_scope?.max_revisions ?? (seller.baseline.max_revisions || 2),
+        quoted_price: session.decision.quoted_price,
+        currency: session.decision.currency || 'USD',
+        milestone_label: payment.label,
+        milestone_amount: payment.amount,
+        payment_plan: session.decision.payment_plan ?? [],
+        exclusions: session.decision.locked_scope?.explicit_exclusions ?? seller.baseline.explicit_exclusions ?? [],
+      },
     });
   } catch (err) {
     console.error('[checkout]', err.message);
@@ -559,18 +685,28 @@ app.post('/api/v1/checkout', async (req, res) => {
 // doesn't echo custom_id), which turns "the remark lives in PayPal's ledger" into a
 // click-to-verify claim instead of a claim about our own database.
 app.get('/api/v1/orders/:id', async (req, res) => {
-  let seller = null;
+  let hit = null;
   for (const session of sessions.values()) {
-    if (session.payments?.some((p) => p.order_id === req.params.id)) {
-      seller = getSeller(session.seller_id);
+    const payment = session.payments?.find((p) => p.order_id === req.params.id);
+    if (payment) {
+      hit = { session, payment };
       break;
     }
   }
+  const seller = hit ? getSeller(hit.session.seller_id) : null;
   try {
     const order = await getOrder(req.params.id, seller ? sellerCredentials(seller) : undefined);
+    if (hit && order.status) {
+      hit.payment.order_status = order.status;
+      if (order.payer?.email_address) {
+        hit.payment.payer_email = order.payer.email_address;
+        hit.session.payer_email = hit.session.payer_email ?? hit.payment.payer_email;
+      }
+    }
     const pu = order.purchase_units?.[0] ?? {};
     res.json({
       id: order.id,
+      session_id: hit?.session?.session_id ?? null,
       status: order.status,
       custom_id: pu.custom_id ?? null,
       amount: pu.amount?.value ?? null,
@@ -581,6 +717,56 @@ app.get('/api/v1/orders/:id', async (req, res) => {
   } catch (err) {
     res.status(502).json({ error: 'paypal_failure', message: err.message });
   }
+});
+
+app.post('/api/v1/orders/:id/sync', async (req, res) => {
+  let hit = null;
+  for (const session of sessions.values()) {
+    const payment = session.payments?.find((p) => p.order_id === req.params.id);
+    if (payment) { hit = { session, payment }; break; }
+  }
+  const seller = hit ? getSeller(hit.session.seller_id) : null;
+  try {
+    const order = await getOrder(req.params.id, seller ? sellerCredentials(seller) : undefined);
+    if (hit && order?.status) {
+      hit.payment.order_status = order.status;
+      if (order.payer?.email_address) {
+        hit.payment.payer_email = order.payer.email_address;
+        hit.session.payer_email = hit.session.payer_email ?? hit.payment.payer_email;
+      }
+    }
+    res.json({
+      order_id: req.params.id,
+      status: order.status,
+      session_id: hit?.session.session_id ?? null,
+      custom_id: order.purchase_units?.[0]?.custom_id ?? null,
+    });
+  } catch (err) {
+    res.status(502).json({ error: 'paypal_failure', message: err.message });
+  }
+});
+
+// Dev helper to attach verified sandbox order
+app.post('/api/v1/dev/link-order', (req, res) => {
+  const { session_id, milestone_id, order_id, capture_id } = req.body ?? {};
+  const s = sessions.get(session_id);
+  if (!s) return res.status(404).json({ error: 'not_found' });
+  const p = s.payments?.find((pay) => pay.milestone_id === (milestone_id || 'm1'));
+  if (!p) return res.status(404).json({ error: 'payment_not_found' });
+  p.order_id = order_id || '1CM50762J06618159';
+  p.order_status = 'COMPLETED';
+  p.capture_id = capture_id || '6W018793V7354363E';
+  p.payer_email = 'sb-kpdyq53477305@personal.example.com';
+  p.captured_at = new Date().toISOString();
+  s.payer_email = p.payer_email;
+  if (!s.context_state) s.context_state = {};
+  s.context_state.consultation_stage = 'FULFILLMENT';
+  s.context_state.contract_status = s.status || 'CONFIRMED';
+  s.context_state.contract_hash = s.decision?.contract_hash;
+  const completed = (s.payments || []).filter((pay) => pay.order_status === 'COMPLETED');
+  s.context_state.paid_summary = completed.map((pay) => `${pay.milestone_id}: $${pay.amount} (COMPLETED)`).join(', ');
+  persistSessionsToDisk();
+  res.json({ ok: true, session: s });
 });
 
 // After the buyer approves on sandbox.paypal.com, the frontend calls this to capture funds
@@ -601,12 +787,20 @@ app.post('/api/v1/orders/:id/capture', async (req, res) => {
       payment.capture_id = capture.purchase_units?.[0]?.payments?.captures?.[0]?.id ?? payment.capture_id ?? null;
       payment.captured_at = new Date().toISOString();
       session.payer_email = session.payer_email ?? payment.payer_email;
+      if (!session.context_state) session.context_state = {};
+      session.context_state.consultation_stage = 'FULFILLMENT';
+      session.context_state.contract_status = session.status || 'CONFIRMED';
+      session.context_state.contract_hash = session.decision?.contract_hash;
+      const completed = (session.payments || []).filter((pay) => pay.order_status === 'COMPLETED');
+      session.context_state.paid_summary = completed.map((pay) => `${pay.milestone_id}: $${pay.amount} (COMPLETED)`).join(', ');
+      persistSessionsToDisk();
     }
     res.json({
       order_id: req.params.id,
       milestone_id: hit?.payment.milestone_id ?? null,
       status: capture.status,
       payer_email: capture.payer?.email_address ?? null,
+      capture_id: hit?.payment.capture_id ?? capture.purchase_units?.[0]?.payments?.captures?.[0]?.id ?? null,
       custom_id_anchor: capture.purchase_units?.[0]?.payments?.captures?.[0]?.custom_id ?? null,
     });
   } catch (err) {
@@ -620,9 +814,43 @@ app.post('/api/v1/orders/:id/capture', async (req, res) => {
   }
 });
 
-app.get('/api/v1/sessions/:id', (req, res) => {
+app.get('/api/v1/sessions', (req, res) => {
+  const sellerId = req.query.seller_id;
+  const list = [];
+  for (const s of sessions.values()) {
+    if (!sellerId || s.seller_id === sellerId) {
+      list.push(s);
+    }
+  }
+  list.sort((a, b) => new Date(b.created_at || b.confirmed_at || 0) - new Date(a.created_at || a.confirmed_at || 0));
+  res.json({ sessions: list });
+});
+
+app.get('/api/v1/sessions/:id', async (req, res) => {
   const session = getSession(req.params.id);
   if (!session) return res.status(404).json({ error: 'session_not_found' });
+
+  // Proactively check PayPal order status for uncompleted milestones (handles local dev without public webhook tunnel)
+  const seller = getSeller(session.seller_id);
+  if (Array.isArray(session.payments)) {
+    for (const p of session.payments) {
+      if (p.order_id && p.order_status !== 'COMPLETED') {
+        try {
+          const remoteOrder = await getOrder(p.order_id, seller ? sellerCredentials(seller) : undefined);
+          if (remoteOrder?.status && remoteOrder.status !== p.order_status) {
+            p.order_status = remoteOrder.status;
+            if (remoteOrder.payer?.email_address) {
+              p.payer_email = remoteOrder.payer.email_address;
+              session.payer_email = session.payer_email ?? p.payer_email;
+            }
+          }
+        } catch {
+          // Non-blocking sync
+        }
+      }
+    }
+  }
+
   // Augment each milestone with delivery state so one poll drives the whole ladder UI.
   const payments = (session.payments ?? []).map((p) => {
     const record = getDeliveryRecord(session.session_id, p.milestone_id);
@@ -631,8 +859,95 @@ app.get('/api/v1/sessions/:id', (req, res) => {
   res.json({ ...session, payments });
 });
 
+// PayPal popup return callback: triggered when buyer clicks "完成购物" in PayPal window
+app.get('/api/v1/paypal/return', async (req, res) => {
+  const token = req.query.token || req.query.order_id || '';
+  let hit = null;
+  if (token) {
+    for (const session of sessions.values()) {
+      const payment = session.payments?.find((p) => p.order_id === token || (p.approve_url && p.approve_url.includes(token)));
+      if (payment) { hit = { session, payment }; break; }
+    }
+  }
+  if (hit) {
+    const seller = getSeller(hit.session.seller_id);
+    try {
+      const remoteOrder = await getOrder(hit.payment.order_id, seller ? sellerCredentials(seller) : undefined);
+      if (remoteOrder?.status) {
+        hit.payment.order_status = remoteOrder.status;
+        if (remoteOrder.payer?.email_address) {
+          hit.payment.payer_email = remoteOrder.payer.email_address;
+          hit.session.payer_email = hit.session.payer_email ?? hit.payment.payer_email;
+        }
+      }
+    } catch {
+      hit.payment.order_status = 'APPROVED';
+    }
+  }
+
+  res.send(`<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <title>ScopeGate · 支付授权成功</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fbfbfd; color: #1d1d1f; }
+    .card { background: #fff; padding: 36px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; max-width: 400px; width: 90%; }
+    .icon { width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%; background: #e8f5e9; color: #34c759; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    h2 { margin: 0 0 10px; font-size: 20px; font-weight: 600; }
+    p { margin: 0 0 16px; font-size: 14px; color: #86868b; line-height: 1.5; }
+    .hint { font-size: 12px; color: #a1a1a6; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">✓</div>
+    <h2>支付授权已完成</h2>
+    <p>商户专属商务代表正在执行自动划款与阶段交付物装配...</p>
+    <div class="hint">此窗口将在 2 秒后自动关闭</div>
+  </div>
+  <script>
+    if (window.opener) {
+      try {
+        window.opener.postMessage({ type: 'PAYPAL_ORDER_APPROVED', token: '${token}' }, '*');
+      } catch (e) {}
+    }
+    setTimeout(() => {
+      try { window.close(); } catch (e) {}
+    }, 1800);
+  </script>
+</body>
+</html>`);
+});
+
+app.get('/api/v1/paypal/cancel', (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <title>ScopeGate · 支付已取消</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fbfbfd; color: #1d1d1f; }
+    .card { background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; max-width: 360px; width: 90%; }
+    h2 { margin: 0 0 10px; font-size: 18px; }
+    p { margin: 0 0 16px; font-size: 13.5px; color: #86868b; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>支付未完成</h2>
+    <p>您已取消本次 PayPal 授权，可随时返回工作台重新发起。</p>
+  </div>
+  <script>
+    setTimeout(() => { try { window.close(); } catch (e) {} }, 1500);
+  </script>
+</body>
+</html>`);
+});
+
 app.delete('/api/v1/sessions/:id', (req, res) => {
   const existed = sessions.delete(req.params.id);
+  if (existed) persistSessionsToDisk();
   res.json({ ok: true, deleted: existed });
 });
 

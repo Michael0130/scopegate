@@ -1,0 +1,7 @@
+{
+  "name": "cj-webhook-idempotency",
+  "version": "1.0.0",
+  "description": "PayPal Webhook 事件幂等性消费架构、消息去重与指数退避重试管道",
+  "author": "CJ Zhao",
+  "rules": "SKILL.md"
+}
