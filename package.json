@@ -10,7 +10,8 @@
     "dev": "node --env-file=.env --watch src/server.js",
     "spike": "node spikes/test-paypal-order.js",
     "eval": "node test/run-eval.mjs",
-    "stress": "node test/stress-test-agent.mjs"
+    "stress": "node test/stress-test-agent.mjs",
+    "test:live": "node test/test-public-deployment.mjs"
   },
   "engines": {
     "node": ">=22"
