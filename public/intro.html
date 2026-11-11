@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScopeGate — Interactive Architecture Tour & Keynote</title>
+  <style>
+    :root {
+      --bg: #07090e;
+      --card-bg: rgba(255, 255, 255, 0.035);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --card-hover-border: rgba(0, 242, 254, 0.4);
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --accent-blue: #0071e3;
+      --accent-cyan: #00f2fe;
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+    canvas#particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      opacity: 0.6;
+    }
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent 35%, rgba(7, 9, 14, 0.8) 80%, var(--bg) 100%);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Top Presentation Bar */
+    .deck-topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
+      background: linear-gradient(180deg, rgba(7, 9, 14, 0.85) 0%, transparent 100%);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .deck-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #fff;
+      text-decoration: none;
+    }
+    .deck-brand svg {
+      width: 24px;
+      height: 24px;
+      filter: drop-shadow(0 0 10px rgba(0, 242, 254, 0.5));
+    }
+    .deck-brand small {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-sub);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    /* Stepper Dots */
+    .deck-stepper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .step-dot:hover {
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-1px);
+    }
+    .step-dot.active {
+      color: #00f2fe;
+      background: rgba(0, 242, 254, 0.12);
+      border-color: rgba(0, 242, 254, 0.35);
+      box-shadow: 0 0 16px rgba(0, 242, 254, 0.2);
+    }
+    .step-dot .dot-circle {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Top Right CTA */
+    .deck-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-enter-app {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      background: linear-gradient(135deg, #0071e3 0%, #00f2fe 100%);
+      color: #000;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 999px;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(0, 113, 227, 0.4);
+      transition: all 0.2s ease;
+    }
+    .btn-enter-app:hover {
+      transform: translateY(-1px) scale(1.02);
+      box-shadow: 0 6px 25px rgba(0, 242, 254, 0.5);
+    }
+    .btn-fullscreen {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 8px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn-fullscreen:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    /* Slide Deck Stage */
+    .deck-stage {
+      position: relative;
+      z-index: 10;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 40px 90px;
+    }
+    .slide {
+      position: absolute;
+      inset: 80px 40px 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.96) translateY(20px);
+      pointer-events: none;
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .slide.active {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+    }
+
+    /* Slide Shared Components */
+    .slide-badge {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent-cyan);
+      background: rgba(0, 242, 254, 0.08);
+      border: 1px solid rgba(0, 242, 254, 0.2);
+      padding: 4px 14px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .slide-title {
+      font-size: 46px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      text-align: center;
+      margin-bottom: 14px;
+      background: linear-gradient(135deg, #ffffff 30%, #cbd5e1 70%, #00f2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      max-width: 900px;
+    }
+    .slide-desc {
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--text-sub);
+      text-align: center;
+      max-width: 760px;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+    .slide-desc strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+
+    /* Slide Cards Grid */
+    .slide-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .slide-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 26px 24px;
+      backdrop-filter: blur(20px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .slide-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--card-hover-border);
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(0, 242, 254, 0.15);
+    }
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .card-icon.cyan { background: rgba(0, 242, 254, 0.12); color: #00f2fe; border: 1px solid rgba(0, 242, 254, 0.3); }
+    .card-icon.blue { background: rgba(0, 113, 227, 0.15); color: #60a5fa; border: 1px solid rgba(0, 113, 227, 0.3); }
+    .card-icon.purple { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .card-icon.amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .card-icon.emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .card-desc {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--text-sub);
+    }
+    .card-tag {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      letter-spacing: 0.04em;
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Slide 1 Cover Specifics */
+    .cover-emblem {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      margin-bottom: 22px;
+    }
+    .cover-emblem .ring {
+      position: absolute;
+      inset: -10px;
+      border-radius: 50%;
+      border: 1px dashed rgba(0, 242, 254, 0.4);
+      animation: spin 20s linear infinite;
+    }
+    .cover-emblem .core {
+      width: 100%;
+      height: 100%;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 50px rgba(0, 113, 227, 0.4);
+    }
+    .cover-emblem .core svg {
+      width: 50px;
+      height: 50px;
+      stroke: #00f2fe;
+      fill: none;
+      stroke-width: 2;
+      filter: drop-shadow(0 0 10px #00f2fe);
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* Bottom Nav Bar */
+    .deck-bottombar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 72px;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
+      background: linear-gradient(0deg, rgba(7, 9, 14, 0.9) 0%, transparent 100%);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .deck-key-hints {
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .key-cap {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    .deck-nav-btns {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 20px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      transition: all 0.2s ease;
+    }
+    .btn-nav:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+    .btn-nav:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .btn-nav.primary {
+      background: #0071e3;
+      border-color: #0071e3;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(0, 113, 227, 0.4);
+    }
+    .btn-nav.primary:hover:not(:disabled) {
+      background: #0077ed;
+      box-shadow: 0 6px 22px rgba(0, 113, 227, 0.6);
+    }
+
+    /* Final Launch Slide CTA Box */
+    .launch-box {
+      margin-top: 32px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .btn-launch-big {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 36px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #0071e3 0%, #00f2fe 100%);
+      color: #000;
+      font-size: 17px;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 8px 32px rgba(0, 113, 227, 0.5), 0 0 30px rgba(0, 242, 254, 0.3);
+      transition: all 0.25s ease;
+    }
+    .btn-launch-big:hover {
+      transform: scale(1.04) translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 242, 254, 0.6);
+    }
+    .btn-restart-tour {
+      padding: 16px 26px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-restart-tour:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+  <div class="vignette"></div>
+
+  <!-- Top Presentation Bar -->
+  <header class="deck-topbar">
+    <a href="/console.html" class="deck-brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
+        <path d="M9 12l2 2 4-4" />
+      </svg>
+      <span>SCOPEGATE</span>
+      <small>Architecture Pitch Deck</small>
+    </a>
+
+    <nav class="deck-stepper" id="stepper">
+      <div class="step-dot active" data-slide="0"><span class="dot-circle"></span> Vision</div>
+      <div class="step-dot" data-slide="1"><span class="dot-circle"></span> 01 Referee</div>
+      <div class="step-dot" data-slide="2"><span class="dot-circle"></span> 02 Scope Lock</div>
+      <div class="step-dot" data-slide="3"><span class="dot-circle"></span> 03 PayPal Ledger</div>
+      <div class="step-dot" data-slide="4"><span class="dot-circle"></span> 04 Evidence Vault</div>
+    </nav>
+
+    <div class="deck-actions">
+      <button type="button" class="btn-fullscreen" id="btn-fullscreen" title="Toggle Fullscreen">⛶ Fullscreen</button>
+      <a href="/console.html" class="btn-enter-app" id="top-enter-btn">
+        <span>Enter Console</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- Slide Stage -->
+  <main class="deck-stage">
+    
+    <!-- SLIDE 0: Cover & The Trust Deficit -->
+    <section class="slide active" id="slide-0">
+      <div class="cover-emblem">
+        <div class="ring"></div>
+        <div class="core">
+          <svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+      </div>
+      <div class="slide-badge">The Trust Deficit in Agentic Commerce</div>
+      <h1 class="slide-title">SCOPEGATE · CONTRACT REFEREE</h1>
+      <p class="slide-desc">
+        AI agents are entering the economy as bespoke contractors. But without rigid boundary enforcement and verifiable payment rails, commerce hits <strong>three fatal roadblocks</strong>:
+      </p>
+      <div class="slide-grid">
+        <div class="slide-card">
+          <div class="card-icon amber">⚠️</div>
+          <div class="card-title">Scope Creep (需求蠕变)</div>
+          <div class="card-desc">Vague subjective prompts lead to endless uncompensated revisions, draining agent compute and merchant sanity.</div>
+          <div class="card-tag">Problem 01 · Boundless Work</div>
+        </div>
+        <div class="slide-card">
+          <div class="card-icon purple">🛡️</div>
+          <div class="card-title">Prompt Injections (越狱盗刷)</div>
+          <div class="card-desc">Unconstrained LLM chatbots fall victim to adversarial prompt injections, leaking services or granting free work.</div>
+          <div class="card-tag">Problem 02 · Zero Guardrails</div>
+        </div>
+        <div class="slide-card">
+          <div class="card-icon cyan">⚖️</div>
+          <div class="card-title">INR Chargebacks (拒付败诉)</div>
+          <div class="card-desc">Digital goods delivered to an email address leave sellers completely defenseless during PayPal "Item Not Received" disputes.</div>
+          <div class="card-tag">Problem 03 · Zero Legal Defense</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 1: Pre-Transaction Referee -->
+    <section class="slide" id="slide-1">
+      <div class="slide-badge">01 / Pre-Transaction Referee</div>
+      <h2 class="slide-title">Pre-Order Arbitration & Ratchet Pricing</h2>
+      <p class="slide-desc">
+        Before any invoice is created or money moves, ScopeGate acts as an <strong>impartial pre-transaction referee</strong>, converting fuzzy briefs into watertight technical proposals.
+      </p>
+      <div class="slide-grid">
+        <div class="slide-card">
+          <div class="card-icon blue">🤖</div>
+          <div class="card-title">Embodied Merchant Agent</div>
+          <div class="card-desc">Mounts merchant craft profiles and skill files (e.g. <code>alex-nextjs-landing-page</code>) to represent the seller's true capability boundary.</div>
+          <div class="card-tag">Architecture · Single-Agent Skills</div>
+        </div>
+        <div class="slide-card">
+          <div class="card-icon cyan">📈</div>
+          <div class="card-title">Dynamic Ratchet Pricing</div>
+          <div class="card-desc">Calculates deterministic capacity surcharges (+40% rush, +$100 extra revisions) via single-directional ratchet formulas. Price never degrades silently.</div>
+          <div class="card-tag">Engine · Ratchet Surcharge</div>
+        </div>
+        <div class="slide-card">
+          <div class="card-icon amber">🚫</div>
+          <div class="card-title">9-Class Referee Firewall</div>
+          <div class="card-desc">Instant <code>REJECT</code> veto against jailbreak attempts, unpayable scopes, or out-of-domain requests before touching settlement.</div>
+          <div class="card-tag">Security · Prompt Injection Veto</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Scope Lock & 40-60 Ladder -->
+    <section class="slide" id="slide-2">
+      <div class="slide-badge">02 / Immutable Scope Lock</div>
+      <h2 class="slide-title">Cryptographic Hash & 40-60 Ladder</h2>
+      <p class="slide-desc">
+        The moment terms are agreed, ScopeGate mathematically seals the contract. <strong>Zero speculative tokens</strong> and <strong>0% platform fund custody</strong>.
+      </p>
+      <div class="slide-grid">
+        <div class="slide-card">
+          <div class="card-icon purple">🔒</div>
+          <div class="card-title">64-Hex SHA-256 Hash</div>
+          <div class="card-desc">Deliverables, exclusions, revisions, and price are serialized into an immutable SHA-256 fingerprint signed by buyer and seller.</div>
+          <div class="card-tag">Cryptography · Contract Hash</div>
+        </div>
+        <div class="slide-card">
+          <div class="card-icon blue">🪜</div>
+          <div class="card-title">40% / 60% Milestone Ladder</div>
+          <div class="card-desc">Milestone 1 (40% Deposit) kicks off production. Milestone 2 (60% Balance) is strictly locked until deliverable 1 is verified.</div>
+          <div class="card-tag">Settlement · Milestone Gating</div>
+        </div>
+        <div class="slide-card">
+          <div class="card-icon emerald">💸</div>
+          <div class="card-title">0% Platform Escrow</div>
+          <div class="card-desc">No middleman bank accounts or shadow pools. Capital flows peer-to-peer directly into the seller's merchant PayPal balance.</div>
+          <div class="card-tag">Compliance · Straight-Through</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: PayPal Official Ledger Anchor -->
+    <section class="slide" id="slide-3">
+      <div class="slide-badge">03 / PayPal Ledger Anchor</div>
+      <h2 class="slide-title">Physical Entanglement with PayPal Ledger</h2>
+      <p class="slide-desc">
+        How do we make contracts real in the financial system? We inject the contract hash <strong>directly into PayPal's official order records</strong>.
+      </p>
+      <div class="slide-grid">
+        <div class="slide-card">
+          <div class="card-icon cyan">⚓</div>
+          <div class="card-title">custom_id Ingestion</div>
+          <div class="card-desc">Every PayPal checkout unit carries <code>custom_id: {contract_hash}:{milestone_id}</code>. Permanently solidified into PayPal's central ledger.</div>
+          <div class="card-tag">Ledger · Permanent Injection</div>
+        </div>
+        <div class="slide-card">
+          <div class="card-icon purple">🔐</div>
+          <div class="card-title">Hardened Gating Gate</div>
+          <div class="card-desc">Attempting to checkout Milestone 2 before Milestone 1 is captured and accepted returns a strict <code>HTTP 409 Conflict</code>.</div>
+          <div class="card-tag">Workflow · Milestone Lock</div>
+        </div>
+        <div class="slide-card">
+          <div class="card-icon blue">🌐</div>
+          <div class="card-title">Multi-Seller Ready</div>
+          <div class="card-desc">Supports Alex (Fullstack), Bella (Visuals), and CJ (Legal). Seamlessly routes payments and webhooks to individual merchant credentials.</div>
+          <div class="card-tag">Production · Multi-Storefront</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Legal Defense Dossier & Launch -->
+    <section class="slide" id="slide-4">
+      <div class="slide-badge">04 / Legal Defense Vault</div>
+      <h2 class="slide-title">Automated PayPal Dispute Defense & Live Portal</h2>
+      <p class="slide-desc">
+        When an unprincipled buyer files an "Item Not Received" claim, ScopeGate converts audit logs into an <strong>irrefutable defense package</strong>.
+      </p>
+      <div class="slide-grid">
+        <div class="slide-card">
+          <div class="card-icon emerald">📁</div>
+          <div class="card-title">Delivery Vault Fingerprints</div>
+          <div class="card-desc">Records recipient IP, User-Agent, download timestamp, and artifact SHA-256 upon file retrieval to prove physical receipt.</div>
+          <div class="card-tag">Audit · Intangible Goods Proof</div>
+        </div>
+        <div class="slide-card">
+          <div class="card-icon cyan">📄</div>
+          <div class="card-title">Compelling Defense PDF</div>
+          <div class="card-desc">One-click compilation of official defense letters strictly formatted for PayPal Resolution Center intangible protection rules.</div>
+          <div class="card-tag">Defense · Official Dossier PDF</div>
+        </div>
+        <div class="slide-card">
+          <div class="card-icon blue">🏆</div>
+          <div class="card-title">Zero-Loss Dispute Record</div>
+          <div class="card-desc">Reverses the power imbalance for agentic service sellers, making autonomous commerce legally bulletproof.</div>
+          <div class="card-tag">Guarantee · Seller Protection</div>
+        </div>
+      </div>
+
+      <!-- Final Launch CTA Box -->
+      <div class="launch-box">
+        <a href="/console.html" class="btn-launch-big">
+          <span>🚀 Launch Live Commerce Console</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+        <button type="button" class="btn-restart-tour" id="btn-restart-tour">🔄 Replay Tour (从头重温)</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Nav Bar -->
+  <footer class="deck-bottombar">
+    <div class="deck-key-hints">
+      <span><span class="key-cap">Space</span> or <span class="key-cap">→</span> Next</span>
+      <span><span class="key-cap">←</span> Prev</span>
+      <span><span class="key-cap">Esc</span> Enter App</span>
+    </div>
+
+    <div class="deck-nav-btns">
+      <span style="font-size:12px;color:#64748b;margin-right:8px" id="slide-counter">Slide 1 of 5</span>
+      <button type="button" class="btn-nav" id="btn-prev" disabled>← Previous</button>
+      <button type="button" class="btn-nav primary" id="btn-next">Next Slide →</button>
+    </div>
+  </footer>
+
+  <script>
+    // Audio FX Generator via Web Audio API (Synthesizer click)
+    let audioCtx = null;
+    function playChime(freq = 440, type = 'sine', duration = 0.08) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    // Presentation Slide State Engine
+    let currentSlide = 0;
+    const totalSlides = 5;
+    const slides = [
+      document.getElementById('slide-0'),
+      document.getElementById('slide-1'),
+      document.getElementById('slide-2'),
+      document.getElementById('slide-3'),
+      document.getElementById('slide-4'),
+    ];
+    const dots = document.querySelectorAll('.step-dot');
+    const prevBtn = document.getElementById('btn-prev');
+    const nextBtn = document.getElementById('btn-next');
+    const counter = document.getElementById('slide-counter');
+
+    function updateSlide(targetIdx) {
+      if (targetIdx < 0 || targetIdx >= totalSlides) return;
+      currentSlide = targetIdx;
+
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentSlide);
+      });
+
+      dots.forEach((d, idx) => {
+        d.classList.toggle('active', idx === currentSlide);
+      });
+
+      prevBtn.disabled = currentSlide === 0;
+      if (currentSlide === totalSlides - 1) {
+        nextBtn.innerHTML = 'Enter App ➔';
+        nextBtn.onclick = () => { window.location.href = '/console.html'; };
+      } else {
+        nextBtn.innerHTML = 'Next Slide →';
+        nextBtn.onclick = () => { nextSlide(); };
+      }
+
+      counter.textContent = `Slide ${currentSlide + 1} of ${totalSlides}`;
+      playChime(320 + currentSlide * 80, 'triangle', 0.06);
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        updateSlide(currentSlide + 1);
+      } else {
+        window.location.href = '/console.html';
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        updateSlide(currentSlide - 1);
+      }
+    }
+
+    prevBtn.addEventListener('click', prevSlide);
+    nextBtn.addEventListener('click', nextSlide);
+
+    dots.forEach((dot) => {
+      dot.addEventListener('click', () => {
+        const idx = parseInt(dot.dataset.slide, 10);
+        updateSlide(idx);
+      });
+    });
+
+    document.getElementById('btn-restart-tour').addEventListener('click', () => {
+      updateSlide(0);
+    });
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'ArrowRight' || e.code === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.code === 'ArrowLeft' || e.code === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.code === 'Escape') {
+        window.location.href = '/console.html';
+      }
+    });
+
+    // Fullscreen Toggle
+    const fsBtn = document.getElementById('btn-fullscreen');
+    fsBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+        fsBtn.textContent = '⛶ Exit';
+      } else {
+        document.exitFullscreen().catch(() => {});
+        fsBtn.textContent = '⛶ Fullscreen';
+      }
+    });
+
+    // Ambient Canvas Particle Mesh
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let particles = [];
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 0.35;
+        this.vy = (Math.random() - 0.5) * 0.35;
+        this.radius = Math.random() * 1.5 + 0.5;
+        this.alpha = Math.random() * 0.5 + 0.2;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > width) this.vx *= -1;
+        if (this.y < 0 || this.y > height) this.vy *= -1;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 242, 254, ${this.alpha})`;
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+    function loop() {
+      ctx.clearRect(0, 0, width, height);
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(0, 113, 227, ${0.16 * (1 - dist / 100)})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>

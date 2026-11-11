@@ -26,6 +26,7 @@ const I18N = {
     gate_llm: '网关: 大模型实时裁决 (GLM)',
     gate_degraded: '网关: 确定性规则兜底',
     nav_market: '服务市集',
+    nav_keynote: '架构全景演示 (PPT)',
     nav_deals: '我的订单',
     nav_orders_heading: '我的定制订单',
     nav_orders_total: '共 {count} 笔订单',
@@ -210,6 +211,7 @@ const I18N = {
     gate_llm: 'Gate: LLM Live (GLM)',
     gate_degraded: 'Gate: Deterministic Fallback',
     nav_market: 'Marketplace',
+    nav_keynote: 'Vision Tour (PPT)',
     nav_deals: 'My Deals',
     nav_orders_heading: 'My Custom Deals',
     nav_orders_total: '{count} order(s)',
@@ -1788,6 +1790,9 @@ function updateStaticDomLang() {
 
   const navMarket = $('nav-market-text');
   if (navMarket) navMarket.textContent = t('nav_market');
+
+  const navKeynote = $('nav-keynote-text');
+  if (navKeynote) navKeynote.textContent = t('nav_keynote');
 
   const navDeals = $('nav-deals-text');
   if (navDeals) navDeals.textContent = t('nav_deals');
