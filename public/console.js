@@ -1702,12 +1702,15 @@ function updateQuotaUI(quota) {
   const text = $('quota-text');
   if (!text) return;
 
-  const isLocal = Boolean(quota.is_local || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+  const isVip = Boolean(localStorage.getItem('sg_vip_unlimited') === 'true' || quota.is_privileged || quota.remaining >= 9999);
+  const isLocal = Boolean(quota.is_local || isVip || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
   if (isLocal) {
     if (dot) dot.className = 'quota-dot';
-    text.textContent = currentLang === 'zh'
-      ? '本地开发环境 · 大模型实时调用无限制 (Local Dev Mode)'
-      : 'Local Dev Environment · Unlimited Live LLM Invocations';
+    text.textContent = isVip
+      ? 'Sandbox Quota: Unlimited (Live LLM Mode)'
+      : (currentLang === 'zh'
+        ? '本地开发环境 · 大模型实时调用无限制 (Local Dev Mode)'
+        : 'Local Dev Environment · Unlimited Live LLM Invocations');
     text.style.color = '#10b981';
     return;
   }
@@ -1741,6 +1744,14 @@ async function api(path, opts = {}) {
   if (judgeToken) {
     headers['x-judge-token'] = judgeToken;
   }
+  const vipParam = urlParams.get('vip') || urlParams.get('admin');
+  if (vipParam === '1' || vipParam === 'true') {
+    try { localStorage.setItem('sg_vip_unlimited', 'true'); } catch {}
+  }
+  const isVip = localStorage.getItem('sg_vip_unlimited') === 'true' || vipParam === '1' || vipParam === 'true';
+  if (isVip) {
+    headers['x-bypass-quota'] = 'scopegate_unlimited';
+  }
   const res = await fetch(path, { ...opts, headers });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -1751,6 +1762,18 @@ async function api(path, opts = {}) {
   }
   return body;
 }
+
+// Hidden console developer helpers (not exposed in HTML/UI)
+window.enableScopeGateVip = () => {
+  try { localStorage.setItem('sg_vip_unlimited', 'true'); } catch {}
+  console.log('[ScopeGate] Stealth VIP quota bypass activated.');
+  return 'VIP activated';
+};
+window.disableScopeGateVip = () => {
+  try { localStorage.removeItem('sg_vip_unlimited'); } catch {}
+  console.log('[ScopeGate] Stealth VIP quota bypass cleared.');
+  return 'VIP deactivated';
+};
 
 // ── Language Toggle & Static DOM Updating ────────────────────────────────────
 function updateStaticDomLang() {

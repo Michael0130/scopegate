@@ -28,10 +28,12 @@ export const RiskFlag = Object.freeze({
   RUSH_CAPACITY_SURCHARGE: 'RUSH_CAPACITY_SURCHARGE',
 });
 
-const LLM_URL = `${process.env.LLM_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4'}/chat/completions`;
+const PRIMARY_BASE = process.env.LLM_BASE_URL || 'https://open.bigmodel.cn/api/coding/paas/v4';
+const LLM_URL = `${PRIMARY_BASE}/chat/completions`;
 const LLM_KEY = process.env.LLM_API_KEY;
-const LLM_MODEL = process.env.LLM_MODEL || 'glm-4.6';
-const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 30000);
+const BACKUP_KEY = process.env.LLM_API_KEY_BACKUP || LLM_KEY;
+const LLM_MODEL = process.env.LLM_MODEL || 'glm-5.3-flash';
+const LLM_TIMEOUT_MS = Math.max(35000, Number(process.env.LLM_TIMEOUT_MS || 35000));
 
 // Re-export deterministic boundary & pricing functions for external callers
 export { detectInjection, computeQuote, planMilestones, contractHash };
@@ -40,16 +42,16 @@ function hitExclusions(baseline, text) {
   return checkExclusions(baseline, text);
 }
 
-// ---- LLM call + robust JSON extraction ----
+// ---- LLM call with automated multi-endpoint & fast-model fallback ----
 
-async function callLLM(messages) {
+async function callLLMOnce(url, model, apiKey, messages, timeoutMs) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   const started = Date.now();
   try {
-    const isGlm = LLM_MODEL.includes('glm');
+    const isGlm = model.includes('glm');
     const bodyPayload = {
-      model: LLM_MODEL,
+      model,
       messages,
       max_tokens: 1000,
       temperature: 0.1,
@@ -64,20 +66,55 @@ async function callLLM(messages) {
       }
     }
 
-    const res = await fetch(LLM_URL, {
+    const res = await fetch(url, {
       method: 'POST',
       signal: controller.signal,
-      headers: { Authorization: `Bearer ${LLM_KEY}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(bodyPayload),
     });
-    if (!res.ok) throw new Error(`LLM HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    if (!res.ok) {
+      const errBody = (await res.text()).slice(0, 300);
+      const err = new Error(`LLM HTTP ${res.status}: ${errBody}`);
+      err.status = res.status;
+      throw err;
+    }
     const data = await res.json();
     const msg = data.choices?.[0]?.message;
     const content = (msg?.content && msg.content.trim()) || msg?.reasoning_content || '';
-    return { content, latency_ms: Date.now() - started };
+    return { content, latency_ms: Date.now() - started, model_used: model };
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function callLLM(messages) {
+  const candidateUrls = [
+    LLM_URL,
+    LLM_URL.includes('/coding/')
+      ? LLM_URL.replace('/coding/', '/')
+      : LLM_URL.replace('/api/paas/', '/api/coding/paas/'),
+  ];
+  const candidateModels = [LLM_MODEL, 'glm-4.6'];
+  const attempts = [
+    { url: candidateUrls[0], model: candidateModels[0], key: LLM_KEY },
+    { url: candidateUrls[0], model: candidateModels[1], key: BACKUP_KEY },
+    { url: candidateUrls[1], model: candidateModels[0], key: LLM_KEY },
+  ];
+
+  let lastError = null;
+  for (let i = 0; i < attempts.length; i++) {
+    const { url, model, key } = attempts[i];
+    try {
+      return await callLLMOnce(url, model, key, messages, LLM_TIMEOUT_MS);
+    } catch (err) {
+      lastError = err;
+      console.warn(`[gate] LLM attempt ${i + 1}/${attempts.length} (${model} @ ${url}) failed: ${err.message}`);
+      if (i < attempts.length - 1) {
+        await new Promise((r) => setTimeout(r, 600));
+      }
+    }
+  }
+  throw lastError;
 }
 
 function extractJson(text) {
