@@ -88,6 +88,48 @@
       text-decoration: none;
     }
 
+    .btn-keynote {
+      background: linear-gradient(135deg, rgba(0, 113, 227, 0.22) 0%, rgba(0, 242, 254, 0.25) 100%) !important;
+      border: 1px solid rgba(0, 242, 254, 0.5) !important;
+      color: #00f2fe !important;
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.25);
+      font-weight: 700 !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+    }
+    .btn-keynote:hover {
+      background: linear-gradient(135deg, #0071e3 0%, #00f2fe 100%) !important;
+      color: #05070d !important;
+      border-color: #00f2fe !important;
+      transform: translateY(-2px);
+      box-shadow: 0 0 32px rgba(0, 242, 254, 0.5);
+      text-decoration: none;
+    }
+    .nav-keynote-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 15px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(0, 113, 227, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%);
+      border: 1px solid rgba(0, 242, 254, 0.45);
+      color: #00f2fe !important;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 0 14px rgba(0, 242, 254, 0.2);
+      transition: all 0.2s ease;
+    }
+    .nav-keynote-link:hover {
+      background: linear-gradient(135deg, rgba(0, 113, 227, 0.3) 0%, rgba(0, 242, 254, 0.3) 100%);
+      border-color: #00f2fe;
+      transform: translateY(-1px);
+      box-shadow: 0 0 22px rgba(0, 242, 254, 0.45);
+      color: #fff !important;
+    }
+
     .hero { text-align: center; padding: 66px 24px 56px; position: relative; overflow: hidden; }
     .hero .hglow { position: absolute; inset: 8% -10% auto; height: 380px; background: radial-gradient(closest-side, rgba(139,92,246,.17), transparent 72%); filter: blur(8px); pointer-events: none; }
     .hero > * { position: relative; }
@@ -234,9 +276,9 @@
       ScopeGate
     </a>
     <nav class="nav-links">
+      <a href="/intro.html" class="nav-keynote-link">✨ Vision Tour (PPT)</a>
       <a href="#how">How it works</a>
       <a href="#proof">Proof</a>
-      <a href="#quickstart">Run it locally &darr;</a>
       <a href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
       <a class="nav-cta" href="/console.html">Open Live Console &rarr;</a>
     </nav>
@@ -250,22 +292,11 @@
     <p class="h1sub">ScopeGate is the Multi-Agent Commerce Mesh for bespoke services: 24/7 sales, scope gatekeeper, and PayPal milestone escrow — protecting scope before money moves.</p>
     <div class="cta">
       <a class="btn btn-white" href="/console.html">Open Live Console &rarr;</a>
-      <a class="btn btn-ghost" data-needs-video href="">&#9654;&nbsp;Watch 90-sec demo</a>
+      <a class="btn btn-keynote" href="/intro.html">✨ Architecture Tour (PPT) &rarr;</a>
       <a class="btn btn-ghost" href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
     </div>
-    <div class="ctacap"><b>Free &middot; no signup</b> &middot; real PayPal sandbox rails &middot; first load &asymp; 30s (free-tier cold start)</div>
+    <div class="ctacap"><b>Free &middot; no signup</b> &middot; real PayPal sandbox rails</div>
   </section>
-
-  <div class="lane">
-    <div class="lane-in">
-      <span class="lane-tag">JUDGING THIS PROJECT?</span>
-      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/demo-walkthrough.md" target="_blank" rel="noopener">5-min guided tour</a>
-      <a data-needs-video href="">90-sec demo video</a>
-      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/gatekeeper-eval.md" target="_blank" rel="noopener">Live eval report &mdash; 56/56</a>
-      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/evidence-table.md" target="_blank" rel="noopener">Verification &amp; Evidence Matrix</a>
-      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/failed-experiments.md" target="_blank" rel="noopener">What we tried that failed</a>
-    </div>
-  </div>
 
   <section class="band">
     <div class="eyebrow">THE PROBLEM</div>
@@ -385,12 +416,6 @@
         <div class="rec-t">Dispute answered</div>
         <div class="rec-h">evidence dossier, one click</div>
       </div>
-    </div>
-    <div class="evidence">
-      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/gatekeeper-eval.md" target="_blank" rel="noopener">eval report &mdash; 56/56</a>
-      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/evidence-table.md" target="_blank" rel="noopener">real vs simulated</a>
-      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/failed-experiments.md" target="_blank" rel="noopener">failed experiments</a>
-      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/architecture-comparison.md" target="_blank" rel="noopener">vs x402 / AP2 / ACP</a>
     </div>
   </section>
 
@@ -558,8 +583,8 @@ LLM_API_KEY=...           <span class="cm"># optional &mdash; without it the gat
     <div class="foot-line">Settled by the contract, not the loudest voice.</div>
     <div class="foot-links">
       <a href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
-      <a href="/console.html">Live console</a>
-      <a href="https://github.com/Michael0130/scopegate/blob/main/docs/demo-walkthrough.md" target="_blank" rel="noopener">Judges&rsquo; tour</a>
+      <a href="/console.html">Live Console</a>
+      <a href="/intro.html">Vision Tour (PPT)</a>
       <a href="https://paypalaihackathon.devpost.com" target="_blank" rel="noopener">PayPal AI Hackathon</a>
     </div>
     <div class="foot-meta">MIT &middot; PayPal Sandbox only &middot; Built for the PayPal AI Hackathon</div>
