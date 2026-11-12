@@ -51,7 +51,7 @@ const I18N = {
 
     // Marketplace
     hero_h1: '下一代智能体商务网络 · 刚性契约与全链路底账守护',
-    hero_p: '专业卖家专注做好核心服务，销售、法务、财务、清算与争议抗辩全交由 ScopeGate 智能体集群守护。在资金流转前冻结不可篡改的契约哈希，在 PayPal 官方账本完成存证与分期清算。',
+    hero_p: '专业卖家专注做好核心服务，销售、法务、财务、清算与争议抗辩全交由 ScopeGate 具身单智能体与模块化 Skills 守护。在资金流转前冻结不可篡改的契约哈希，在 PayPal 官方账本完成存证与分期清算。',
     active_deals_heading: '您当前进行中的定制订单',
     stall_from: '起步',
     stall_days: '天交付',
@@ -67,8 +67,8 @@ const I18N = {
     shop_back: '← 返回服务市集',
     shop_status_open: '正在接单',
     shop_agent_head: '与商户专属商务智能体沟通',
-    shop_agent_sub: '多智能体商务中台守护',
-    shop_thread_sys: '该商户由专属自治商务智能体集群守护 —— 严密守护服务边界与风控，并在达成一致后由 ScopeGate 压制不可篡改的契约哈希。',
+    shop_agent_sub: '单智能体 + 模块化 Skills 守护',
+    shop_thread_sys: '该商户由专属具身商务智能体 + 模块化 Skills 守护 —— 严密守护服务边界与风控，并在达成一致后由 ScopeGate 压制不可篡改的契约哈希。',
     shop_input_ph: '请简述您的项目愿景或定制诉求（如：计划打造高品质产品官网，展示核心卖点与交互方案）…',
     shop_send_btn: '发送',
     btn_reset_chat: '重置对话',
@@ -236,7 +236,7 @@ const I18N = {
 
     // Marketplace
     hero_h1: 'Next-Gen Agentic Commerce Network · Cryptographic Contracts & Ledger Anchors',
-    hero_p: 'Sellers focus 100% on their core craft. Sales, legal boundaries, escrow finance, and dispute defense are executed by the ScopeGate Multi-Agent Mesh — freezing contract hashes before money moves, settling sequentially on PayPal rails.',
+    hero_p: 'Sellers focus 100% on their core craft. Sales, legal boundaries, escrow finance, and dispute defense are executed by an embodied Core Commerce Agent with modular Skills — freezing contract hashes before money moves, settling sequentially on PayPal rails.',
     active_deals_heading: 'Your Active Customized Deals',
     stall_from: 'from',
     stall_days: 'days turnaround',
@@ -252,8 +252,8 @@ const I18N = {
     shop_back: '← Back to Marketplace',
     shop_status_open: 'Open for Orders',
     shop_agent_head: 'Chat with Storefront Sales Agent',
-    shop_agent_sub: 'Multi-Agent Commerce Mesh',
-    shop_thread_sys: 'This merchant is protected by an autonomous multi-agent mesh — strictly guarding boundaries and freezing agreed terms into immutable contract hashes.',
+    shop_agent_sub: 'Core Agent + Modular Skills',
+    shop_thread_sys: 'This merchant is protected by an embodied Core Commerce Agent with modular Skills — strictly guarding boundaries and freezing agreed terms into immutable contract hashes.',
     shop_input_ph: 'Describe your project vision (e.g. looking for a bespoke showcase website for our new product)…',
     shop_send_btn: 'Send',
     btn_reset_chat: 'Reset Chat',
