@@ -108,6 +108,23 @@ if (!sid) {
   check('m1 dispatch records payer email', dispatch.payer_email === 'sb-buyer@personal.example.com', dispatch.payer_email);
   check('m1 dispatch records artifact sha256 (64-char hex)', /^[0-9a-f]{64}$/.test(dispatch.artifact_sha256 ?? ''), dispatch.artifact_sha256);
 
+  // Before recipient download: dispatched-only dossier & PDF honestly disclose pending pickup,
+  // while requesting an un-dispatched milestone (m2) cleanly returns 409 instead of crashing.
+  const pendingDossierRes = await fetch(`${BASE_URL}/api/v1/sessions/${sid}/dossier`);
+  const pendingDossier = await pendingDossierRes.json();
+  check('pending-pickup dossier HTTP 200 after dispatch', pendingDossierRes.status === 200, JSON.stringify(pendingDossier).slice(0, 120));
+  check('pending-pickup status = PENDING_RECIPIENT_DOWNLOAD', pendingDossier.proof_of_delivery?.recipient_access_log?.status === 'PENDING_RECIPIENT_DOWNLOAD');
+  check('pending-pickup accessed_at is null (no fabricated log)', pendingDossier.proof_of_delivery?.recipient_access_log?.accessed_at === null);
+
+  const pendingPdfRes = await fetch(`${BASE_URL}/api/v1/sessions/${sid}/dossier/pdf`);
+  const pendingPdfText = await pendingPdfRes.text();
+  check('pending-pickup defense PDF HTTP 200', pendingPdfRes.status === 200, `got ${pendingPdfRes.status}`);
+  check('pending-pickup PDF headers inline application/pdf', (pendingPdfRes.headers.get('content-type') || '').includes('application/pdf') && (pendingPdfRes.headers.get('content-disposition') || '').startsWith('inline;'));
+  check('pending-pickup PDF is valid PDF & discloses pending pickup', pendingPdfText.startsWith('%PDF-') && pendingPdfText.includes('PENDING RECIPIENT DOWNLOAD'));
+
+  const undispatchedRes = await fetch(`${BASE_URL}/api/v1/sessions/${sid}/dossier?milestone=m2`);
+  check('undispatched milestone (?milestone=m2) returns 409 (no 500 crash)', undispatchedRes.status === 409, `got ${undispatchedRes.status}`);
+
   const artifactRes = await fetch(`${BASE_URL}/api/v1/delivery/${sid}/artifact?milestone=m1`);
   const artifactBody = await artifactRes.text();
   check('m1 artifact download HTTP 200', artifactRes.status === 200, `got ${artifactRes.status}`);
@@ -129,7 +146,11 @@ if (!sid) {
   check('dossier cites Seller Protection Intangible-Goods clause', String(dossier.policy_compliance).includes('Intangible Goods Additional Requirements'));
   check('dossier snapshot max_revisions = 2', dossier.contract_snapshot?.max_revisions === 2);
   check('dossier log has client ip', Boolean(dossier.proof_of_delivery?.recipient_access_log?.client_ip), dossier.proof_of_delivery?.recipient_access_log?.client_ip);
+  check('dossier log status = DOWNLOADED after pickup', dossier.proof_of_delivery?.recipient_access_log?.status === 'DOWNLOADED');
   check('dossier log hash equals artifact hash', dossier.proof_of_delivery?.recipient_access_log?.artifact_sha256 === dispatch.artifact_sha256);
+  const downloadedPdfRes = await fetch(`${BASE_URL}/api/v1/sessions/${sid}/dossier/pdf`);
+  const downloadedPdfText = await downloadedPdfRes.text();
+  check('post-download defense PDF HTTP 200 & logs DOWNLOADED', downloadedPdfRes.status === 200 && downloadedPdfText.startsWith('%PDF-') && downloadedPdfText.includes('Pickup status: DOWNLOADED'));
 }
 
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}`);

@@ -1913,6 +1913,25 @@ if (langToggleBtn) {
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
+async function loadSellersWithRetry() {
+  const stallsEl = $('stalls');
+  if (stallsEl && state.sellers.length === 0) {
+    stallsEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:#6e6e73;font-size:14px">${currentLang === 'zh' ? '正在连接独立商业智能体集市…' : 'Loading autonomous merchant storefronts…'}</div>`;
+  }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const data = await api('/api/v1/sellers');
+      if (Array.isArray(data?.sellers) && data.sellers.length > 0) {
+        state.sellers = data.sellers;
+        return true;
+      }
+    } catch {
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 600));
+    }
+  }
+  return false;
+}
+
 async function boot() {
   try {
     const icon = document.querySelector("link[rel*='icon']") || document.createElement('link');
@@ -1928,15 +1947,36 @@ async function boot() {
 
   api('/api/v1/quota').then(updateQuotaUI).catch(() => {});
 
-  try {
-    const data = await api('/api/v1/sellers');
-    state.sellers = data.sellers;
-  } catch {
+  // 1. Fetch & render merchant stalls immediately without blocking on sessions/health
+  const loaded = await loadSellersWithRetry();
+  if (loaded) {
+    renderStalls();
+    if (typeof initPresetChips === 'function') initPresetChips();
+  } else {
     toast(t('gateway_offline'));
+    const stallsEl = $('stalls');
+    if (stallsEl) {
+      stallsEl.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:36px 20px;border:1px solid rgba(0,0,0,.08);border-radius:16px;background:#fff">
+          <div style="font-size:15px;font-weight:600;color:#1d1d1f;margin-bottom:8px">${currentLang === 'zh' ? '暂时无法连接网关服务' : 'Unable to reach ScopeGate Gateway'}</div>
+          <div style="font-size:13px;color:#6e6e73;margin-bottom:16px">${t('gateway_offline')}</div>
+          <button type="button" class="btn" id="btn-retry-stalls">${currentLang === 'zh' ? '🔄 重新加载商铺' : '🔄 Reload Merchants'}</button>
+        </div>`;
+      const retryBtn = $('btn-retry-stalls');
+      if (retryBtn) retryBtn.addEventListener('click', () => boot());
+    }
   }
 
-  try {
-    const h = await api('/api/v1/health');
+  const paramShop = new URLSearchParams(location.search).get('shop');
+  const paramSession = new URLSearchParams(location.search).get('session');
+  if (paramShop && sellerById(paramShop)) {
+    enterShop(paramShop);
+  } else {
+    applyView();
+  }
+
+  // 2. Fetch health and sync active sessions in background (never blocks storefront cards)
+  api('/api/v1/health').then((h) => {
     const llm = h.gate_mode === 'llm';
     const pill = $('gate-mode');
     if (pill) {
@@ -1945,9 +1985,8 @@ async function boot() {
     if (h.sandbox_buyer) {
       state.sandboxBuyer = h.sandbox_buyer;
     }
-  } catch { /* handled above */ }
+  }).catch(() => {});
 
-  // 1. Sync all active sessions from server so we recover deals even after restart or localStorage clear
   try {
     const sessRes = await api('/api/v1/sessions');
     if (Array.isArray(sessRes?.sessions)) {
@@ -1966,20 +2005,13 @@ async function boot() {
   const storedIds = Object.values(state.shopSessions).filter(Boolean);
   await Promise.allSettled(storedIds.map(refreshSession));
 
-  renderStalls();
   renderActiveDeals();
-  if (typeof initPresetChips === 'function') initPresetChips();
-
-  const paramShop = new URLSearchParams(location.search).get('shop');
-  const paramSession = new URLSearchParams(location.search).get('session');
   if (paramShop && sellerById(paramShop)) {
     if (paramSession) {
       state.shopSessions[paramShop] = paramSession;
       await refreshSession(paramSession);
     }
-    enterShop(paramShop);
-  } else {
-    applyView();
+    renderShopDeal();
   }
 }
 
@@ -2781,10 +2813,14 @@ async function shopSend() {
       const factsLines = decision.facts?.lines ?? [];
       const factsHtml = factsLines
         .map((l) => `<div style="font-size:12.5px;padding:2px 0">&middot; ${esc(l)}</div>`).join('');
-      const dossierLink = decision.session_id
+      const dossierLink = decision.session_id && decision.dossier_ready
         ? `<div style="margin-top:8px"><a class="link" href="/api/v1/sessions/${encodeURIComponent(decision.session_id)}/dossier/pdf" target="_blank" rel="noopener" style="font-weight:600;color:#0071e3">📄 ${t('open_dossier_link')}</a></div>
-           <div style="font-size:11.5px;color:#64748b;margin-top:5px;line-height:1.45">ℹ️ <b>${isZh ? '官方举证说明' : 'Official Proof Notice'}</b>: ${isZh ? '此抗辩信为商户基于 PayPal 卖家保障政策自动生成的正式法定抗辩书，作为向 PayPal 官方争议庭提交的仲裁证据。' : 'This defense letter is an official legal rebuttal generated under PayPal Seller Protection, ready for arbitration in PayPal Resolution Center.'}</div>`
-        : '';
+           <div style="font-size:11.5px;color:#64748b;margin-top:5px;line-height:1.45">ℹ️ <b>${isZh ? '官方举证说明' : 'Official Proof Notice'}</b>: ${
+             decision.evidence_status === 'dispatched_pending_pickup'
+               ? (isZh ? '当前交付物已派发至买方邮箱但尚未检测到下载提取记录；该抗辩信 PDF 将如实披露待签收状态（绝不伪造访问日志）。' : 'Deliverable has been dispatched to the payer email but download is still pending; the PDF honestly discloses pending pickup without fabricating access logs.')
+               : (isZh ? '此抗辩信为商户基于 PayPal 卖家保障政策自动生成的正式法定抗辩书，作为向 PayPal 官方争议庭提交的仲裁证据。' : 'This defense letter is an official legal rebuttal generated under PayPal Seller Protection, ready for arbitration in PayPal Resolution Center.')
+           }</div>`
+        : `<div style="font-size:11.5px;color:#64748b;margin-top:8px;line-height:1.45">ℹ️ ${isZh ? '当前尚未派发交付物，完成阶段收款与交付物派发后即可生成官方抗辩信 (PDF)。' : 'No deliverable has been dispatched yet. Complete capture and dispatch to generate the defense letter PDF.'}</div>`;
       bubble(thread, 'agent',
         `<span class="dot warn"></span><b>${t('evidence_desk_title')}</b><span class="sub mono" style="font-size:10.5px"> · ${t('evidence_desk_sub')}</span>
          <div style="margin-top:6px">${factsHtml}</div>
@@ -4211,6 +4247,18 @@ function renderShopDeal() {
   const topDisputeEl = $('shop-top-dispute');
   if (topDisputeEl) {
     if (session.dispute) {
+      const hasAccepted = (session.payments ?? []).some((p) => p.dispatched && p.access_count > 0);
+      const hasDispatched = (session.payments ?? []).some((p) => p.dispatched);
+      const statusBadge = hasAccepted
+        ? (isZh ? '🛡️ 官方抗辩已组装（含签收指纹）' : '🛡️ Official Defense Ready (Pickup Verified)')
+        : hasDispatched
+          ? (isZh ? '🛡️ 抗辩信已就绪（已派发·待买方下载）' : '🛡️ Defense Ready (Dispatched · Pickup Pending)')
+          : (isZh ? '⏳ 待派发交付物后生成抗辩信' : '⏳ Awaiting Deliverable Dispatch');
+      const pdfAction = hasDispatched
+        ? `<a class="shop-top-dispute-btn" href="/api/v1/sessions/${encodeURIComponent(session.session_id)}/dossier/pdf" target="_blank" rel="noopener" title="${isZh ? '查看或下载卖家提供给 PayPal 官方的法定证据抗辩信 (PDF)' : 'View or download official defense letter submitted to PayPal (PDF)'}">
+            📄 ${isZh ? '官方抗辩信 PDF ↗' : 'Defense PDF ↗'}
+          </a>`
+        : `<span style="font-size:11px;color:#991b1b;font-weight:500">${isZh ? '请先完成交付物派发' : 'Dispatch deliverable first'}</span>`;
       topDisputeEl.hidden = false;
       topDisputeEl.innerHTML = `
         <div class="shop-top-dispute-inner">
@@ -4219,11 +4267,9 @@ function renderShopDeal() {
             <b style="color:#b91c1c;font-size:11.5px">${t('dispute_open_title')}${session.dispute.simulated ? t('dispute_open_sim') : ''}</b>
             <span style="font-weight:400;color:#7f1d1d;font-size:11px">(${esc(disputeLabel(session.dispute.reason))} &middot; <b>${money(session.dispute.amount)}</b>)</span>
             <span style="color:#fca5a5;margin:0 1px">|</span>
-            <span style="font-size:11px;color:#991b1b">🛡️ ${isZh ? '官方抗辩已组装' : 'Official Defense Ready'}</span>
+            <span style="font-size:11px;color:#991b1b">${statusBadge}</span>
           </div>
-          <a class="shop-top-dispute-btn" href="/api/v1/sessions/${encodeURIComponent(session.session_id)}/dossier/pdf" target="_blank" rel="noopener" title="${isZh ? '下载卖家提供给 PayPal 官方的法定证据抗辩信 (PDF)' : 'Download official defense letter submitted to PayPal (PDF)'}">
-            📄 ${isZh ? '官方抗辩信 PDF ↗' : 'Defense PDF ↗'}
-          </a>
+          ${pdfAction}
         </div>
       `;
     } else {
@@ -4841,25 +4887,46 @@ async function runAutonomousSellerAgent() {
       });
 
       await wait(800);
-      let factsHtml = `<div style="font-size:12.5px;padding:2px 0">${t('agent_dispute_facts_done')}</div>`;
+      let dossier = null;
+      let dossierErr = null;
       try {
-        const dossier = await api(`/api/v1/sessions/${encodeURIComponent(s.session_id)}/dossier`);
-        const log = dossier.proof_of_delivery?.recipient_access_log ?? {};
-        const anchor = dossier.paypal_custom_id_anchor ?? '';
-        const doneCount = (dossier.payment_ledger ?? []).filter((r) => r.status === 'COMPLETED').length;
-        factsHtml = [
-          `custom_id: <span class="mono">${esc(anchor.slice(0, 12))}…:m1 / :m2</span>`,
-          `Fulfillment log: IP ${esc(log.client_ip ?? '—')} &middot; sha256 ${esc((log.artifact_sha256 ?? '').slice(0, 12))}…`,
-          `Payment history: ${doneCount} milestone(s) COMPLETED on PayPal`,
-        ].map((r) => `<div style="font-size:12.5px;padding:2px 0">${r}</div>`).join('');
-      } catch { /* ignore */ }
+        dossier = await api(`/api/v1/sessions/${encodeURIComponent(s.session_id)}/dossier`);
+      } catch (err) {
+        dossierErr = err;
+      }
 
-      const sellerObj = sellerById(s.seller_id);
+      if (!dossier) {
+        demo.done.delete(`court:${s.session_id}`);
+        bubble(thread, 'agent',
+          `<span class="dot warn"></span><b>${t('evidence_desk_title')}</b>
+           <div style="margin-top:6px;font-size:12.5px;color:#991b1b">${esc(dossierErr?.message || (isZh ? '交付物尚未派发，暂无法组装抗辩卷宗；请先完成阶段交付物派发。' : 'Deliverable has not been dispatched yet; dispatch it first to compile the defense dossier.'))}</div>`,
+          { agentKey: 'legal', seller: sellerObj, routerNote: isZh ? '法务举证等待交付物派发就绪' : 'Legal Agent awaiting deliverable dispatch' });
+        return;
+      }
+
+      const log = dossier.proof_of_delivery?.recipient_access_log ?? {};
+      const anchor = dossier.paypal_custom_id_anchor ?? '';
+      const doneCount = (dossier.payment_ledger ?? []).filter((r) => r.status === 'COMPLETED').length;
+      const pickupLine = log.accessed_at
+        ? `Fulfillment log: IP ${esc(log.client_ip ?? '—')} &middot; sha256 ${esc((log.artifact_sha256 ?? '').slice(0, 12))}…`
+        : (isZh
+            ? `履约状态: 已派发（sha256 ${esc((log.artifact_sha256 ?? '').slice(0, 12))}…），买方尚未下载（抗辩信将如实标注待签收）`
+            : `Fulfillment status: Dispatched (sha256 ${esc((log.artifact_sha256 ?? '').slice(0, 12))}…) · buyer pickup pending (honestly noted in PDF)`);
+      const factsHtml = [
+        `custom_id: <span class="mono">${esc(anchor.slice(0, 12))}…:m1 / :m2</span>`,
+        pickupLine,
+        `Payment history: ${doneCount} milestone(s) COMPLETED on PayPal`,
+      ].map((r) => `<div style="font-size:12.5px;padding:2px 0">${r}</div>`).join('');
+
       bubble(thread, 'agent',
         `<span class="dot ok"></span><b>${t('agent_evidence_desk')}</b><span class="sub mono" style="font-size:10.5px"> &middot; ${t('agent_evidence_desk_sub')}</span>
          <div style="margin-top:6px">${factsHtml}</div>
          <div style="margin-top:8px"><a class="link" href="/api/v1/sessions/${encodeURIComponent(s.session_id)}/dossier/pdf" target="_blank" rel="noopener" style="font-weight:600;color:#0071e3">📄 ${t('open_dossier_link')}</a></div>
-         <div style="font-size:11.5px;color:#64748b;margin-top:5px;line-height:1.45">ℹ️ <b>${isZh ? '官方举证说明' : 'Official Proof Notice'}</b>: ${isZh ? '此抗辩信为商户基于 PayPal 卖家保障政策自动生成的正式法定抗辩书，已包含资金底账流水、custom_id 契约哈希、交付物 SHA-256 及买家访问日志，作为提交给 PayPal 官方争议庭的仲裁证据。' : 'This defense letter is an official legal rebuttal generated under PayPal Seller Protection, complete with captured ledger entries, custom_id contract hash, artifact SHA-256, and access audit logs for PayPal Resolution Center.'}</div>`,
+         <div style="font-size:11.5px;color:#64748b;margin-top:5px;line-height:1.45">ℹ️ <b>${isZh ? '官方举证说明' : 'Official Proof Notice'}</b>: ${
+           log.accessed_at
+             ? (isZh ? '此抗辩信为商户基于 PayPal 卖家保障政策自动生成的正式法定抗辩书，已包含资金底账流水、custom_id 契约哈希、交付物 SHA-256 及买家访问日志，作为提交给 PayPal 官方争议庭的仲裁证据。' : 'This defense letter is an official legal rebuttal generated under PayPal Seller Protection, complete with captured ledger entries, custom_id contract hash, artifact SHA-256, and access audit logs for PayPal Resolution Center.')
+             : (isZh ? '当前阶段交付物已派发但买方尚未下载，抗辩信已如实记录资金底账、custom_id 契约哈希、派发时间与交付物 SHA-256，并在访问日志区诚实标注“待买方签收”（绝不伪造访问记录）。' : 'This milestone deliverable was dispatched and awaits recipient download; the defense letter honestly records settled ledger entries, custom_id hash, dispatch timestamp, and artifact SHA-256 without fabricating access logs.')
+         }</div>`,
         { agentKey: 'legal', seller: sellerObj, routerNote: isZh ? '法务合规智能体生成官方证据抗辩信' : 'Legal Agent compiled official defense letter' });
 
       try {

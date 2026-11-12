@@ -371,7 +371,7 @@
                 "m2"
               ]
             },
-            "description": "Scope proof-of-delivery to this milestone; default = latest accepted"
+            "description": "Scope proof-of-delivery to this milestone; default = latest accepted (falls back to latest dispatched)"
           }
         ],
         "responses": {
@@ -386,7 +386,7 @@
             }
           },
           "409": {
-            "description": "Delivery evidence incomplete (not dispatched or never downloaded)"
+            "description": "Delivery evidence incomplete (no milestone deliverable has been dispatched yet)"
           }
         }
       }
@@ -627,12 +627,12 @@
                 "m2"
               ]
             },
-            "description": "Scope proof-of-delivery to this milestone; default = latest accepted"
+            "description": "Scope proof-of-delivery to this milestone; default = latest accepted (falls back to latest dispatched)"
           }
         ],
         "responses": {
           "200": {
-            "description": "Defense letter PDF",
+            "description": "Defense letter PDF (inline preview by default; pass ?download=1 for attachment)",
             "content": {
               "application/pdf": {
                 "schema": {
@@ -643,7 +643,7 @@
             }
           },
           "409": {
-            "description": "evidence_incomplete — dispatch + recipient download must happen first"
+            "description": "evidence_incomplete — a milestone deliverable must be dispatched first"
           }
         }
       }
@@ -676,7 +676,7 @@
                 "m2"
               ]
             },
-            "description": "Scope evidence to this milestone; default = latest accepted"
+            "description": "Scope evidence to this milestone; default = latest accepted (falls back to latest dispatched)"
           }
         ],
         "responses": {
@@ -726,7 +726,7 @@
                       "m1",
                       "m2"
                     ],
-                    "description": "Which milestone stage the evidence defends; default = latest accepted"
+                    "description": "Which milestone stage the evidence defends; default = latest accepted (falls back to latest dispatched)"
                   }
                 }
               }
@@ -1010,17 +1010,33 @@
               "recipient_access_log": {
                 "type": "object",
                 "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "DOWNLOADED",
+                      "PENDING_RECIPIENT_DOWNLOAD"
+                    ]
+                  },
+                  "download_count": {
+                    "type": "integer"
+                  },
                   "accessed_at": {
                     "type": "string",
-                    "format": "date-time"
+                    "format": "date-time",
+                    "nullable": true
                   },
                   "client_ip": {
-                    "type": "string"
+                    "type": "string",
+                    "nullable": true
                   },
                   "user_agent": {
-                    "type": "string"
+                    "type": "string",
+                    "nullable": true
                   },
                   "artifact_sha256": {
+                    "type": "string"
+                  },
+                  "note": {
                     "type": "string"
                   }
                 }

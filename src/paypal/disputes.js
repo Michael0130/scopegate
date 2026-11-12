@@ -12,7 +12,11 @@ import { getAccessToken } from './client.js';
 import crypto from 'node:crypto';
 
 export function buildDossier(session, deliveryRecord, milestoneId) {
-  const lastAccess = deliveryRecord.accesses[deliveryRecord.accesses.length - 1];
+  if (!deliveryRecord) {
+    throw new Error(`No delivery record for ${session?.session_id}:${milestoneId}`);
+  }
+  const accesses = Array.isArray(deliveryRecord.accesses) ? deliveryRecord.accesses : [];
+  const lastAccess = accesses.length > 0 ? accesses[accesses.length - 1] : null;
   const plan = session.decision.payment_plan ?? [];
   const planEntry = plan.find((m) => m.milestone_id === milestoneId);
   const payment = session.payments?.find((p) => p.milestone_id === milestoneId);
@@ -50,12 +54,24 @@ export function buildDossier(session, deliveryRecord, milestoneId) {
       milestone_id: milestoneId,
       verified_payer_email: deliveryRecord.payer_email,
       delivery_dispatched_at: deliveryRecord.delivery_dispatched_at,
-      recipient_access_log: {
-        accessed_at: lastAccess.accessed_at,
-        client_ip: lastAccess.client_ip,
-        user_agent: lastAccess.user_agent,
-        artifact_sha256: deliveryRecord.artifact_sha256,
-      },
+      recipient_access_log: lastAccess
+        ? {
+            status: 'DOWNLOADED',
+            download_count: accesses.length,
+            accessed_at: lastAccess.accessed_at,
+            client_ip: lastAccess.client_ip,
+            user_agent: lastAccess.user_agent,
+            artifact_sha256: deliveryRecord.artifact_sha256,
+          }
+        : {
+            status: 'PENDING_RECIPIENT_DOWNLOAD',
+            download_count: 0,
+            accessed_at: null,
+            client_ip: null,
+            user_agent: null,
+            artifact_sha256: deliveryRecord.artifact_sha256,
+            note: 'Deliverable dispatched to payer-verified email; recipient download has not occurred yet.',
+          },
     },
   };
 }
@@ -66,6 +82,10 @@ export function buildDossier(session, deliveryRecord, milestoneId) {
  * PayPal's flow asks for that intangible sellers never had (docs/evidence-table.md #3).
  */
 export function buildEvidencePayload(dossier, session) {
+  const accessLog = dossier.proof_of_delivery.recipient_access_log;
+  const deliveryNote = accessLog?.accessed_at
+    ? `downloaded (${accessLog.accessed_at}), with a server-side access log, payment ledger, and artifact hash attached as the defense letter PDF.`
+    : `awaiting recipient pickup on the logged vault endpoint (no synthetic access log fabricated); dispatch timestamp (${dossier.proof_of_delivery.delivery_dispatched_at}), payment ledger, and artifact SHA-256 are attached in the defense letter PDF.`;
   return {
     evidences: [{
       evidence_type: 'PROOF_OF_FULFILLMENT',
@@ -81,9 +101,7 @@ export function buildEvidencePayload(dossier, session) {
       `payment plan were frozen pre-payment and hashed with SHA-256. Every milestone order ` +
       `carries that hash in purchase_units[0].custom_id, suffixed with its milestone id ` +
       `(disputed stage: ${dossier.milestone_id}, order ${dossier.paypal_order_id}). The ` +
-      `milestone artifact was dispatched to the payer-verified email and downloaded ` +
-      `(${dossier.proof_of_delivery.recipient_access_log.accessed_at}), with a server-side ` +
-      `access log, payment ledger, and artifact hash attached as the defense letter PDF.`,
+      `milestone artifact was dispatched to the payer-verified email and is ${deliveryNote}`,
   };
 }
 

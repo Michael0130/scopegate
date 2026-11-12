@@ -50,6 +50,47 @@
     .btn-ghost { color: #f3f5f9; border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.02); }
     .btn-ghost:hover { border-color: rgba(255,255,255,.34); color: #fff; }
 
+    .btn-tour,
+    .btn-tour:link,
+    .btn-tour:visited {
+      background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #6f86d6 100%);
+      color: #070913 !important;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.4);
+      box-shadow: 0 0 22px rgba(0, 242, 254, 0.45);
+      animation: tour-glow 2.8s infinite alternate ease-in-out;
+    }
+    .btn-tour:hover,
+    .btn-tour:active,
+    .btn-tour:focus {
+      background: linear-gradient(135deg, #38f9d7 0%, #4facfe 100%);
+      box-shadow: 0 0 32px rgba(0, 242, 254, 0.75);
+      transform: translateY(-1px);
+    }
+    @keyframes tour-glow {
+      0% { box-shadow: 0 0 15px rgba(0, 242, 254, 0.35); }
+      100% { box-shadow: 0 0 28px rgba(0, 242, 254, 0.7), 0 0 12px rgba(111, 134, 214, 0.5); }
+    }
+    .nav-tour {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #00f2fe !important;
+      background: rgba(0, 242, 254, 0.08);
+      border: 1px solid rgba(0, 242, 254, 0.28);
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .nav-tour:hover {
+      background: rgba(0, 242, 254, 0.18);
+      border-color: #00f2fe;
+      box-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
+    }
+
     .chip-v { display: inline-flex; align-items: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; letter-spacing: 1px; border-radius: 6px; padding: 2px 8px; font-weight: 600; }
     .v-accept { color: #4ade80; background: rgba(74,222,128,.12); border: 1px solid rgba(74,222,128,.4); }
     .v-counter { color: #fbbf24; background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.4); }
@@ -213,6 +254,150 @@
       .next-grid { grid-template-columns: 1fr; }
       .prob { grid-template-columns: 30px 1fr; } .prob .chip-v { grid-column: 2; justify-self: start; }
     }
+
+    /* 15s Video Theater Overlay inside index.html for instant 33% unmuted playback */
+    #video-story-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    #video-story-overlay.open {
+      display: flex;
+      opacity: 1;
+    }
+    .video-nav-bar {
+      position: absolute;
+      top: 24px;
+      left: 36px;
+      right: 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    .video-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #ffffff;
+      backdrop-filter: blur(8px);
+    }
+    .video-badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #00f2fe;
+      box-shadow: 0 0 8px #00f2fe;
+    }
+    .btn-video-sound {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+    }
+    .btn-video-sound:hover { background: rgba(255, 255, 255, 0.25); }
+    .btn-skip-video {
+      background: #ffffff;
+      color: #000000;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-skip-video:hover { background: #f1f5f9; }
+    .video-viewport {
+      width: 100%;
+      height: 100%;
+      max-width: 1200px;
+      max-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+    }
+    .video-viewport video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000000;
+    }
+    .video-ended-actions {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(10px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+    .video-ended-actions.show { display: flex; }
+    .ended-card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 32px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+    }
+    .ended-title { font-size: 20px; font-weight: 700; color: #ffffff; }
+    .ended-sub { font-size: 13.5px; color: #94a3b8; max-width: 360px; line-height: 1.5; }
+    .ended-btns { display: flex; gap: 14px; align-items: center; margin-top: 6px; }
+    .btn-replay-video {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .btn-replay-video:hover { background: rgba(255, 255, 255, 0.25); }
+    .btn-close-video-action {
+      background: #ffffff;
+      border: none;
+      color: #000000;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 24px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .btn-close-video-action:hover { background: #f1f5f9; }
   </style>
 </head>
 <body>
@@ -234,6 +419,7 @@
       ScopeGate
     </a>
     <nav class="nav-links">
+      <a class="nav-tour" href="/intro.html">▶ Story &amp; Tour</a>
       <a href="#how">How it works</a>
       <a href="#proof">Proof</a>
       <a href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
@@ -247,6 +433,10 @@
     <h1>Sellers focus on their craft. <span class="grad">AI Agents handle the rest.</span></h1>
     <p class="h1sub">ScopeGate is the Multi-Agent Commerce Mesh for bespoke services: 24/7 sales, scope gatekeeper, and PayPal milestone escrow — protecting scope before money moves.</p>
     <div class="cta">
+      <a class="btn btn-tour" href="/intro.html">
+        <span style="font-size:12px">▶</span>
+        <span>Watch Story &amp; Presentation</span>
+      </a>
       <a class="btn btn-white" href="/console.html">Open Live Console &rarr;</a>
       <a class="btn btn-ghost" href="https://github.com/Michael0130/scopegate" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -572,6 +762,135 @@ LLM_API_KEY=...           <span class="cm"># optional &mdash; without it the gat
         }
       });
     });
+  </script>
+
+  <!-- 15s Video Theater Overlay (Instant 33% Unmuted Audio on Click) -->
+  <div id="video-story-overlay">
+    <div class="video-nav-bar">
+      <div class="video-badge">
+        <span class="video-badge-dot"></span>
+        <span>SCENARIO STORY · 15s</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button type="button" class="btn-video-sound" id="btn-video-sound">
+          <span id="video-sound-text">🔊 Sound: 33%</span>
+        </button>
+        <button type="button" class="btn-skip-video" id="btn-skip-video">
+          <span>Skip to Overview ➔</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="video-viewport">
+      <video id="story-video" src="/story.mp4" playsinline controls></video>
+      <div class="video-ended-actions" id="video-ended-actions">
+        <div class="ended-card">
+          <div class="ended-title">✨ Story Complete</div>
+          <div class="ended-sub">ScopeGate protected the seller before money moved. Replay the story or open the architecture overview.</div>
+          <div class="ended-btns">
+            <button type="button" class="btn-replay-video" id="btn-replay-video">↺ Replay Video</button>
+            <button type="button" class="btn-close-video-action" id="btn-close-video-action">✕ Close &amp; View Overview ➔</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const overlay = document.getElementById('video-story-overlay');
+      const video = document.getElementById('story-video');
+      const endedBox = document.getElementById('video-ended-actions');
+      const btnSound = document.getElementById('btn-video-sound');
+      const soundText = document.getElementById('video-sound-text');
+      const btnSkip = document.getElementById('btn-skip-video');
+      const btnReplay = document.getElementById('btn-replay-video');
+      const btnCloseAction = document.getElementById('btn-close-video-action');
+
+      function updateSoundLabel() {
+        if (!video || !soundText) return;
+        if (video.muted || video.volume === 0) {
+          soundText.textContent = '🔇 Sound: OFF';
+        } else {
+          soundText.textContent = '🔊 Sound: ' + Math.round(video.volume * 100) + '%';
+        }
+      }
+
+      function launchVideoWithAudio(e) {
+        if (e) e.preventDefault();
+        if (!overlay || !video) return;
+        if (endedBox) endedBox.classList.remove('show');
+        overlay.classList.add('open');
+
+        // Directly inside user click event: browser guarantees unmuted 33% playback!
+        video.muted = false;
+        video.volume = 0.33;
+        video.currentTime = 0;
+        updateSoundLabel();
+        video.play().catch(function () {
+          video.muted = true;
+          updateSoundLabel();
+          video.play().catch(function () {});
+        });
+      }
+
+      function closeToOverview() {
+        if (video) video.pause();
+        window.location.href = '/intro.html?ppt=1';
+      }
+
+      function dismissOverlay() {
+        if (video) video.pause();
+        if (overlay) overlay.classList.remove('open');
+      }
+
+      document.querySelectorAll('.btn-tour, .nav-tour').forEach(function (el) {
+        el.addEventListener('click', launchVideoWithAudio);
+      });
+
+      if (btnSound) {
+        btnSound.addEventListener('click', function () {
+          if (!video) return;
+          if (video.muted || video.volume === 0) {
+            video.muted = false;
+            if (video.volume === 0) video.volume = 0.33;
+          } else {
+            video.muted = true;
+          }
+          updateSoundLabel();
+        });
+      }
+
+      if (video) {
+        video.addEventListener('ended', function () {
+          if (endedBox) endedBox.classList.add('show');
+        });
+        video.addEventListener('play', function () {
+          if (endedBox) endedBox.classList.remove('show');
+        });
+        video.addEventListener('volumechange', updateSoundLabel);
+      }
+
+      if (btnReplay) {
+        btnReplay.addEventListener('click', function () {
+          if (endedBox) endedBox.classList.remove('show');
+          video.muted = false;
+          video.volume = 0.33;
+          video.currentTime = 0;
+          updateSoundLabel();
+          video.play().catch(function () {});
+        });
+      }
+
+      if (btnSkip) btnSkip.addEventListener('click', closeToOverview);
+      if (btnCloseAction) btnCloseAction.addEventListener('click', closeToOverview);
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay && overlay.classList.contains('open')) {
+          dismissOverlay();
+        }
+      });
+    })();
   </script>
 </body>
 </html>

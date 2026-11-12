@@ -147,6 +147,11 @@ function isAccepted(session, milestoneId) {
   return !!(record && record.accesses.length > 0);
 }
 
+/** Whether a milestone's deliverable has been dispatched in the delivery vault. */
+function isDispatched(session, milestoneId) {
+  return !!getDeliveryRecord(session.session_id, milestoneId);
+}
+
 /** m1 is always payable (contract hash = signature); milestone N needs N-1 paid + accepted. */
 function milestoneUnlocked(session, milestoneId) {
   const idx = session.payments?.findIndex((p) => p.milestone_id === milestoneId) ?? -1;
@@ -156,12 +161,23 @@ function milestoneUnlocked(session, milestoneId) {
   return prev.order_status === 'COMPLETED' && isAccepted(session, prev.milestone_id);
 }
 
-/** Pick the milestone a dossier should describe: the explicit one, or the latest accepted. */
+/**
+ * Pick the milestone a dossier should describe:
+ * - Explicit `requested`: valid only if in payment plan AND already dispatched (prevents crash on un-dispatched stage).
+ * - Default: latest accepted (dispatched + downloaded) milestone, falling back to latest dispatched milestone.
+ */
 function resolveEvidenceMilestone(session, requested) {
-  if (requested) return paymentFor(session, requested) ? requested : null;
-  for (let i = (session.payments?.length ?? 0) - 1; i >= 0; i--) {
-    const mid = session.payments[i].milestone_id;
+  if (requested) {
+    return paymentFor(session, requested) && isDispatched(session, requested) ? requested : null;
+  }
+  const payments = session.payments ?? [];
+  for (let i = payments.length - 1; i >= 0; i--) {
+    const mid = payments[i].milestone_id;
     if (isAccepted(session, mid)) return mid;
+  }
+  for (let i = payments.length - 1; i >= 0; i--) {
+    const mid = payments[i].milestone_id;
+    if (isDispatched(session, mid)) return mid;
   }
   return null;
 }
@@ -215,16 +231,18 @@ function buildDisputeDeskReply(session, isZh = false) {
       const n = record.accesses?.length ?? 0;
       if (n > 0) {
         const last = record.accesses[n - 1];
+        const accessedAt = last.accessed_at ?? last.accessedAt;
+        const clientIp = last.client_ip ?? last.clientIp ?? 'n/a';
         if (isZh) {
-          lines.push(`【访问审计】${p.milestone_id} 交付物已被提取下载 ×${n} 次 — 最近一次下载于 ${hh(last.accessedAt)}，来源客户端 IP: ${last.clientIp ?? 'n/a'}`);
+          lines.push(`【访问审计】${p.milestone_id} 交付物已被提取下载 ×${n} 次 — 最近一次下载于 ${hh(accessedAt)}，来源客户端 IP: ${clientIp}`);
         } else {
-          lines.push(`${p.milestone_id} downloaded ×${n} — last at ${hh(last.accessedAt)} from IP ${last.clientIp ?? 'n/a'}`);
+          lines.push(`${p.milestone_id} downloaded ×${n} — last at ${hh(accessedAt)} from IP ${clientIp}`);
         }
       } else {
         if (isZh) {
-          lines.push(`【访问审计】${p.milestone_id} 暂无下载提取记录 — 请检查认证邮箱或垃圾邮件箱；系统已记录完整访问审计日志以备仲裁抗辩。`);
+          lines.push(`【访问审计】${p.milestone_id} 暂无下载提取记录 — 请检查认证邮箱或垃圾邮件箱；当前抗辩信将如实标注“待买方签收”。`);
         } else {
-          lines.push(`${p.milestone_id} no download yet — check spam; every attempt is logged for the dossier.`);
+          lines.push(`${p.milestone_id} no download yet — check spam; the dossier honestly marks pickup as pending.`);
         }
       }
     }
@@ -246,10 +264,18 @@ function buildDisputeDeskReply(session, isZh = false) {
     }
   }
 
+  const evidenceMilestone = resolveEvidenceMilestone(session, null);
+  const evidenceStatus = !evidenceMilestone
+    ? 'incomplete'
+    : (isAccepted(session, evidenceMilestone) ? 'accepted' : 'dispatched_pending_pickup');
+
   return {
     response_type: 'dispute_desk',
     session_id: session.session_id,
     seller_id: session.seller_id,
+    dossier_ready: Boolean(evidenceMilestone),
+    dossier_milestone: evidenceMilestone,
+    evidence_status: evidenceStatus,
     reasoning: lines.join(' '),
     facts: { lines },
     gate_meta: { mode: 'dispute-desk', latency_ms: 0, injection_firewall_forced: false },
@@ -1032,31 +1058,32 @@ app.get('/api/v1/delivery/:sessionId/artifact', (req, res) => {
 });
 
 // One-click Seller Protection Intangible-Goods evidence package. `?milestone=mN` scopes the
-// proof of delivery to that stage; default is the latest accepted milestone. The dossier
-// always embeds the full payment ledger (every milestone order + capture id).
+// proof of delivery to that stage; default is the latest accepted (or latest dispatched)
+// milestone. The dossier always embeds the full payment ledger and never fabricates access logs.
 app.get('/api/v1/sessions/:sessionId/dossier', (req, res) => {
   const session = getSession(req.params.sessionId);
   if (!session) return res.status(404).json({ error: 'session_not_found' });
   const milestoneId = resolveEvidenceMilestone(session, req.query.milestone);
   if (!milestoneId) {
-    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch a milestone deliverable and let the recipient download it first.' });
+    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch a milestone deliverable first.' });
   }
   const record = getDeliveryRecord(session.session_id, milestoneId);
   res.json(buildDossier(session, record, milestoneId));
 });
 
-// The same dossier as a downloadable defense-letter PDF (Seller Protection Intangible-Goods).
+// The same dossier as an inline-viewable / downloadable defense-letter PDF.
 app.get('/api/v1/sessions/:sessionId/dossier/pdf', (req, res) => {
   const session = getSession(req.params.sessionId);
   if (!session) return res.status(404).json({ error: 'session_not_found' });
   const milestoneId = resolveEvidenceMilestone(session, req.query.milestone);
   if (!milestoneId) {
-    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch a milestone deliverable and let the recipient download it first.' });
+    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch a milestone deliverable first.' });
   }
   const record = getDeliveryRecord(session.session_id, milestoneId);
   const pdf = buildDefenseLetterPdf(buildDossier(session, record, milestoneId));
+  const disposition = req.query.download === '1' ? 'attachment' : 'inline';
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="scopegate-defense-letter-${session.session_id}-${milestoneId}.pdf"`);
+  res.setHeader('Content-Disposition', `${disposition}; filename="scopegate-defense-letter-${session.session_id}-${milestoneId}.pdf"`);
   res.send(pdf);
 });
 
@@ -1067,7 +1094,7 @@ app.get('/api/v1/sessions/:sessionId/evidence-payload', (req, res) => {
   if (!session) return res.status(404).json({ error: 'session_not_found' });
   const milestoneId = resolveEvidenceMilestone(session, req.query.milestone);
   if (!milestoneId) {
-    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch + download must happen before evidence exists.' });
+    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch a milestone deliverable first.' });
   }
   const record = getDeliveryRecord(session.session_id, milestoneId);
   res.json({
@@ -1084,7 +1111,7 @@ app.post('/api/v1/disputes/:disputeId/provide-evidence', async (req, res) => {
   if (!session) return res.status(404).json({ error: 'session_not_found' });
   const milestoneId = resolveEvidenceMilestone(session, req.body?.milestone_id);
   if (!milestoneId) {
-    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch + download must happen before evidence exists.' });
+    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch a milestone deliverable first.' });
   }
   const record = getDeliveryRecord(session.session_id, milestoneId);
   try {
@@ -1098,6 +1125,7 @@ app.post('/api/v1/disputes/:disputeId/provide-evidence', async (req, res) => {
       credentials: sellerCredentials(getSeller(session.seller_id)),
     });
     session.dispute = { ...(session.dispute ?? {}), evidence_submitted_at: new Date().toISOString() };
+    persistSessionsToDisk();
     res.json(result);
   } catch (err) {
     console.error('[provide-evidence]', err.message);
@@ -1159,6 +1187,7 @@ app.post('/api/v1/demo/simulate-dispute', (req, res) => {
     received_at: session.dispute.created_at,
   });
   webhookEvents.length = Math.min(webhookEvents.length, WEBHOOK_EVENT_LIMIT);
+  persistSessionsToDisk();
   res.json({ session_id: session.session_id, dispute: session.dispute, simulated: true });
 });
 
@@ -1172,6 +1201,10 @@ app.post('/api/v1/demo/file-evidence', (req, res) => {
   }
   if (!session.dispute.simulated) {
     return res.status(409).json({ error: 'real_dispute', message: 'Real disputes file through POST /api/v1/disputes/:id/provide-evidence.' });
+  }
+  const milestoneId = resolveEvidenceMilestone(session, req.body?.milestone_id);
+  if (!milestoneId) {
+    return res.status(409).json({ error: 'evidence_incomplete', message: 'Dispatch a milestone deliverable first.' });
   }
   session.dispute.status = 'UNDER_PAYPAL_REVIEW';
   const at = new Date().toISOString();
@@ -1187,6 +1220,7 @@ app.post('/api/v1/demo/file-evidence', (req, res) => {
     received_at: at,
   });
   webhookEvents.length = Math.min(webhookEvents.length, WEBHOOK_EVENT_LIMIT);
+  persistSessionsToDisk();
   res.json({ session_id: session.session_id, dispute: session.dispute, simulated: true });
 });
 
@@ -1270,6 +1304,7 @@ function applyWebhookEvent(event) {
       created_at: event.create_time,
     };
   }
+  persistSessionsToDisk();
   return { session_id: session.session_id, milestone_id: payment?.milestone_id ?? null };
 }
 
