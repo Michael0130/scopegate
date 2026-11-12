@@ -2668,11 +2668,13 @@ function sessionForShop() {
 }
 
 async function shopSend() {
+  if (state.shopSending) return;
   const s = sellerById(state.shop);
   const input = $('shop-input');
   const text = input.value.trim();
   const sendImages = [...pendingImages];
   if (!s || (!text && sendImages.length === 0)) return;
+  state.shopSending = true;
   input.value = '';
   pendingImages = [];
   renderImagePreviews();
@@ -2956,12 +2958,35 @@ async function shopSend() {
     }
     bubble(thread, 'agent', `<span class="dot no"></span><b>${t('gate_err')}</b> <span class="sub">${esc(err.message)}</span>`, { agentKey: 'concierge', seller: s, lang: turnLang });
   } finally {
+    state.shopSending = false;
     $('shop-send').disabled = false;
   }
 }
 
 $('shop-send').addEventListener('click', shopSend);
-$('shop-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') shopSend(); });
+
+let isImeComposing = false;
+let lastImeCompEndAt = 0;
+const shopInputEl = $('shop-input');
+if (shopInputEl) {
+  shopInputEl.addEventListener('compositionstart', () => {
+    isImeComposing = true;
+  });
+  shopInputEl.addEventListener('compositionend', () => {
+    isImeComposing = false;
+    lastImeCompEndAt = Date.now();
+  });
+  shopInputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      // Prevent Safari/Chrome IME candidate confirmation Enter key from prematurely sending
+      if (isImeComposing || e.isComposing || e.keyCode === 229 || (Date.now() - lastImeCompEndAt < 120)) {
+        return;
+      }
+      e.preventDefault();
+      shopSend();
+    }
+  });
+}
 
 // Image attachment triggers
 const btnAttachImg = $('btn-attach-img');
@@ -3134,9 +3159,9 @@ const SELLER_PRESETS = {
           tagEn: 'Bespoke · Baseline Scope',
           tagType: 'ok',
           descZh: '提出核心出海官网定制需求，商户 Agent 拟定标准交付方案与分期付款计划',
-          descEn: 'Request high-converting modern product landing page matching baseline scope and milestone plan',
-          textZh: '我们下个月准备出海发版一款 AI 效率工具，需要定制一套极具现代感、高转化率的产品官方网站。',
-          textEn: 'We are launching an AI productivity tool next month and need a high-converting, modern official website.',
+          descEn: 'Request 3-section Next.js landing page matching baseline scope for instant 1-turn order proposal',
+          textZh: '我们需要按标准基准定制一套 3 区块响应式 Next.js 官网（Tailwind 暗黑模式，标准 3 天交付），请直接确认报价并生成订单契约。',
+          textEn: 'Build a 3-section responsive Next.js landing page with Tailwind dark mode, standard 3-day turnaround.',
         },
         {
           nameZh: '发布会临近 · 24 小时加急冲刺',
@@ -4279,25 +4304,50 @@ function renderShopDeal() {
   }
 
   const hasCaptured = (session.payments ?? []).some((p) => p.order_status === 'COMPLETED');
-  const disputeSection = session.dispute ? '' : `
+  const hasDispatchedAny = (session.payments ?? []).some((p) => p.dispatched);
+  const activeDisputeReason = session.dispute?.reason || '';
+  const isSnadActive = activeDisputeReason === 'MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED' || activeDisputeReason === 'SIGNIFICANTLY_NOT_AS_DESCRIBED';
+  const isInrActive = activeDisputeReason === 'MERCHANDISE_OR_SERVICE_NOT_RECEIVED';
+
+  const activeDisputeBox = session.dispute ? `
+    <div style="margin-top:10px;padding:10px 12px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="font-size:12px;color:#991b1b">
+          <b>🛡️ ${esc(disputeLabel(session.dispute.reason))}</b> · <span>${esc(session.dispute.status || 'OPEN')}</span>
+        </div>
+        ${hasDispatchedAny ? `
+          <div style="display:inline-flex;gap:6px;flex-wrap:wrap">
+            <a class="btn" style="font-size:11.5px;padding:4px 10px;background:#dc2626;color:#fff;border-color:#dc2626;text-decoration:none" href="/api/v1/sessions/${encodeURIComponent(session.session_id)}/dossier/pdf" target="_blank" rel="noopener">
+              📄 ${isZh ? '在线查看抗辩信 PDF ↗' : 'View Defense PDF ↗'}
+            </a>
+            <a class="btn ghost" style="font-size:11.5px;padding:4px 10px;color:#991b1b;border-color:#fca5a5;text-decoration:none" href="/api/v1/sessions/${encodeURIComponent(session.session_id)}/dossier/pdf?download=1" target="_blank" rel="noopener">
+              ⬇ ${isZh ? '下载 PDF' : 'Download PDF'}
+            </a>
+          </div>
+        ` : `<span style="font-size:11.5px;color:#991b1b">${isZh ? '正在准备交付物派发，派发完成后自动生成抗辩 PDF…' : 'Auto-dispatching deliverable — PDF unlocks momentarily…'}</span>`}
+      </div>
+    </div>` : '';
+
+  const disputeSection = `
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.06)">
       <div style="font-size:12.5px;font-weight:600;color:#1d1d1f">${t('dispute_section_title')}</div>
       <div class="sub" style="font-size:12px;margin-top:3px;line-height:1.55;color:#555">${t('dispute_section_sub')}</div>
+      ${activeDisputeBox}
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <a class="btn ghost" style="font-size:12px;padding:5px 12px;display:inline-flex" href="https://www.sandbox.paypal.com/disputes" target="_blank" rel="noopener">${t('btn_open_pp_center')}</a>
+        <a class="btn ghost" style="font-size:12px;padding:5px 12px;display:inline-flex" href="https://www.sandbox.paypal.com/disputes?locale.x=en_US" target="_blank" rel="noopener">${t('btn_open_pp_center')}</a>
         ${hasCaptured ? `
-          <button type="button" class="btn ghost" style="font-size:11.5px;padding:5px 10px;color:#d97706;border-color:rgba(217,119,6,.3);cursor:pointer" onclick="shopRaiseDispute('SIGNIFICANTLY_NOT_AS_DESCRIBED')">
+          <button type="button" class="btn ghost" style="font-size:11.5px;padding:5px 10px;color:${isSnadActive ? '#b45309' : '#d97706'};background:${isSnadActive ? 'rgba(217,119,6,.12)' : 'transparent'};border-color:${isSnadActive ? '#d97706' : 'rgba(217,119,6,.3)'};font-weight:${isSnadActive ? '600' : '500'};cursor:pointer" onclick="shopRaiseDispute('MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED')">
             ⚖️ ${isZh ? '模拟发起“货不对板”抗辩演练' : 'Simulate SNAD Dispute'}
           </button>
-          <button type="button" class="btn ghost" style="font-size:11.5px;padding:5px 10px;color:#d97706;border-color:rgba(217,119,6,.3);cursor:pointer" onclick="shopRaiseDispute('MERCHANDISE_OR_SERVICE_NOT_RECEIVED')">
+          <button type="button" class="btn ghost" style="font-size:11.5px;padding:5px 10px;color:${isInrActive ? '#b45309' : '#d97706'};background:${isInrActive ? 'rgba(217,119,6,.12)' : 'transparent'};border-color:${isInrActive ? '#d97706' : 'rgba(217,119,6,.3)'};font-weight:${isInrActive ? '600' : '500'};cursor:pointer" onclick="shopRaiseDispute('MERCHANDISE_OR_SERVICE_NOT_RECEIVED')">
             📦 ${isZh ? '模拟发起“未收到货”抗辩演练' : 'Simulate INR Dispute'}
           </button>
         ` : ''}
       </div>
       <div style="font-size:11px;color:#86868b;margin-top:6px;line-height:1.45">
         ${isZh
-          ? '💡 <b>提示</b>：上方外链直接访问 <b>PayPal 官方沙盒解决中心</b>（展示该沙盒账号在官方系统的历史案件）；您也可以点击黄色按钮直接针对当前订单模拟发起争议，体验法务智能体秒级调证与生成官方抗辩信。'
-          : '💡 <b>Tip</b>: The link opens the live <b>PayPal Sandbox Resolution Center</b> for this test account. Click the buttons to simulate a dispute and watch Legal Agent compile defense evidence instantly.'}
+          ? '💡 <b>提示</b>：上方外链直接访问 <b>PayPal 官方沙盒解决中心</b>；您可随时点击任意黄色按钮切换模拟“货不对板”或“未收到货”争议，体验法务智能体秒级调证与下载官方抗辩信 PDF。'
+          : '💡 <b>Tip</b>: Click either button anytime to simulate SNAD or INR disputes and view/download the compiled Legal Defense PDF.'}
       </div>
     </div>`;
 
@@ -4492,10 +4542,12 @@ async function shopRaiseDispute(reason) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sid, reason }),
     });
-    toast(`<b>${t('dispute_open_title')}：</b>${esc(disputeLabel(data.dispute?.reason))}`);
+    demo.done.delete(`court:${sid}`);
+    toast(`<b>${t('dispute_open_title')}: </b>${esc(disputeLabel(data.dispute?.reason))}`);
     await refreshSession(sid);
     renderShopDeal();
     renderActiveDeals();
+    runAutonomousSellerAgent();
   } catch (err) {
     toast('<b>Dispute failed.</b> ' + esc(err.message));
   }

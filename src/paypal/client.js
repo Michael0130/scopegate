@@ -102,6 +102,7 @@ export async function createScopedOrder({ contractHash, paypalRequestId, amount,
           }],
           application_context: {
             brand_name: 'ScopeGate Merchant Shield',
+            locale: 'en-US',
             user_action: 'PAY_NOW',
             shipping_preference: 'NO_SHIPPING',
             return_url: `${process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`}/api/v1/paypal/return`,

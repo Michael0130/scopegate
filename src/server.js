@@ -687,7 +687,10 @@ app.post('/api/v1/checkout', async (req, res) => {
     }
     payment.order_id = order.id;
     payment.order_status = order.status;
-    payment.approve_url = order.links?.find((l) => l.rel === 'approve')?.href ?? null;
+    const rawApproveUrl = order.links?.find((l) => l.rel === 'approve')?.href ?? null;
+    payment.approve_url = rawApproveUrl
+      ? `${rawApproveUrl}${rawApproveUrl.includes('?') ? '&' : '?'}locale.x=en_US&country.x=US`
+      : null;
 
     // Anchor readback: PayPal's create-order response does NOT echo custom_id — read the
     // order back so the console can show "verified against PayPal's own record", not just
@@ -939,7 +942,7 @@ app.get('/api/v1/paypal/return', async (req, res) => {
   }
 
   res.send(`<!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>ScopeGate · Payment Authorized</title>
@@ -1154,7 +1157,10 @@ app.post('/api/v1/demo/simulate-dispute', (req, res) => {
     'MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED',
     'UNAUTHORIZED_TRANSACTION',
   ]);
-  const reason = DISPUTE_REASONS.has(req.body?.reason) ? req.body.reason : 'MERCHANDISE_OR_SERVICE_NOT_RECEIVED';
+  const rawReason = req.body?.reason === 'SIGNIFICANTLY_NOT_AS_DESCRIBED'
+    ? 'MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED'
+    : req.body?.reason;
+  const reason = DISPUTE_REASONS.has(rawReason) ? rawReason : 'MERCHANDISE_OR_SERVICE_NOT_RECEIVED';
   // Attribute the dispute to the latest accepted milestone (delivery disputed), else
   // the first captured one.
   const milestoneId = resolveEvidenceMilestone(session, null) ?? captured.milestone_id;
